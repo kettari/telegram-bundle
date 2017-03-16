@@ -1,0 +1,23 @@
+{
+  "name": "kettari/telegram-bundle",
+  "type": "symfony-bundle",
+  "description": "Kaula TelegramBundle",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Andrei Kornienko",
+      "email": "ant@kaula.ru",
+      "homepage": "https://github.com/kettari"
+    }
+  ],
+  "require": {
+    "php": ">=5.6.0",
+    "unreal4u/telegram-api": "~2.3"
+  },
+  "autoload": {
+    "psr-4": {
+      "Kaula\\TelegramBundle": ""
+    }
+  },
+  "prefer-stable": true
+}
