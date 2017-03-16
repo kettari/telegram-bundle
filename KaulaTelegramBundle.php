@@ -13,6 +13,4 @@ use Symfony\Component\HttpKernel\Bundle\Bundle;
 
 class KaulaTelegramBundle extends Bundle {
 
-
-
 }

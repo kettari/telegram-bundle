@@ -1,0 +1,7 @@
+services:
+    kaula_telegram.bot:
+        class: Kaula\TelegramBundle\Telegram\Bot
+        arguments: ['@service_container']
+
+    telegram_bot:
+        alias: kaula_telegram.bot
