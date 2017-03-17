@@ -18,7 +18,18 @@ class HelpCommand extends AbstractCommand {
    * Executes command.
    */
   public function execute() {
-
+    $text = 'Список команд бота: '.PHP_EOL.PHP_EOL;
+    $commands = $this->getBus()
+      ->getCommands();
+    /** @var AbstractCommand $command */
+    foreach ($commands as $command => $placeholder) {
+      if (!$command::isVisible()) {
+        continue;
+      }
+      $text .= sprintf('/%s — %s', $command::$name, $command::$description).
+        PHP_EOL;
+    }
+    $this->replyWithMessage($text);
   }
 
 

@@ -10,7 +10,7 @@ namespace Kaula\TelegramBundle\Telegram;
 
 
 use GuzzleHttp\Exception\ClientException;
-use Kaula\TelegramBundle\Telegram\Command\AbstractCommand;
+
 use Kaula\TelegramBundle\Telegram\Command\HelpCommand;
 use Kaula\TelegramBundle\Telegram\Command\StartCommand;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -40,7 +40,7 @@ class Bot {
    */
   public function __construct(ContainerInterface $container) {
     $this->container = $container;
-    $this->bus = new CommandBus();
+    $this->bus = new CommandBus($this);
     $this->bus->registerCommand(StartCommand::class)
       ->registerCommand(HelpCommand::class);
   }

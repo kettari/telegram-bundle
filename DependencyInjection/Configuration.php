@@ -25,8 +25,10 @@ class Configuration implements ConfigurationInterface {
     /** @noinspection PhpUndefinedMethodInspection */
     $rootNode
       ->children()
+          ->scalarNode('secret')->end()
           ->scalarNode('api_token')->end()
           ->scalarNode('certificate_file')->end()
+          ->scalarNode('url')->end()
         ->end() // twitter
       ->end();
     // @formatter:on
