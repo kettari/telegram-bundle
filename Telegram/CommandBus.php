@@ -11,6 +11,9 @@ namespace Kaula\TelegramBundle\Telegram;
 
 use Kaula\TelegramBundle\Exception\InvalidCommand;
 use Kaula\TelegramBundle\Telegram\Command\AbstractCommand;
+use Psr\Log\LoggerInterface;
+
+
 use unreal4u\TelegramAPI\Telegram\Types\Update;
 
 class CommandBus {
@@ -68,9 +71,17 @@ class CommandBus {
    * @return bool Returns TRUE if appropriate command was found.
    */
   public function executeCommand($command_name, Update $update) {
+    /** @var LoggerInterface $l */
+    $l = $this->getBot()
+      ->getContainer()
+      ->get('logger');
+
     foreach ($this->commands_classes as $command_class => $placeholder) {
       /** @var AbstractCommand $command_class */
       if ($command_class::getName() == $command_name) {
+        $l->debug('Executing command /{command_name}',
+          ['command_name' => $command_name]);
+
         /** @var AbstractCommand $command */
         $command = new $command_class($this, $update);
         $command->execute();
@@ -78,6 +89,8 @@ class CommandBus {
         return TRUE;
       }
     }
+    $l->debug('No class registered to handle /{command_name} command',
+      ['command_name' => $command_name]);
 
     return FALSE;
   }

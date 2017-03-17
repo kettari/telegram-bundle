@@ -13,7 +13,10 @@ use GuzzleHttp\Exception\ClientException;
 
 use Kaula\TelegramBundle\Telegram\Command\HelpCommand;
 use Kaula\TelegramBundle\Telegram\Command\StartCommand;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Symfony\Component\VarDumper\Cloner\VarCloner;
+use Symfony\Component\VarDumper\Dumper\CliDumper;
 use unreal4u\TelegramAPI\Abstracts\KeyboardMethods;
 use unreal4u\TelegramAPI\Telegram\Methods\SendMessage;
 use unreal4u\TelegramAPI\Telegram\Types\Message;
@@ -52,18 +55,30 @@ class Bot {
    * @return bool Returns TRUE if appropriate command was found.
    */
   public function handleUpdate(Update $update = NULL) {
+    /** @var LoggerInterface $l */
+    $l = $this->container->get('logger');
+    $cloner = new VarCloner();
+    $dumper = new CliDumper();
+
     if (is_null($update)) {
       $update_data = json_decode(file_get_contents('php://input'), TRUE);
       $update = new Update($update_data);
     }
 
+    // Allow some debug info
+    $l->debug('Bot is handling telegram update',
+      ['update' => $dumper->dump($cloner->cloneVar($update), TRUE)]);
+
     // Parse command "/start@BotName params"
     if (preg_match('/^\/([a-z_]+)@?([a-z_]*)\s*(.*)$/i', $update->message->text,
       $matches)) {
       if (isset($matches[1]) && ($command_name = $matches[1])) {
+        $l->debug('Detected incoming command /{command_name}', ['command_name' => $command_name]);
+
         return $this->bus->executeCommand($command_name, $update);
       }
     }
+    $l->debug('No commands detected within incoming update');
 
     return FALSE;
   }
@@ -73,6 +88,15 @@ class Bot {
    */
   public function getBus(): CommandBus {
     return $this->bus;
+  }
+
+  /**
+   * Returns container.
+   *
+   * @return \Symfony\Component\DependencyInjection\ContainerInterface
+   */
+  public function getContainer(): ContainerInterface {
+    return $this->container;
   }
 
   /**
@@ -99,6 +123,11 @@ class Bot {
    * @return Message
    */
   public function sendMessage($chat_id, $text, $parse_mode = '', $reply_markup = NULL, $disable_web_page_preview = FALSE, $disable_notification = FALSE, $reply_to_message_id = NULL) {
+    /** @var LoggerInterface $l */
+    $l = $this->container->get('logger');
+    $cloner = new VarCloner();
+    $dumper = new CliDumper();
+
     $send_message = new SendMessage();
     $send_message->chat_id = $chat_id;
     $send_message->text = $text;
@@ -110,6 +139,10 @@ class Bot {
 
     // Get configuration
     $config = $this->container->getParameter('kaula_telegram');
+
+    // Allow some debug info
+    $l->debug('Bot is sending message',
+      ['message' => $dumper->dump($cloner->cloneVar($send_message), TRUE)]);
 
     try {
       $tgLog = new TgLog($config['api_token'], $this->container->get('logger'));
