@@ -10,7 +10,7 @@ namespace Kaula\TelegramBundle\Telegram;
 
 
 use GuzzleHttp\Exception\ClientException;
-
+use InvalidArgumentException;
 use Kaula\TelegramBundle\Telegram\Command\HelpCommand;
 use Kaula\TelegramBundle\Telegram\Command\StartCommand;
 use Psr\Log\LoggerInterface;
@@ -29,6 +29,8 @@ class Bot {
   protected $bus;
 
   /**
+   * Symfony container.
+   *
    * @var ContainerInterface
    */
   protected $container;
@@ -50,14 +52,20 @@ class Bot {
    * Handles update.
    *
    * @param \unreal4u\TelegramAPI\Telegram\Types\Update $update
-   * @return bool Returns TRUE if appropriate command was found.
+   * @return void
+   * @throws \InvalidArgumentException
    */
   public function handleUpdate(Update $update = NULL) {
     /** @var LoggerInterface $l */
     $l = $this->container->get('logger');
 
+    // Scrap incoming data
     if (is_null($update)) {
       $update_data = json_decode(file_get_contents('php://input'), TRUE);
+      if (JSON_ERROR_NONE != json_last_error()) {
+        throw new InvalidArgumentException(json_last_error_msg());
+      }
+
       $update = new Update($update_data);
     }
 
@@ -67,41 +75,67 @@ class Bot {
 
     // If there is a Message object, analyze it
     if (!is_null($update->message)) {
+      $this->handleUpdateWithMessage($update);
+    }
+  }
+
+  /**
+   * Handles update with Message in it.
+   *
+   * @param \unreal4u\TelegramAPI\Telegram\Types\Update $update
+   * @throws \Exception
+   */
+  protected function handleUpdateWithMessage(Update $update) {
+    try {
+      /** @var LoggerInterface $l */
+      $l = $this->container->get('logger');
 
       // Parse command "/start@BotName params"
       if (preg_match('/^\/([a-z_]+)@?([a-z_]*)\s*(.*)$/i',
         $update->message->text, $matches)) {
+
         if (isset($matches[1]) && ($command_name = $matches[1])) {
           $l->debug('Detected incoming command /{command_name}',
             ['command_name' => $command_name]);
 
           // Find and delete the hook
           if ($hook = $this->getBus()
+            ->getHooker()
             ->findHook($update)
           ) {
             $this->getBus()
+              ->getHooker()
               ->deleteHook($hook);
           }
 
-          return $this->getBus()
+          // Execute command with CommandBus logic
+          $this->getBus()
             ->executeCommand($command_name, $update);
+
+          return;
         }
       }
       $l->debug('No commands detected within incoming update');
 
-      // Check for hooks
+      // Check for hooks and execute if any found
       if ($hook = $this->getBus()
+        ->getHooker()
         ->findHook($update)
       ) {
         $this->getBus()
+          ->getHooker()
           ->executeHook($hook, $update)
           ->deleteHook($hook);
       }
-
+    } catch (\Exception $e) {
+      try {
+        $this->sendMessage($update->message->chat->id,
+          'На сервере произошла ошибка, пожалуйста, сообщите системному администратору.');
+      } catch (\Exception $passthrough) {
+        // Do nothing
+      }
+      throw $e;
     }
-
-
-    return FALSE;
   }
 
   /**

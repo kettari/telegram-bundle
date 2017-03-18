@@ -106,9 +106,16 @@ abstract class AbstractCommand {
   }
 
   /**
+   * Initialize command.
+   *
+   * @return AbstractCommand
+   */
+  abstract public function initialize();
+
+  /**
    * Executes command.
    *
-   * @return mixed
+   * @return void
    */
   abstract public function execute();
 

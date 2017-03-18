@@ -17,7 +17,7 @@ use Doctrine\ORM\Mapping as ORM;
 class Chat {
 
   /**
-   * @ORM\Column(type="integer")
+   * @ORM\Column(type="bigint")
    * @ORM\Id
    * @ORM\GeneratedValue(strategy="NONE")
    */
@@ -36,19 +36,19 @@ class Chat {
   private $title;
 
   /**
-   * @ORM\Column(type="string",length=255)
+   * @ORM\Column(type="string",length=255,nullable=true)
    *
    */
   private $username;
 
   /**
-   * @ORM\Column(type="string",length=255)
+   * @ORM\Column(type="string",length=255,nullable=true)
    *
    */
   private $first_name;
 
   /**
-   * @ORM\Column(type="string",length=255)
+   * @ORM\Column(type="string",length=255,nullable=true)
    *
    */
   private $last_name;

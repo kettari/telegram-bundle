@@ -9,7 +9,7 @@
 namespace Kaula\TelegramBundle\Telegram\Command;
 
 
-class HelpCommand extends AbstractCommand {
+class HelpCommand extends AbstractUserAwareCommand {
 
   static public $name = 'help';
   static public $description = 'Показать список команд бота';
@@ -26,7 +26,7 @@ class HelpCommand extends AbstractCommand {
       if (!$command::isVisible()) {
         continue;
       }
-      $text .= sprintf('/%s — %s', $command::$name, $command::$description).
+      $text .= sprintf('/%s %s', $command::$name, $command::$description).
         PHP_EOL;
     }
     $this->replyWithMessage($text);

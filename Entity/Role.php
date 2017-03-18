@@ -1,0 +1,227 @@
+<?php
+/**
+ * Created by PhpStorm.
+ * User: ant
+ * Date: 18.03.2017
+ * Time: 0:11
+ */
+
+namespace Kaula\TelegramBundle\Entity;
+
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
+use Doctrine\ORM\Mapping as ORM;
+use Doctrine\ORM\Mapping\Index;
+
+/**
+ * @ORM\Entity
+ * @ORM\Table(name="role",indexes={@Index(name="role_name_idx",columns={"name"}),
+ *   @Index(name="permissions_idx",columns={"anonymous","registered","privileged","administrator"})})
+ */
+class Role {
+
+  /**
+   * @ORM\Column(type="integer")
+   * @ORM\Id
+   * @ORM\GeneratedValue(strategy="AUTO")
+   */
+  private $id;
+
+  /**
+   * @ORM\Column(type="string",length=50)
+   *
+   */
+  private $name;
+
+  /**
+   * @ORM\Column(type="boolean")
+   *
+   */
+  private $anonymous;
+
+  /**
+   * @ORM\Column(type="boolean")
+   *
+   */
+  private $registered;
+
+  /**
+   * @ORM\Column(type="boolean")
+   *
+   */
+  private $privileged;
+
+  /**
+   * @ORM\Column(type="boolean")
+   *
+   */
+  private $administrator;
+
+  /**
+   * Many Roles have Many Users.
+   *
+   * @var Collection
+   * @ORM\ManyToMany(targetEntity="Kaula\TelegramBundle\Entity\User",mappedBy="roles")
+   */
+  private $users;
+
+
+  /**
+   * Constructor
+   */
+  public function __construct() {
+    $this->users = new ArrayCollection();
+  }
+
+  /**
+   * Get id
+   *
+   * @return integer
+   */
+  public function getId() {
+    return $this->id;
+  }
+
+  /**
+   * Set name
+   *
+   * @param string $name
+   *
+   * @return Role
+   */
+  public function setName($name) {
+    $this->name = $name;
+
+    return $this;
+  }
+
+  /**
+   * Get name
+   *
+   * @return string
+   */
+  public function getName() {
+    return $this->name;
+  }
+
+  /**
+   * Set anonymous
+   *
+   * @param boolean $anonymous
+   *
+   * @return Role
+   */
+  public function setAnonymous($anonymous) {
+    $this->anonymous = $anonymous;
+
+    return $this;
+  }
+
+  /**
+   * Get anonymous
+   *
+   * @return boolean
+   */
+  public function getAnonymous() {
+    return $this->anonymous;
+  }
+
+  /**
+   * Set registered
+   *
+   * @param boolean $registered
+   *
+   * @return Role
+   */
+  public function setRegistered($registered) {
+    $this->registered = $registered;
+
+    return $this;
+  }
+
+  /**
+   * Get registered
+   *
+   * @return boolean
+   */
+  public function getRegistered() {
+    return $this->registered;
+  }
+
+  /**
+   * Set privileged
+   *
+   * @param boolean $privileged
+   *
+   * @return Role
+   */
+  public function setPrivileged($privileged) {
+    $this->privileged = $privileged;
+
+    return $this;
+  }
+
+  /**
+   * Get privileged
+   *
+   * @return boolean
+   */
+  public function getPrivileged() {
+    return $this->privileged;
+  }
+
+  /**
+   * Set administrator
+   *
+   * @param boolean $administrator
+   *
+   * @return Role
+   */
+  public function setAdministrator($administrator) {
+    $this->administrator = $administrator;
+
+    return $this;
+  }
+
+  /**
+   * Get administrator
+   *
+   * @return boolean
+   */
+  public function getAdministrator() {
+    return $this->administrator;
+  }
+
+  /**
+   * Add user
+   *
+   * @param User $user
+   *
+   * @return Role
+   */
+  public function addUser(User $user) {
+    if (!$this->getUsers()->contains($user)) {
+      $this->users[] = $user;
+    }
+
+    return $this;
+  }
+
+  /**
+   * Remove user
+   *
+   * @param User $user
+   */
+  public function removeUser(User $user) {
+    $this->users->removeElement($user);
+  }
+
+  /**
+   * Get users
+   *
+   * @return \Doctrine\Common\Collections\Collection
+   */
+  public function getUsers() {
+    return $this->users;
+  }
+}

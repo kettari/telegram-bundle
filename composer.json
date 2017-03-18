@@ -12,7 +12,8 @@
   ],
   "require": {
     "php": ">=5.6.0",
-    "unreal4u/telegram-api": "~2.3"
+    "unreal4u/telegram-api": "~2.3",
+    "kettari/tallanto-api": "^1.0"
   },
   "autoload": {
     "psr-4": {
