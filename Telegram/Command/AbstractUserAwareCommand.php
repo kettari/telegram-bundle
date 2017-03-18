@@ -27,10 +27,8 @@ abstract class AbstractUserAwareCommand extends AbstractCommand {
 
   /**
    * Updates user information in the database.
-   *
-   * @param \Kaula\TelegramBundle\Entity\User $user
    */
-  protected function updateUserInformation(User $user = NULL) {
+  protected function updateUserInformation() {
     $tu = $this->getUpdate()->message->from;
     $d = $this->getBus()->getBot()
       ->getContainer()
@@ -38,14 +36,12 @@ abstract class AbstractUserAwareCommand extends AbstractCommand {
     $em = $d->getManager();
 
     // Find user object. If not found, create new
-    if (is_null($user)) {
-      $user = $d->getRepository('KaulaTelegramBundle:User')
-        ->find($tu->id);
-      if (!$user) {
-        $user = new User();
-      }
+    $user = $d->getRepository('KaulaTelegramBundle:User')
+      ->find($tu->id);
+    if (!$user) {
+      $user = new User();
     }
-    // Detect changes
+    // Detect telegram-related changes
     if (($user->getId() != $tu->id) ||
       ($user->getFirstName() != $tu->first_name) ||
       ($user->getLastName() != $tu->last_name) ||

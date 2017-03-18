@@ -113,7 +113,8 @@ class RegisterCommand extends AbstractUserAwareCommand {
         ->setUsername($tu->username);
     }
     // Update information
-    $user->setPhone($contact->phone_number);
+    $phone = $this->sanitizePhone($contact->phone_number);
+    $user->setPhone($phone);
     /** @var Role $single_role */
     foreach ($roles as $single_role) {
       $user->addRole($single_role);
@@ -124,6 +125,27 @@ class RegisterCommand extends AbstractUserAwareCommand {
     $em->flush();
 
     return TRUE;
+  }
+
+  /**
+   * Sanitize phone and return pure numbers.
+   *
+   * @param string $phone
+   * @return mixed
+   */
+  protected function sanitizePhone($phone) {
+    // Remove all chars except numbers
+    $needle = preg_replace('/[^0-9]/', '', $phone);
+    // Replace leading 8 with 7
+    if ('8' == substr($needle, 0, 1)) {
+      $needle = '7'.substr($needle, 1);
+    }
+    // Add missing digit
+    if (strlen($needle) == 10) {
+      $needle = '7'.$needle;
+    }
+
+    return empty($needle) ? NULL : $needle;
   }
 
 

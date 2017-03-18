@@ -11,9 +11,11 @@ namespace Kaula\TelegramBundle\Telegram\Command;
 
 use Kaula\TelegramBundle\Entity\User;
 use Tallanto\Api\Aggregator\ContactAggregator;
+use Tallanto\Api\Intruder\ContactIntruder;
 use Tallanto\Api\Provider\Http\Request;
 use Tallanto\Api\Provider\Http\ServiceProvider;
-use unreal4u\TelegramAPI\Telegram\Types\Contact;
+use unreal4u\TelegramAPI\Telegram\Types\Contact AS TelegramContact;
+use Tallanto\Api\Entity\Contact AS TallantoContact;
 
 
 class ContactRegisterCommand extends RegisterCommand {
@@ -24,15 +26,14 @@ class ContactRegisterCommand extends RegisterCommand {
    * @param \unreal4u\TelegramAPI\Telegram\Types\Contact $contact
    * @return bool
    */
-  protected function registerUser(Contact $contact) {
-    if (!parent::registerUser($contact)) {
-      return FALSE;
+  protected function registerUser(TelegramContact $contact) {
+    $phone = $this->sanitizePhone($contact->phone_number);
+    $contact_aggregator = $this->loadTallantoContacts($phone);
+    if ($this->bindTallantoContact($contact_aggregator, $phone)) {
+      return parent::registerUser($contact);
     }
 
-    $contact_aggregator = $this->loadTallantoContacts($contact->phone_number);
-
-    return $this->bindTallantoContact($contact_aggregator,
-      $contact->phone_number);
+    return FALSE;
   }
 
   /**
@@ -49,12 +50,19 @@ class ContactRegisterCommand extends RegisterCommand {
     // Create HTTP Request object for ServiceProvider
     $request = new Request();
     $tallanto_url = sprintf('http://%s%s', $c->getParameter('tallanto.host'),
-      ($c->getParameter('kernel.environment') == 'dev') ? '/app_dev.php' : '');
+      /*($c->getParameter('kernel.environment') == 'dev') ? '/app_dev.php' : */
+      '');
     $request->setLogger($c->get('logger'))
       ->setUrl($tallanto_url)
       ->setMethod('/api/v1/contacts')
       ->setLogin($c->getParameter('tallanto.login'))
       ->setApiHash($c->getParameter('tallanto.token'));
+
+    $c->get('logger')
+      ->debug('Credentials used for Tallanto', [
+        'login' => $c->getParameter('tallanto.login'),
+        'token' => $c->getParameter('tallanto.token'),
+      ]);
 
     // Create ServiceProvider object
     $provider = new ServiceProvider($request);
@@ -79,34 +87,93 @@ class ContactRegisterCommand extends RegisterCommand {
    */
   private function bindTallantoContact(ContactAggregator $contact_aggregator, $phone) {
     if (0 == $contact_aggregator->count()) {
-      $this->replyWithMessage('К сожалению, я не смог найти вас по номеру телефона в базе данных ЦРМ.'.
-        PHP_EOL.PHP_EOL.
-        'Регистрация не завершена. Обратитесь к сотрудникам Школы, пожалуйста.');
 
-      return FALSE;
+      // Contact not found in the Tallanto CRM, create it
+      $tallanto_contact_id = $this->createTallantoContact($phone);
+
     } elseif ($contact_aggregator->count() > 1) {
+
+      // Several contacts found, deny
       $this->replyWithMessage('К сожалению, я нашёл несколько человек по указанному номеру телефона в базе данных ЦРМ.'.
         PHP_EOL.PHP_EOL.
         'Регистрация не завершена. Обратитесь к сотрудникам Школы, пожалуйста.');
 
       return FALSE;
-    }
-    $iterator = $contact_aggregator->getIterator();
-    /** @var \Tallanto\Api\Entity\Contact $tallanto_contact */
-    $tallanto_contact = $iterator->current();
-    if (($tallanto_contact->getPhoneMobile() != $phone) &&
-      ($tallanto_contact->getPhoneWork() != $phone)
-    ) {
-      throw new \RuntimeException('Mobile and Work phones from Tallanto do not match Telegram contact phone '.
-        $phone);
+    } else {
+
+      // Single contact found in the Tallanto CRM, proceed
+      $iterator = $contact_aggregator->getIterator();
+      /** @var \Tallanto\Api\Entity\Contact $tallanto_contact */
+      $tallanto_contact = $iterator->current();
+      if (($tallanto_contact->getPhoneMobile() != $phone) &&
+        ($tallanto_contact->getPhoneWork() != $phone)
+      ) {
+        throw new \RuntimeException('Mobile and Work phones from Tallanto do not match Telegram contact phone '.
+          $phone);
+      }
+
+      $tallanto_contact_id = $tallanto_contact->getId();
     }
 
-    // Fill user with Tallanto ID and update
-    $user = new User();
-    $user->setTallantoContactId($tallanto_contact->getId());
-    $this->updateUserInformation($user);
+    // Update user with Tallanto ID
+    $this->updateTallantoUserInformation($tallanto_contact_id);
 
     return TRUE;
+  }
+
+  /**
+   * Updates user information in the database.
+   *
+   * @param string $tallanto_contact_id
+   */
+  protected function updateTallantoUserInformation($tallanto_contact_id) {
+    $tu = $this->getUpdate()->message->from;
+    $d = $this->getBus()
+      ->getBot()
+      ->getContainer()
+      ->get('doctrine');
+    $em = $d->getManager();
+
+    // Find user object. If not found, create new
+    /** @var User $user */
+    $user = $d->getRepository('KaulaTelegramBundle:User')
+      ->find($tu->id);
+    if (!$user) {
+      throw new \RuntimeException('User is expected to exist at this point.');
+    }
+    $user->setTallantoContactId($tallanto_contact_id);
+    $em->persist($user);
+
+    // Commit changes
+    $em->flush();
+  }
+
+  /**
+   * Creates contact in the Tallanto CRM.
+   *
+   * @param string $phone
+   * @return string Returns Tallanto ID
+   */
+  protected function createTallantoContact($phone) {
+    $c = $this->getBus()
+      ->getBot()
+      ->getContainer();
+    $tu = $this->getUpdate()->message->from;
+
+    $intruder = new ContactIntruder();
+    $intruder->setLogger($c->get('logger'))
+      ->setHost($c->getParameter('tallanto.intruder.host'))
+      ->setUserName($c->getParameter('tallanto.intruder.user'))
+      ->setPassword($c->getParameter('tallanto.intruder.password'))
+      ->login();
+
+    return $intruder->saveContact(new TallantoContact([
+      'first_name'   => $tu->first_name,
+      'last_name'    => $tu->last_name,
+      'phone_mobile' => $phone,
+      'branches'     => $c->getParameter('tallanto.intruder.branches'),
+      'manager_id'   => $c->getParameter('tallanto.intruder.manager_id'),
+    ]));
   }
 
 
