@@ -75,6 +75,14 @@ class Bot {
           $l->debug('Detected incoming command /{command_name}',
             ['command_name' => $command_name]);
 
+          // Find and delete the hook
+          if ($hook = $this->getBus()
+            ->findHook($update)
+          ) {
+            $this->getBus()
+              ->deleteHook($hook);
+          }
+
           return $this->getBus()
             ->executeCommand($command_name, $update);
         }
