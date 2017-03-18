@@ -15,8 +15,6 @@ use Kaula\TelegramBundle\Telegram\Command\HelpCommand;
 use Kaula\TelegramBundle\Telegram\Command\StartCommand;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
-use Symfony\Component\VarDumper\Cloner\VarCloner;
-use Symfony\Component\VarDumper\Dumper\CliDumper;
 use unreal4u\TelegramAPI\Abstracts\KeyboardMethods;
 use unreal4u\TelegramAPI\Telegram\Methods\SendMessage;
 use unreal4u\TelegramAPI\Telegram\Types\Message;
@@ -57,8 +55,6 @@ class Bot {
   public function handleUpdate(Update $update = NULL) {
     /** @var LoggerInterface $l */
     $l = $this->container->get('logger');
-    $cloner = new VarCloner();
-    $dumper = new CliDumper();
 
     if (is_null($update)) {
       $update_data = json_decode(file_get_contents('php://input'), TRUE);
@@ -67,18 +63,35 @@ class Bot {
 
     // Allow some debug info
     $l->debug('Bot is handling telegram update',
-      ['update' => $dumper->dump($cloner->cloneVar($update), TRUE)]);
+      ['update' => print_r($update, TRUE)]);
 
-    // Parse command "/start@BotName params"
-    if (preg_match('/^\/([a-z_]+)@?([a-z_]*)\s*(.*)$/i', $update->message->text,
-      $matches)) {
-      if (isset($matches[1]) && ($command_name = $matches[1])) {
-        $l->debug('Detected incoming command /{command_name}', ['command_name' => $command_name]);
+    // If there is a Message object, analyze it
+    if (!is_null($update->message)) {
 
-        return $this->bus->executeCommand($command_name, $update);
+      // Parse command "/start@BotName params"
+      if (preg_match('/^\/([a-z_]+)@?([a-z_]*)\s*(.*)$/i',
+        $update->message->text, $matches)) {
+        if (isset($matches[1]) && ($command_name = $matches[1])) {
+          $l->debug('Detected incoming command /{command_name}',
+            ['command_name' => $command_name]);
+
+          return $this->getBus()
+            ->executeCommand($command_name, $update);
+        }
       }
+      $l->debug('No commands detected within incoming update');
+
+      // Check for hooks
+      if ($hook = $this->getBus()
+        ->findHook($update)
+      ) {
+        $this->getBus()
+          ->executeHook($hook, $update)
+          ->deleteHook($hook);
+      }
+
     }
-    $l->debug('No commands detected within incoming update');
+
 
     return FALSE;
   }
@@ -125,8 +138,6 @@ class Bot {
   public function sendMessage($chat_id, $text, $parse_mode = '', $reply_markup = NULL, $disable_web_page_preview = FALSE, $disable_notification = FALSE, $reply_to_message_id = NULL) {
     /** @var LoggerInterface $l */
     $l = $this->container->get('logger');
-    $cloner = new VarCloner();
-    $dumper = new CliDumper();
 
     $send_message = new SendMessage();
     $send_message->chat_id = $chat_id;
@@ -142,7 +153,7 @@ class Bot {
 
     // Allow some debug info
     $l->debug('Bot is sending message',
-      ['message' => $dumper->dump($cloner->cloneVar($send_message), TRUE)]);
+      ['message' => print_r($send_message, TRUE)]);
 
     try {
       $tgLog = new TgLog($config['api_token'], $this->container->get('logger'));

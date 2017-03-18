@@ -1,0 +1,60 @@
+<?php
+/**
+ * Created by PhpStorm.
+ * User: ant
+ * Date: 18.03.2017
+ * Time: 2:40
+ */
+
+namespace AppBundle\Entity;
+
+use Doctrine\ORM\Mapping as ORM;
+
+/**
+ * @ORM\Entity
+ * @ORM\Table(name="hook")
+ */
+class Hook {
+
+  /**
+   * @ORM\Column(type="integer")
+   * @ORM\Id
+   * @ORM\GeneratedValue(strategy="AUTO")
+   */
+  private $id;
+
+  /**
+   * @ORM\Column(type="datetime")
+   *
+   */
+  private $created;
+
+  /**
+   * @ORM\ManyToOne(targetEntity="AppBundle\Entity\Chat")
+   */
+  private $chat;
+
+  /**
+   * @ORM\ManyToOne(targetEntity="AppBundle\Entity\User")
+   */
+  private $user;
+
+  /**
+   * @ORM\Column(type="string",length=255)
+   *
+   */
+  private $class_name;
+
+  /**
+   * @ORM\Column(type="string",length=255)
+   *
+   */
+  private $method_name;
+
+  /**
+   * @ORM\Column(type="string",length=4096)
+   *
+   */
+  private $parameters;
+
+}

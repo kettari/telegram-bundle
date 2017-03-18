@@ -12,6 +12,7 @@ namespace Kaula\TelegramBundle\Command;
 
 
 use unreal4u\TelegramAPI\Telegram\Methods\SetWebhook;
+use unreal4u\TelegramAPI\Telegram\Types\Custom\InputFile;
 use unreal4u\TelegramAPI\TgLog;
 
 class WebhookSetCommand extends AbstractCommand {
@@ -32,9 +33,12 @@ class WebhookSetCommand extends AbstractCommand {
     $set_webhook = new SetWebhook();
     $set_webhook->url = str_replace('{secret}', $this->config['secret'],
       $this->config['url']);
-    $set_webhook->certificate = '';
+    $set_webhook->certificate = new InputFile($this->config['certificate_file']);
 
     $this->io->writeln('Setting telegram webhook to URL: '.$set_webhook->url);
+    if ($this->output->isVerbose()) {
+      $this->io->writeln('Certificate file: '.$this->config['certificate_file']);
+    }
 
     // Create API object and execute method
     $tgLog = new TgLog($this->config['api_token'], $this->getContainer()

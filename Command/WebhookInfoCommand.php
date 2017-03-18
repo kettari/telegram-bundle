@@ -20,8 +20,8 @@ class WebhookInfoCommand extends AbstractCommand {
    */
   protected function configure() {
     $this->setName('telegram:webhook-info')
-      ->setDescription('Deletes Telegram webhook')
-      ->setHelp('Use this method to remove webhook integration if you decide to switch back to getUpdates.');
+      ->setDescription('Prints webhook information')
+      ->setHelp('Use this method to get current webhook status.');
   }
 
   /**

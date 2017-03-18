@@ -16,6 +16,10 @@ use unreal4u\TelegramAPI\Telegram\Types\Update;
 
 abstract class AbstractCommand {
 
+  const PARSE_MODE_PLAIN = '';
+  const PARSE_MODE_HTML = 'HTML';
+  const PARSE_MODE_MARKDOWN = 'Markdown';
+
   /**
    * Command name.
    *

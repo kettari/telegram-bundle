@@ -18,7 +18,7 @@ class StartCommand extends AbstractCommand {
    * Executes command.
    */
   public function execute() {
-    dump(self::$name.' executed');
+    $this->replyWithMessage('Привет! Список команд доступен по команде /help');
   }
 
 

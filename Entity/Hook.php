@@ -1,0 +1,214 @@
+<?php
+/**
+ * Created by PhpStorm.
+ * User: ant
+ * Date: 18.03.2017
+ * Time: 2:40
+ */
+
+namespace Kaula\TelegramBundle\Entity;
+
+use Doctrine\ORM\Mapping as ORM;
+
+/**
+ * @ORM\Entity
+ * @ORM\Table(name="hook")
+ */
+class Hook {
+
+  /**
+   * @ORM\Column(type="integer")
+   * @ORM\Id
+   * @ORM\GeneratedValue(strategy="AUTO")
+   */
+  private $id;
+
+  /**
+   * @ORM\Column(type="datetime")
+   *
+   */
+  private $created;
+
+  /**
+   * @ORM\ManyToOne(targetEntity="Kaula\TelegramBundle\Entity\Chat")
+   */
+  private $chat;
+
+  /**
+   * @ORM\ManyToOne(targetEntity="Kaula\TelegramBundle\Entity\User")
+   */
+  private $user;
+
+  /**
+   * @ORM\Column(type="string",length=255)
+   *
+   */
+  private $class_name;
+
+  /**
+   * @ORM\Column(type="string",length=255)
+   *
+   */
+  private $method_name;
+
+  /**
+   * @ORM\Column(type="string",length=4096,nullable=true)
+   *
+   */
+  private $parameters;
+
+
+    /**
+     * Get id
+     *
+     * @return integer
+     */
+    public function getId()
+    {
+        return $this->id;
+    }
+
+    /**
+     * Set created
+     *
+     * @param \DateTime $created
+     *
+     * @return Hook
+     */
+    public function setCreated($created)
+    {
+        $this->created = $created;
+
+        return $this;
+    }
+
+    /**
+     * Get created
+     *
+     * @return \DateTime
+     */
+    public function getCreated()
+    {
+        return $this->created;
+    }
+
+    /**
+     * Set className
+     *
+     * @param string $className
+     *
+     * @return Hook
+     */
+    public function setClassName($className)
+    {
+        $this->class_name = $className;
+
+        return $this;
+    }
+
+    /**
+     * Get className
+     *
+     * @return string
+     */
+    public function getClassName()
+    {
+        return $this->class_name;
+    }
+
+    /**
+     * Set methodName
+     *
+     * @param string $methodName
+     *
+     * @return Hook
+     */
+    public function setMethodName($methodName)
+    {
+        $this->method_name = $methodName;
+
+        return $this;
+    }
+
+    /**
+     * Get methodName
+     *
+     * @return string
+     */
+    public function getMethodName()
+    {
+        return $this->method_name;
+    }
+
+    /**
+     * Set parameters
+     *
+     * @param string $parameters
+     *
+     * @return Hook
+     */
+    public function setParameters($parameters)
+    {
+        $this->parameters = $parameters;
+
+        return $this;
+    }
+
+    /**
+     * Get parameters
+     *
+     * @return string
+     */
+    public function getParameters()
+    {
+        return $this->parameters;
+    }
+
+    /**
+     * Set chat
+     *
+     * @param Chat $chat
+     *
+     * @return Hook
+     */
+    public function setChat(Chat $chat = null)
+    {
+        $this->chat = $chat;
+
+        return $this;
+    }
+
+    /**
+     * Get chat
+     *
+     * @return Chat
+     */
+    public function getChat()
+    {
+        return $this->chat;
+    }
+
+    /**
+     * Set user
+     *
+     * @param User $user
+     *
+     * @return Hook
+     */
+    public function setUser(User $user = null)
+    {
+        $this->user = $user;
+
+        return $this;
+    }
+
+    /**
+     * Get user
+     *
+     * @return User
+     */
+    public function getUser()
+    {
+        return $this->user;
+    }
+}
