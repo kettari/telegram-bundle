@@ -124,7 +124,7 @@ class CommandBus {
 
     // Find chat object. If not found, create new
     $chat = $d->getRepository('KaulaTelegramBundle:Chat')
-      ->find($update->message->chat->id);
+      ->find($tc->id);
     if (!$chat) {
       $chat = new Chat();
       $chat->setId($tc->id)
@@ -138,7 +138,7 @@ class CommandBus {
     }
     // Find user object. If not found, create new
     $user = $d->getRepository('KaulaTelegramBundle:User')
-      ->find($update->message->chat->id);
+      ->find($tu->id);
     if (!$user) {
       $user = new User();
       $user->setId($tu->id)
