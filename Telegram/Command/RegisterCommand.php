@@ -20,19 +20,26 @@ class RegisterCommand extends AbstractUserAwareCommand {
   static public $name = 'register';
   static public $description = 'Зарегистрироваться у бота';
 
+  const BTN_PHONE = 'Сообщить номер телефона';
+  const BTN_CANCEL = 'Отмена';
+
   /**
    * Executes command.
    */
   public function execute() {
-    $this->replyWithMessage('Чтобы зарегистрироваться, мне нужно узнать ваш телефон.'.
-      PHP_EOL.PHP_EOL.
-      'Пришлите его мне с помощью кнопки «Сообщить номер телефона».',
-      self::PARSE_MODE_PLAIN, $this->getReplyKeyboardMarkup());
+    if ('private' == $this->getUpdate()->message->chat->type) {
+      $this->replyWithMessage('Чтобы зарегистрироваться, мне нужно узнать ваш телефон.'.
+        PHP_EOL.PHP_EOL.
+        'Пришлите его мне с помощью кнопки «Сообщить номер телефона».',
+        self::PARSE_MODE_PLAIN, $this->getReplyKeyboardMarkup());
 
-    // Register the hook so when user will send information, we will be notified.
-    $this->getBus()
-      ->getHooker()
-      ->createHook($this->getUpdate(), get_class($this), 'handleContact');
+      // Register the hook so when user will send information, we will be notified.
+      $this->getBus()
+        ->getHooker()
+        ->createHook($this->getUpdate(), get_class($this), 'handleContact');
+    } else {
+      $this->replyWithMessage('Эта команда работает только в личной переписке с ботом. В общем канале регистрация невозможна.');
+    }
   }
 
   /**
@@ -44,11 +51,11 @@ class RegisterCommand extends AbstractUserAwareCommand {
     // Phone button
     $phone_btn = new KeyboardButton();
     $phone_btn->request_contact = TRUE;
-    $phone_btn->text = 'Сообщить номер телефона';
+    $phone_btn->text = self::BTN_PHONE;
 
     // Cancel button
     $cancel_btn = new KeyboardButton();
-    $cancel_btn->text = 'Отмена';
+    $cancel_btn->text = self::BTN_CANCEL;
 
     // Keyboard
     $reply_markup = new ReplyKeyboardMarkup();
@@ -78,6 +85,10 @@ class RegisterCommand extends AbstractUserAwareCommand {
         $this->replyWithMessage('Вы зарегистрированы с номером телефона '.
           $message->contact->phone_number);
       }
+    } elseif (self::BTN_CANCEL == $message->text) {
+      $this->replyWithMessage('Регистрация отменена.');
+    } else {
+      $this->replyWithMessage('Вы прислали не телефон, а что-то, мне непонятное. Попробуйте ещё раз команду /register');
     }
   }
 
@@ -104,10 +115,10 @@ class RegisterCommand extends AbstractUserAwareCommand {
 
     // Find user object. If not found, create new
     $user = $d->getRepository('KaulaTelegramBundle:User')
-      ->find($tu->id);
+      ->findOneBy(['telegram_id' => $tu->id]);
     if (!$user) {
       $user = new User();
-      $user->setId($tu->id)
+      $user->setTelegramId($tu->id)
         ->setFirstName($tu->first_name)
         ->setLastName($tu->last_name)
         ->setUsername($tu->username);

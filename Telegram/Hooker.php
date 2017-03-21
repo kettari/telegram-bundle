@@ -50,18 +50,19 @@ class Hooker {
 
     $tc = $update->message->chat;
     $tu = $update->message->from;
-    $d = $this->getBus()->getBot()
+    $d = $this->getBus()
+      ->getBot()
       ->getContainer()
       ->get('doctrine');
     $em = $d->getManager();
 
     // Find chat object. If not found, create new
     $chat = $d->getRepository('KaulaTelegramBundle:Chat')
-      ->find($tc->id);
+      ->findOneBy(['telegram_id' => $tc->id]);
     if (!$chat) {
       $chat = new Chat();
-      $chat->setId($tc->id)
-        ->setChatType($tc->type)
+      $chat->setTelegramId($tc->id)
+        ->setType($tc->type)
         ->setTitle($tc->title)
         ->setUsername($tc->username)
         ->setFirstName($tc->first_name)
@@ -71,10 +72,10 @@ class Hooker {
     }
     // Find user object. If not found, create new
     $user = $d->getRepository('KaulaTelegramBundle:User')
-      ->find($tu->id);
+      ->findOneBy(['telegram_id' => $tu->id]);
     if (!$user) {
       $user = new User();
-      $user->setId($tu->id)
+      $user->setTelegramId($tu->id)
         ->setFirstName($tu->first_name)
         ->setLastName($tu->last_name)
         ->setUsername($tu->username);
@@ -111,18 +112,48 @@ class Hooker {
 
     $tc = $update->message->chat;
     $tu = $update->message->from;
-    $d = $this->getBus()->getBot()
+    $d = $this->getBus()
+      ->getBot()
       ->getContainer()
       ->get('doctrine');
 
+    // Find chat object. If not found, nothing to do
+    $chat = $d->getRepository('KaulaTelegramBundle:Chat')
+      ->findOneBy(['telegram_id' => $tc->id]);
+    if (!$chat) {
+      return NULL;
+    }
+
+    // Find user object. If not found, nothing to do
+    $user = $d->getRepository('KaulaTelegramBundle:User')
+      ->findOneBy(['telegram_id' => $tu->id]);
+    if (!$user) {
+      return NULL;
+    }
+
     // Find hook object
     $many_hooks = $d->getRepository('KaulaTelegramBundle:Hook')
-      ->findBy(['chat' => $tc->id, 'user' => $tu->id]);
+      ->findBy([
+        'chat' => $chat->getId(),
+        'user' => $user->getId(),
+      ]);
     if (count($many_hooks) == 1) {
       return reset($many_hooks);
     } elseif (count($many_hooks) > 1) {
-      throw new HookException(sprintf('Multiple hooks found for chat_id=%s and user_id=%s',
-        $tc->id, $tu->id));
+      $l = $this->getBus()
+        ->getBot()
+        ->getContainer()
+        ->get('logger');
+      $l->warning('Multiple hooks found for user={user_id} and chat_id={chat_id}',
+        ['user_id' => $tu->id, 'chat_id' => $tc->id]);
+
+      // Try to delete all hooks
+      $em = $d->getManager();
+      /** @var Hook $one_hook */
+      foreach ($many_hooks as $one_hook) {
+        $em->remove($one_hook);
+      }
+      $em->flush();
     }
 
     return NULL;
@@ -162,7 +193,8 @@ class Hooker {
    * @param \Kaula\TelegramBundle\Entity\Hook $hook
    */
   public function deleteHook(Hook $hook) {
-    $d = $this->getBus()->getBot()
+    $d = $this->getBus()
+      ->getBot()
       ->getContainer()
       ->get('doctrine');
     $em = $d->getManager();

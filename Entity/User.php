@@ -15,16 +15,21 @@ use Doctrine\ORM\Mapping\Index;
 
 /**
  * @ORM\Entity
- * @ORM\Table(name="user",indexes={@Index(name="tallanto_idx",columns={"tallanto_contact_id","tallanto_user_id"})})
+ * @ORM\Table(name="user",indexes={@Index(name="telegram_idx",columns={"telegram_id"}),@Index(name="tallanto_idx",columns={"tallanto_contact_id","tallanto_user_id"})})
  */
 class User {
 
   /**
-   * @ORM\Column(type="bigint")
+   * @ORM\Column(type="integer")
    * @ORM\Id
-   * @ORM\GeneratedValue(strategy="NONE")
+   * @ORM\GeneratedValue(strategy="AUTO")
    */
   private $id;
+
+  /**
+   * @ORM\Column(type="bigint")
+   */
+  private $telegram_id;
 
   /**
    * @ORM\Column(type="string",length=255,nullable=true)
@@ -69,19 +74,6 @@ class User {
    *
    */
   private $tallanto_user_id;
-
-  /**
-   * Set id
-   *
-   * @param integer $id
-   *
-   * @return User
-   */
-  public function setId($id) {
-    $this->id = $id;
-
-    return $this;
-  }
 
   /**
    * Get id
@@ -266,4 +258,28 @@ class User {
   public function getTallantoUserId() {
     return $this->tallanto_user_id;
   }
+
+    /**
+     * Set telegramId
+     *
+     * @param integer $telegramId
+     *
+     * @return User
+     */
+    public function setTelegramId($telegramId)
+    {
+        $this->telegram_id = $telegramId;
+
+        return $this;
+    }
+
+    /**
+     * Get telegramId
+     *
+     * @return integer
+     */
+    public function getTelegramId()
+    {
+        return $this->telegram_id;
+    }
 }

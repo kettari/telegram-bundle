@@ -137,7 +137,7 @@ class ContactRegisterCommand extends RegisterCommand {
     // Find user object. If not found, create new
     /** @var User $user */
     $user = $d->getRepository('KaulaTelegramBundle:User')
-      ->find($tu->id);
+      ->findOneBy(['telegram_id' => $tu->id]);
     if (!$user) {
       throw new \RuntimeException('User is expected to exist at this point.');
     }

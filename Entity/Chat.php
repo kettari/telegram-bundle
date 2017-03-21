@@ -9,25 +9,31 @@
 namespace Kaula\TelegramBundle\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
+use Doctrine\ORM\Mapping\Index;
 
 /**
  * @ORM\Entity
- * @ORM\Table(name="chat")
+ * @ORM\Table(name="chat",indexes={@Index(name="telegram_idx",columns={"telegram_id"})})
  */
 class Chat {
 
   /**
-   * @ORM\Column(type="bigint")
+   * @ORM\Column(type="integer")
    * @ORM\Id
-   * @ORM\GeneratedValue(strategy="NONE")
+   * @ORM\GeneratedValue(strategy="AUTO")
    */
   private $id;
+
+  /**
+   * @ORM\Column(type="bigint")
+   */
+  private $telegram_id;
 
   /**
    * @ORM\Column(type="string",length=255)
    *
    */
-  private $chat_type;
+  private $type;
 
   /**
    * @ORM\Column(type="string",length=255)
@@ -59,20 +65,6 @@ class Chat {
    */
   private $all_members_are_administrators;
 
-
-  /**
-   * Set id
-   *
-   * @param integer $id
-   *
-   * @return Chat
-   */
-  public function setId($id) {
-    $this->id = $id;
-
-    return $this;
-  }
-
   /**
    * Get id
    *
@@ -89,8 +81,8 @@ class Chat {
    *
    * @return Chat
    */
-  public function setChatType($chatType) {
-    $this->chat_type = $chatType;
+  public function setType($chatType) {
+    $this->type = $chatType;
 
     return $this;
   }
@@ -100,8 +92,8 @@ class Chat {
    *
    * @return string
    */
-  public function getChatType() {
-    return $this->chat_type;
+  public function getType() {
+    return $this->type;
   }
 
   /**
@@ -213,4 +205,28 @@ class Chat {
   public function getAllMembersAreAdministrators() {
     return $this->all_members_are_administrators;
   }
+
+    /**
+     * Set telegramId
+     *
+     * @param integer $telegramId
+     *
+     * @return Chat
+     */
+    public function setTelegramId($telegramId)
+    {
+        $this->telegram_id = $telegramId;
+
+        return $this;
+    }
+
+    /**
+     * Get telegramId
+     *
+     * @return integer
+     */
+    public function getTelegramId()
+    {
+        return $this->telegram_id;
+    }
 }

@@ -37,7 +37,7 @@ abstract class AbstractUserAwareCommand extends AbstractCommand {
 
     // Find user object. If not found, create new
     $user = $d->getRepository('KaulaTelegramBundle:User')
-      ->find($tu->id);
+      ->findOneBy(['telegram_id' => $tu->id]);
     if (!$user) {
       $user = new User();
     }
@@ -47,7 +47,7 @@ abstract class AbstractUserAwareCommand extends AbstractCommand {
       ($user->getLastName() != $tu->last_name) ||
       ($user->getUsername() != $tu->username)) {
       // Update information
-      $user->setId($tu->id)
+      $user->setTelegramId($tu->id)
         ->setFirstName($tu->first_name)
         ->setLastName($tu->last_name)
         ->setUsername($tu->username);
