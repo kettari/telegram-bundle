@@ -15,7 +15,7 @@ use unreal4u\TelegramAPI\Telegram\Types\Contact;
 use unreal4u\TelegramAPI\Telegram\Types\KeyboardButton;
 use unreal4u\TelegramAPI\Telegram\Types\ReplyKeyboardMarkup;
 
-class RegisterCommand extends AbstractUserAwareCommand {
+class RegisterCommand extends AbstractCommand {
 
   static public $name = 'register';
   static public $description = 'Зарегистрироваться у бота';

@@ -15,6 +15,7 @@ use Kaula\TelegramBundle\Exception\KaulaTelegramBundleException;
 use Kaula\TelegramBundle\Telegram\Command\HelpCommand;
 use Kaula\TelegramBundle\Telegram\Command\StartCommand;
 use Kaula\TelegramBundle\Telegram\Listener\GroupCreatedEvent;
+use Kaula\TelegramBundle\Telegram\Listener\IdentityWatchdogEvent;
 use Kaula\TelegramBundle\Telegram\Listener\LeftChatMemberEvent;
 use Kaula\TelegramBundle\Telegram\Listener\JoinChatMemberEvent;
 use Kaula\TelegramBundle\Telegram\Listener\EventListenerInterface;
@@ -24,6 +25,8 @@ use Kaula\TelegramBundle\Telegram\Listener\MigrateToChatIdEvent;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use unreal4u\TelegramAPI\Abstracts\KeyboardMethods;
+use unreal4u\TelegramAPI\Abstracts\TelegramMethods;
+use unreal4u\TelegramAPI\Telegram\Methods\SendChatAction;
 use unreal4u\TelegramAPI\Telegram\Methods\SendMessage;
 use unreal4u\TelegramAPI\Telegram\Types\Message;
 use unreal4u\TelegramAPI\Telegram\Types\Update;
@@ -106,7 +109,8 @@ class Bot {
    * Adds default listeners.
    */
   protected function addDefaultListeners() {
-    $this->addEventListener(self::ET_TEXT, ExecuteCommandsEvent::class)
+    $this->addEventListener(self::ET_ANY, IdentityWatchdogEvent::class)
+      ->addEventListener(self::ET_TEXT, ExecuteCommandsEvent::class)
       ->addEventListener(self::ET_NEW_CHAT_MEMBER, JoinChatMemberEvent::class)
       ->addEventListener(self::ET_LEFT_CHAT_MEMBER, LeftChatMemberEvent::class)
       ->addEventListener(self::ET_MIGRATE_TO_CHAT_ID,
@@ -338,36 +342,6 @@ class Bot {
   }
 
   /**
-   * Handles event with text
-   *
-   * @param \unreal4u\TelegramAPI\Telegram\Types\Update $update
-   * @throws \Exception
-   */
-  /*protected function handleEventText(Update $update) {
-    /** @var LoggerInterface $l
-    $l = $this->container->get('logger');
-
-    // Parse command "/start@BotName params"
-    if (preg_match('/^\/([a-z_]+)@?([a-z_]*)\s*(.*)$/i', $update->message->text,
-      $matches)) {
-
-      if (isset($matches[1]) && ($command_name = $matches[1])) {
-        $l->debug('Detected incoming command /{command_name}',
-          ['command_name' => $command_name]);
-
-        // Delete hook because command takes precedence
-        // then execute command
-        $this->deleteHook($update);
-        $this->getBus()
-          ->executeCommand($command_name, $update);
-
-        return;
-      }
-    }
-    $l->debug('No commands detected within incoming update');
-  }*/
-
-  /**
    * Executes hook if found.
    *
    * @param \unreal4u\TelegramAPI\Telegram\Types\Update $update
@@ -440,6 +414,48 @@ class Bot {
   }
 
   /**
+   * Performs actual API request.
+   *
+   * @param \unreal4u\TelegramAPI\Abstracts\TelegramMethods $method
+   * @return \unreal4u\TelegramAPI\Abstracts\TelegramTypes
+   */
+  private function performRequest(TelegramMethods $method) {
+    /** @var LoggerInterface $l */
+    $l = $this->getContainer()
+      ->get('logger');
+
+    try {
+      // Get configuration
+      $config = $this->getContainer()
+        ->getParameter('kaula_telegram');
+
+      $tgLog = new TgLog($config['api_token'], $l);
+
+      return $tgLog->performApiRequest($method);
+    } catch (ClientException $e) {
+
+      // User blocked the bot
+      if (403 == $e->getCode()) {
+
+        if (method_exists($method, 'chat_id')) {
+          /** @noinspection PhpUndefinedFieldInspection */
+          $chat_id = $method->chat_id;
+        } else {
+          $chat_id = '(undefined)';
+        }
+
+        $l->notice('Bot is blocked in the chat {chat_id}',
+          ['chat_id' => $chat_id]);
+      } else {
+        // Other errors
+        throw $e;
+      }
+    }
+
+    return NULL;
+  }
+
+  /**
    * Use this method to send text messages. On success, the sent Message is
    * returned.
    *
@@ -475,21 +491,45 @@ class Bot {
     $send_message->reply_to_message_id = $reply_to_message_id;
     $send_message->reply_markup = $reply_markup;
 
-    // Get configuration
-    $config = $this->container->getParameter('kaula_telegram');
-
     // Allow some debug info
     $l->debug('Bot is sending message',
       ['message' => print_r($send_message, TRUE)]);
 
-    try {
-      $tgLog = new TgLog($config['api_token'], $this->container->get('logger'));
-      /** @var Message $message */
-      $message = $tgLog->performApiRequest($send_message);
+    /** @var Message $message */
+    $message = $this->performRequest($send_message);
 
-      return $message;
-    } catch (ClientException $e) {
-      throw $e;
-    }
+    return $message;
+  }
+
+  /**
+   * Use this method when you need to tell the user that something is happening
+   * on the bot's side. The status is set for 5 seconds or less (when a message
+   * arrives from your bot, Telegram clients clear its typing status).
+   *
+   * Example: The ImageBot needs some time to process a request and upload the
+   * image. Instead of sending a text message along the lines of “Retrieving
+   * image, please wait…”, the bot may use sendChatAction with action =
+   * upload_photo. The user will see a “sending photo” status for the bot. We
+   * only recommend using this method when a response from the bot will take a
+   * noticeable amount of time to arrive.
+   *
+   * Objects defined as-is july 2016
+   *
+   * @see https://core.telegram.org/bots/api#sendchataction
+   * @param string $chat_id Unique identifier for the target chat or username
+   *   of the target channel (in the format @channelusername)
+   * @param string $action Type of action to broadcast. Choose one, depending
+   *   on what the user is about to receive: typing for text messages,
+   *   upload_photo for photos, record_video or upload_video for videos,
+   *   record_audio or upload_audio for audio files, upload_document for
+   *   general files, find_location for location data.
+   */
+  public function sendAction($chat_id, $action = 'typing') {
+    $send_chat_action = new SendChatAction();
+    $send_chat_action->chat_id = $chat_id;
+    $send_chat_action->action = $action;
+
+    /** @var Message $message */
+    $this->performRequest($send_chat_action);
   }
 }

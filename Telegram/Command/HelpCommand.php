@@ -9,7 +9,7 @@
 namespace Kaula\TelegramBundle\Telegram\Command;
 
 
-class HelpCommand extends AbstractUserAwareCommand {
+class HelpCommand extends AbstractCommand {
 
   static public $name = 'help';
   static public $description = 'Показать список команд бота';

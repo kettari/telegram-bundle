@@ -49,20 +49,11 @@ class ContactRegisterCommand extends RegisterCommand {
 
     // Create HTTP Request object for ServiceProvider
     $request = new Request();
-    $tallanto_url = sprintf('http://%s%s', $c->getParameter('tallanto.host'),
-      /*($c->getParameter('kernel.environment') == 'dev') ? '/app_dev.php' : */
-      '');
     $request->setLogger($c->get('logger'))
-      ->setUrl($tallanto_url)
+      ->setUrl($c->getParameter('tallanto.url'))
       ->setMethod('/api/v1/contacts')
       ->setLogin($c->getParameter('tallanto.login'))
       ->setApiHash($c->getParameter('tallanto.token'));
-
-    $c->get('logger')
-      ->debug('Credentials used for Tallanto', [
-        'login' => $c->getParameter('tallanto.login'),
-        'token' => $c->getParameter('tallanto.token'),
-      ]);
 
     // Create ServiceProvider object
     $provider = new ServiceProvider($request);

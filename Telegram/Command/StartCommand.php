@@ -9,7 +9,7 @@
 namespace Kaula\TelegramBundle\Telegram\Command;
 
 
-class StartCommand extends AbstractUserAwareCommand {
+class StartCommand extends AbstractCommand {
 
   static public $name = 'start';
   static public $description = 'Начать разговор с ботом';
