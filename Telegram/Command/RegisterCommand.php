@@ -19,6 +19,7 @@ class RegisterCommand extends AbstractCommand {
 
   static public $name = 'register';
   static public $description = 'Зарегистрироваться у бота';
+  static public $required_permissions = ['execute command register'];
 
   const BTN_PHONE = 'Сообщить номер телефона';
   const BTN_CANCEL = 'Отмена';
@@ -108,7 +109,7 @@ class RegisterCommand extends AbstractCommand {
 
     // Find role object
     $roles = $d->getRepository('KaulaTelegramBundle:Role')
-      ->findBy(['registered' => TRUE]);
+      ->findBy(['name' => 'registered']);
     if (0 == count($roles)) {
       throw new \LogicException('Roles for registered users not found');
     }

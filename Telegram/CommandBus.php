@@ -132,15 +132,19 @@ class CommandBus {
    * @param $command_class
    * @return bool
    */
-  protected function isAuthorized(TelegramUser $tu, $command_class) {
+  public function isAuthorized(TelegramUser $tu, $command_class) {
+    if (is_null($tu)) {
+      return FALSE;
+    }
+
     $l = $this->getBot()
       ->getContainer()
       ->get('logger');
 
     // Special utility to check equality of arrays
-    function array_equal_values(array $a, array $b) {
+    /*function array_equal_values(array $a, array $b) {
       return !array_diff($a, $b) && !array_diff($b, $a);
-    }
+    }*/
 
     $d = $this->getBot()
       ->getContainer()
@@ -184,11 +188,8 @@ class CommandBus {
       'applicable_permissions' => $applicable_permissions,
     ]);
 
-    if (array_equal_values($applicable_permissions, $required_permissions)) {
-      return TRUE;
-    }
-
-    return FALSE;
+    return !array_diff($applicable_permissions, $required_permissions) &&
+      !array_diff($required_permissions, $applicable_permissions);
   }
 
   /**

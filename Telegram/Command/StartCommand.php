@@ -14,6 +14,7 @@ class StartCommand extends AbstractCommand {
   static public $name = 'start';
   static public $description = 'Начать разговор с ботом';
   static public $visible = FALSE;
+  static public $required_permissions = ['execute command start'];
 
   /**
    * Executes command.
