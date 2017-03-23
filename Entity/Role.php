@@ -16,7 +16,7 @@ use Doctrine\ORM\Mapping\Index;
 /**
  * @ORM\Entity
  * @ORM\Table(name="role",indexes={@Index(name="role_name_idx",columns={"name"}),
- *   @Index(name="permissions_idx",columns={"anonymous","registered","privileged","administrator"})})
+ *   @Index(name="permissions_idx",columns={"administrator"})})
  */
 class Role {
 
@@ -34,22 +34,16 @@ class Role {
   private $name;
 
   /**
+   * @var Collection
+   * @ORM\ManyToMany(targetEntity="Kaula\TelegramBundle\Entity\Permission",mappedBy="roles")
+   */
+  private $permissions;
+
+  /**
    * @ORM\Column(type="boolean")
    *
    */
   private $anonymous;
-
-  /**
-   * @ORM\Column(type="boolean")
-   *
-   */
-  private $registered;
-
-  /**
-   * @ORM\Column(type="boolean")
-   *
-   */
-  private $privileged;
 
   /**
    * @ORM\Column(type="boolean")
@@ -60,11 +54,9 @@ class Role {
   /**
    * Many Roles have Many Users.
    *
-   * @var Collection
    * @ORM\ManyToMany(targetEntity="Kaula\TelegramBundle\Entity\User",mappedBy="roles")
    */
   private $users;
-
 
   /**
    * Constructor
@@ -127,50 +119,6 @@ class Role {
   }
 
   /**
-   * Set registered
-   *
-   * @param boolean $registered
-   *
-   * @return Role
-   */
-  public function setRegistered($registered) {
-    $this->registered = $registered;
-
-    return $this;
-  }
-
-  /**
-   * Get registered
-   *
-   * @return boolean
-   */
-  public function getRegistered() {
-    return $this->registered;
-  }
-
-  /**
-   * Set privileged
-   *
-   * @param boolean $privileged
-   *
-   * @return Role
-   */
-  public function setPrivileged($privileged) {
-    $this->privileged = $privileged;
-
-    return $this;
-  }
-
-  /**
-   * Get privileged
-   *
-   * @return boolean
-   */
-  public function getPrivileged() {
-    return $this->privileged;
-  }
-
-  /**
    * Set administrator
    *
    * @param boolean $administrator
@@ -200,7 +148,9 @@ class Role {
    * @return Role
    */
   public function addUser(User $user) {
-    if (!$this->getUsers()->contains($user)) {
+    if (!$this->getUsers()
+      ->contains($user)
+    ) {
       $this->users[] = $user;
     }
 
@@ -223,5 +173,36 @@ class Role {
    */
   public function getUsers() {
     return $this->users;
+  }
+
+  /**
+   * Add permission
+   *
+   * @param Permission $permission
+   *
+   * @return Role
+   */
+  public function addPermission(Permission $permission) {
+    $this->permissions[] = $permission;
+
+    return $this;
+  }
+
+  /**
+   * Remove permission
+   *
+   * @param Permission $permission
+   */
+  public function removePermission(Permission $permission) {
+    $this->permissions->removeElement($permission);
+  }
+
+  /**
+   * Get permissions
+   *
+   * @return \Doctrine\Common\Collections\Collection
+   */
+  public function getPermissions() {
+    return $this->permissions;
   }
 }

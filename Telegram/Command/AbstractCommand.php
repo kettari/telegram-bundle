@@ -49,6 +49,13 @@ abstract class AbstractCommand {
   static public $visible = TRUE;
 
   /**
+   * Permissions required to execute this command.
+   *
+   * @var array
+   */
+  static public $required_permissions = [];
+
+  /**
    * @var CommandBus
    */
   protected $bus;
@@ -97,6 +104,15 @@ abstract class AbstractCommand {
    */
   static public function isVisible(): bool {
     return static::$visible;
+  }
+
+  /**
+   * Returns required permissions to execute the command.
+   *
+   * @return array
+   */
+  static public function getRequiredPermissions(): array {
+    return static::$required_permissions;
   }
 
   /**

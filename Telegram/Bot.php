@@ -160,7 +160,7 @@ class Bot {
   protected function scrapIncomingData() {
     $update_data = json_decode(file_get_contents('php://input'), TRUE);
     if (JSON_ERROR_NONE != json_last_error()) {
-      throw new InvalidArgumentException(json_last_error_msg());
+      throw new InvalidArgumentException('JSON error: '.json_last_error_msg());
     }
 
     return new Update($update_data);

@@ -9,11 +9,11 @@
 namespace Kaula\TelegramBundle\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
-use Doctrine\ORM\Mapping\Index;
+
 
 /**
  * @ORM\Entity
- * @ORM\Table(name="chat",indexes={@Index(name="telegram_idx",columns={"telegram_id"})})
+ * @ORM\Table(name="chat")
  */
 class Chat {
 
@@ -25,7 +25,7 @@ class Chat {
   private $id;
 
   /**
-   * @ORM\Column(type="bigint")
+   * @ORM\Column(type="bigint",unique=true)
    */
   private $telegram_id;
 

@@ -13,6 +13,7 @@ class HelpCommand extends AbstractCommand {
 
   static public $name = 'help';
   static public $description = 'Показать список команд бота';
+  static public $required_permissions = ['execute command help', 'blah'];
 
   /**
    * Executes command.

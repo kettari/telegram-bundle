@@ -15,7 +15,7 @@ use Doctrine\ORM\Mapping\Index;
 
 /**
  * @ORM\Entity
- * @ORM\Table(name="user",indexes={@Index(name="telegram_idx",columns={"telegram_id"}),@Index(name="tallanto_idx",columns={"tallanto_contact_id","tallanto_user_id"})})
+ * @ORM\Table(name="user",indexes={@Index(name="tallanto_idx",columns={"tallanto_contact_id","tallanto_user_id"})})
  */
 class User {
 
@@ -27,7 +27,7 @@ class User {
   private $id;
 
   /**
-   * @ORM\Column(type="bigint")
+   * @ORM\Column(type="bigint",unique=true)
    */
   private $telegram_id;
 
