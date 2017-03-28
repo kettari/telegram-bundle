@@ -18,7 +18,8 @@ use unreal4u\TelegramAPI\Telegram\Types\Contact AS TelegramContact;
 use Tallanto\Api\Entity\Contact AS TallantoContact;
 
 
-class ContactRegisterCommand extends RegisterCommand {
+class ContactRegisterCommand extends RegisterCommand
+{
 
   /**
    * Registers user in the database.
@@ -26,14 +27,15 @@ class ContactRegisterCommand extends RegisterCommand {
    * @param \unreal4u\TelegramAPI\Telegram\Types\Contact $contact
    * @return bool
    */
-  protected function registerUser(TelegramContact $contact) {
+  protected function registerUser(TelegramContact $contact)
+  {
     $phone = $this->sanitizePhone($contact->phone_number);
     $contact_aggregator = $this->loadTallantoContacts($phone);
     if ($this->bindTallantoContact($contact_aggregator, $phone)) {
       return parent::registerUser($contact);
     }
 
-    return FALSE;
+    return false;
   }
 
   /**
@@ -42,7 +44,8 @@ class ContactRegisterCommand extends RegisterCommand {
    * @param $phone
    * @return \Tallanto\Api\Aggregator\ContactAggregator
    */
-  private function loadTallantoContacts($phone) {
+  private function loadTallantoContacts($phone)
+  {
     $c = $this->getBus()
       ->getBot()
       ->getContainer();
@@ -76,20 +79,28 @@ class ContactRegisterCommand extends RegisterCommand {
    * @param string $phone
    * @return bool
    */
-  private function bindTallantoContact(ContactAggregator $contact_aggregator, $phone) {
+  private function bindTallantoContact(
+    ContactAggregator $contact_aggregator,
+    $phone
+  ) {
     if (0 == $contact_aggregator->count()) {
 
       // Contact not found in the Tallanto CRM, create it
-      $tallanto_contact_id = $this->createTallantoContact($phone);
+      $tallanto_contact_id = $this->createTallantoContact(
+        $contact_aggregator,
+        $phone
+      );
 
     } elseif ($contact_aggregator->count() > 1) {
 
       // Several contacts found, deny
-      $this->replyWithMessage('К сожалению, я нашёл несколько человек по указанному номеру телефона в базе данных ЦРМ.'.
+      $this->replyWithMessage(
+        'К сожалению, я нашёл несколько человек по указанному номеру телефона в базе данных ЦРМ.'.
         PHP_EOL.PHP_EOL.
-        'Регистрация не завершена. Обратитесь к сотрудникам Школы, пожалуйста.');
+        'Регистрация не завершена. Обратитесь к сотрудникам Школы, пожалуйста.'
+      );
 
-      return FALSE;
+      return false;
     } else {
 
       // Single contact found in the Tallanto CRM, proceed
@@ -99,8 +110,10 @@ class ContactRegisterCommand extends RegisterCommand {
       if (($tallanto_contact->getPhoneMobile() != $phone) &&
         ($tallanto_contact->getPhoneWork() != $phone)
       ) {
-        throw new \RuntimeException('Mobile and Work phones from Tallanto do not match Telegram contact phone '.
-          $phone);
+        throw new \RuntimeException(
+          'Mobile and Work phones from Tallanto do not match Telegram contact phone '.
+          $phone
+        );
       }
 
       $tallanto_contact_id = $tallanto_contact->getId();
@@ -109,7 +122,7 @@ class ContactRegisterCommand extends RegisterCommand {
     // Update user with Tallanto ID
     $this->updateTallantoUserInformation($tallanto_contact_id);
 
-    return TRUE;
+    return true;
   }
 
   /**
@@ -117,7 +130,8 @@ class ContactRegisterCommand extends RegisterCommand {
    *
    * @param string $tallanto_contact_id
    */
-  protected function updateTallantoUserInformation($tallanto_contact_id) {
+  protected function updateTallantoUserInformation($tallanto_contact_id)
+  {
     $tu = $this->getUpdate()->message->from;
     $d = $this->getBus()
       ->getBot()
@@ -142,29 +156,30 @@ class ContactRegisterCommand extends RegisterCommand {
   /**
    * Creates contact in the Tallanto CRM.
    *
+   * @param \Tallanto\Api\Aggregator\ContactAggregator $contact_aggregator
    * @param string $phone
    * @return string Returns Tallanto ID
    */
-  protected function createTallantoContact($phone) {
+  protected function createTallantoContact(
+    ContactAggregator $contact_aggregator,
+    $phone
+  ) {
     $c = $this->getBus()
       ->getBot()
       ->getContainer();
     $tu = $this->getUpdate()->message->from;
 
-    $intruder = new ContactIntruder();
-    $intruder->setLogger($c->get('logger'))
-      ->setHost($c->getParameter('tallanto.intruder.host'))
-      ->setUserName($c->getParameter('tallanto.intruder.user'))
-      ->setPassword($c->getParameter('tallanto.intruder.password'))
-      ->login();
+    // Create Contact object
+    $contact = new TallantoContact(
+      [
+        'first_name' => $tu->first_name,
+        'last_name' => $tu->last_name,
+        'phone_mobile' => $phone,
+      ]
+    );
+    $contact_aggregator->add($contact);
 
-    return $intruder->saveContact(new TallantoContact([
-      'first_name'   => $tu->first_name,
-      'last_name'    => $tu->last_name,
-      'phone_mobile' => $phone,
-      'branches'     => $c->getParameter('tallanto.intruder.branches'),
-      'manager_id'   => $c->getParameter('tallanto.intruder.manager_id'),
-    ]));
+    return $intruder->saveContact();
   }
 
 
