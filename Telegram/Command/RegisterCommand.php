@@ -9,11 +9,13 @@
 namespace Kaula\TelegramBundle\Telegram\Command;
 
 
+use Doctrine\Bundle\DoctrineBundle\Registry;
 use Kaula\TelegramBundle\Entity\Role;
 use Kaula\TelegramBundle\Entity\User;
 use unreal4u\TelegramAPI\Telegram\Types\Contact;
 use unreal4u\TelegramAPI\Telegram\Types\KeyboardButton;
 use unreal4u\TelegramAPI\Telegram\Types\ReplyKeyboardMarkup;
+use unreal4u\TelegramAPI\Telegram\Types\ReplyKeyboardRemove;
 
 class RegisterCommand extends AbstractCommand {
 
@@ -76,7 +78,7 @@ class RegisterCommand extends AbstractCommand {
     if (!is_null($message->contact)) {
       // Check if user sent his contact
       if ($message->contact->user_id != $message->from->id) {
-        $this->replyWithMessage('Вы прислали не свой номер телефона! Попробуйте ещё раз /register');
+        $this->replyWithMessage('Вы прислали не свой номер телефона! Попробуйте ещё раз /register', '', new ReplyKeyboardRemove());
 
         return;
       }
@@ -87,9 +89,9 @@ class RegisterCommand extends AbstractCommand {
           $message->contact->phone_number);
       }
     } elseif (self::BTN_CANCEL == $message->text) {
-      $this->replyWithMessage('Регистрация отменена.');
+      $this->replyWithMessage('Регистрация отменена.', '', new ReplyKeyboardRemove());
     } else {
-      $this->replyWithMessage('Вы прислали не телефон, а что-то, мне непонятное. Попробуйте ещё раз команду /register');
+      $this->replyWithMessage('Вы прислали не телефон, а что-то, мне непонятное. Попробуйте ещё раз команду /register', '', new ReplyKeyboardRemove());
     }
   }
 
@@ -132,6 +134,10 @@ class RegisterCommand extends AbstractCommand {
       $user->addRole($single_role);
     }
 
+    // Load default notifications and assign them to the user
+    $default_notifications = $this->getDefaultNotifications($d);
+    $this->assignDefaultNotifications($d, $user, $default_notifications);
+
     // Commit changes
     $em->persist($user);
     $em->flush();
@@ -160,5 +166,44 @@ class RegisterCommand extends AbstractCommand {
     return empty($needle) ? NULL : $needle;
   }
 
+  /**
+   * Returns array with notifications for anonymous users.
+   *
+   * @param \Doctrine\Bundle\DoctrineBundle\Registry $d
+   * @return array
+   */
+  private function getDefaultNotifications(Registry $d) {
+    $notifications = $d->getRepository('KaulaTelegramBundle:Notification')
+      ->findBy(['default' => TRUE]);
+    if (0 == count($notifications)) {
+      // No error, just no default notifications defined
+      return [];
+    }
+
+    return $notifications;
+  }
+
+  /**
+   * Assigns notifications to the User.
+   *
+   * @param \Doctrine\Bundle\DoctrineBundle\Registry $d
+   * @param \Kaula\TelegramBundle\Entity\User $user
+   * @param array $notifications
+   */
+  private function assignDefaultNotifications(Registry $d, User $user, $notifications) {
+    if (count($notifications)) {
+      $em = $d->getManager();
+
+      // Load all current notifications assigned to user
+      $current_notifications = $user->getNotifications();
+      /** @var \Kaula\TelegramBundle\Entity\Notification $new_notification */
+      foreach ($notifications as $new_notification) {
+        if (!$current_notifications->contains($new_notification)) {
+          $user->addNotification($new_notification);
+          $em->persist($user);
+        }
+      }
+    }
+  }
 
 }

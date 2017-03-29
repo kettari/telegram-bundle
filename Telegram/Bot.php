@@ -9,10 +9,15 @@
 namespace Kaula\TelegramBundle\Telegram;
 
 
+use Doctrine\Common\Collections\ArrayCollection;
+
 use GuzzleHttp\Exception\ClientException;
 use InvalidArgumentException;
 use Kaula\TelegramBundle\Exception\KaulaTelegramBundleException;
+use Kaula\TelegramBundle\Exception\ThrottleControlException;
 use Kaula\TelegramBundle\Telegram\Command\HelpCommand;
+use Kaula\TelegramBundle\Telegram\Command\ListRolesCommand;
+use Kaula\TelegramBundle\Telegram\Command\SettingsCommand;
 use Kaula\TelegramBundle\Telegram\Command\StartCommand;
 use Kaula\TelegramBundle\Telegram\Listener\GroupCreatedEvent;
 use Kaula\TelegramBundle\Telegram\Listener\IdentityWatchdogEvent;
@@ -23,16 +28,21 @@ use Kaula\TelegramBundle\Telegram\Listener\ExecuteCommandsEvent;
 use Kaula\TelegramBundle\Telegram\Listener\MigrateFromChatIdEvent;
 use Kaula\TelegramBundle\Telegram\Listener\MigrateToChatIdEvent;
 use Psr\Log\LoggerInterface;
+
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use unreal4u\TelegramAPI\Abstracts\KeyboardMethods;
 use unreal4u\TelegramAPI\Abstracts\TelegramMethods;
+use unreal4u\TelegramAPI\Telegram\Methods\AnswerCallbackQuery;
+use unreal4u\TelegramAPI\Telegram\Methods\EditMessageReplyMarkup;
 use unreal4u\TelegramAPI\Telegram\Methods\SendChatAction;
 use unreal4u\TelegramAPI\Telegram\Methods\SendMessage;
 use unreal4u\TelegramAPI\Telegram\Types\Message;
 use unreal4u\TelegramAPI\Telegram\Types\Update;
+use unreal4u\TelegramAPI\Telegram\Types\User;
 use unreal4u\TelegramAPI\TgLog;
 
-class Bot {
+class Bot
+{
 
   // Update types
   const UT_MESSAGE = 'message';
@@ -76,6 +86,11 @@ class Bot {
   protected $bus;
 
   /**
+   * @var ThrottleSingleton
+   */
+  protected $throttle_singleton;
+
+  /**
    * Symfony container.
    *
    * @var ContainerInterface
@@ -95,11 +110,17 @@ class Bot {
    * @param \Symfony\Component\DependencyInjection\ContainerInterface $container
    * @internal param string $token
    */
-  public function __construct(ContainerInterface $container) {
+  public function __construct(ContainerInterface $container)
+  {
     $this->container = $container;
     $this->bus = new CommandBus($this);
     $this->bus->registerCommand(StartCommand::class)
-      ->registerCommand(HelpCommand::class);
+      ->registerCommand(SettingsCommand::class)
+      ->registerCommand(HelpCommand::class)
+      ->registerCommand(ListRolesCommand::class);
+
+    // Throttle control
+    $this->throttle_singleton = ThrottleSingleton::getInstance();
 
     // Add default listeners
     $this->addDefaultListeners();
@@ -108,15 +129,20 @@ class Bot {
   /**
    * Adds default listeners.
    */
-  protected function addDefaultListeners() {
+  protected function addDefaultListeners()
+  {
     $this->addEventListener(self::ET_ANY, IdentityWatchdogEvent::class)
       ->addEventListener(self::ET_TEXT, ExecuteCommandsEvent::class)
       ->addEventListener(self::ET_NEW_CHAT_MEMBER, JoinChatMemberEvent::class)
       ->addEventListener(self::ET_LEFT_CHAT_MEMBER, LeftChatMemberEvent::class)
-      ->addEventListener(self::ET_MIGRATE_TO_CHAT_ID,
-        MigrateToChatIdEvent::class)
-      ->addEventListener(self::ET_MIGRATE_FROM_CHAT_ID,
-        MigrateFromChatIdEvent::class)
+      ->addEventListener(
+        self::ET_MIGRATE_TO_CHAT_ID,
+        MigrateToChatIdEvent::class
+      )
+      ->addEventListener(
+        self::ET_MIGRATE_FROM_CHAT_ID,
+        MigrateFromChatIdEvent::class
+      )
       ->addEventListener(self::ET_GROUP_CHAT_CREATED, GroupCreatedEvent::class);
   }
 
@@ -127,7 +153,8 @@ class Bot {
    * @return void
    * @throws \InvalidArgumentException
    */
-  public function handleUpdate(Update $update = NULL) {
+  public function handleUpdate(Update $update = null)
+  {
     /** @var LoggerInterface $l */
     $l = $this->container->get('logger');
 
@@ -138,8 +165,10 @@ class Bot {
     $update_type = $this->whatUpdateType($update);
 
     // Allow some debug info
-    $l->debug('Bot is handling telegram update of type "{type}"',
-      ['type' => $update_type, 'update' => print_r($update, TRUE)]);
+    $l->debug(
+      'Bot is handling telegram update of type "{type}"',
+      ['type' => $update_type, 'update' => print_r($update, true)]
+    );
 
     // Try to execute hook
     $this->executeHook($update);
@@ -157,8 +186,9 @@ class Bot {
    *
    * @return \unreal4u\TelegramAPI\Telegram\Types\Update
    */
-  protected function scrapIncomingData() {
-    $update_data = json_decode(file_get_contents('php://input'), TRUE);
+  protected function scrapIncomingData()
+  {
+    $update_data = json_decode(file_get_contents('php://input'), true);
     if (JSON_ERROR_NONE != json_last_error()) {
       throw new InvalidArgumentException('JSON error: '.json_last_error_msg());
     }
@@ -173,7 +203,8 @@ class Bot {
    * @return string
    * @throws KaulaTelegramBundleException
    */
-  protected function whatUpdateType(Update $update) {
+  protected function whatUpdateType(Update $update)
+  {
     if (!is_null($update->message)) {
       return self::UT_MESSAGE;
     }
@@ -205,9 +236,12 @@ class Bot {
    * @param \unreal4u\TelegramAPI\Telegram\Types\Update $update
    * @return string
    */
-  protected function whatEventType(Update $update) {
+  protected function whatEventType(Update $update)
+  {
     if (is_null($update->message)) {
-      throw new KaulaTelegramBundleException('Unable to tell event type: message object for this update is null.');
+      throw new KaulaTelegramBundleException(
+        'Unable to tell event type: message object for this update is null.'
+      );
     }
 
     $event_type = self::ET_NOTHING;
@@ -287,7 +321,8 @@ class Bot {
    * @param \unreal4u\TelegramAPI\Telegram\Types\Update $update
    * @throws \Exception
    */
-  protected function handleUpdateWithMessage(Update $update) {
+  protected function handleUpdateWithMessage(Update $update)
+  {
     try {
       /** @var LoggerInterface $l */
       $l = $this->container->get('logger');
@@ -301,8 +336,10 @@ class Bot {
 
     } catch (\Exception $e) {
       try {
-        $this->sendMessage($update->message->chat->id,
-          'На сервере произошла ошибка, пожалуйста, сообщите системному администратору.');
+        $this->sendMessage(
+          $update->message->chat->id,
+          'На сервере произошла ошибка, пожалуйста, сообщите системному администратору.'
+        );
       } catch (\Exception $passthrough) {
         // Do nothing
       }
@@ -316,14 +353,15 @@ class Bot {
    * @param $event_type
    * @param \unreal4u\TelegramAPI\Telegram\Types\Update $update
    */
-  protected function executeListeners($event_type, Update $update) {
+  protected function executeListeners($event_type, Update $update)
+  {
     $l = $this->container->get('logger');
 
     // Array of listeners that will be executed
     $to_be_executed = [];
     foreach ($this->listeners as $item) {
       if ($item['event_type'] & $event_type) {
-        $to_be_executed[$item['event_listener']] = TRUE;
+        $to_be_executed[$item['event_listener']] = true;
       }
     }
 
@@ -333,8 +371,10 @@ class Bot {
       $listener = new $listener_class();
 
       // Allow some debug info
-      $l->debug('Executing listener "{listener_class}"',
-        ['listener_class' => $listener_class]);
+      $l->debug(
+        'Executing listener "{listener_class}"',
+        ['listener_class' => $listener_class]
+      );
 
       // Execute listener object
       $listener->execute($this, $update);
@@ -346,7 +386,8 @@ class Bot {
    *
    * @param \unreal4u\TelegramAPI\Telegram\Types\Update $update
    */
-  public function executeHook(Update $update) {
+  public function executeHook(Update $update)
+  {
     // Check for hooks and execute if any found
     if ($hook = $this->getBus()
       ->getHooker()
@@ -364,7 +405,8 @@ class Bot {
    *
    * @param \unreal4u\TelegramAPI\Telegram\Types\Update $update
    */
-  public function deleteHook(Update $update) {
+  public function deleteHook(Update $update)
+  {
     // Find and delete the hook
     if ($hook = $this->getBus()
       ->getHooker()
@@ -379,8 +421,17 @@ class Bot {
   /**
    * @return \Kaula\TelegramBundle\Telegram\CommandBus
    */
-  public function getBus(): CommandBus {
+  public function getBus(): CommandBus
+  {
     return $this->bus;
+  }
+
+  /**
+   * @return ThrottleSingleton
+   */
+  public function getThrottleSingleton(): ThrottleSingleton
+  {
+    return $this->throttle_singleton;
   }
 
   /**
@@ -388,7 +439,8 @@ class Bot {
    *
    * @return \Symfony\Component\DependencyInjection\ContainerInterface
    */
-  public function getContainer(): ContainerInterface {
+  public function getContainer(): ContainerInterface
+  {
     return $this->container;
   }
 
@@ -399,10 +451,13 @@ class Bot {
    * @param string $listener
    * @return Bot
    */
-  public function addEventListener($event_type, $listener) {
+  public function addEventListener($event_type, $listener)
+  {
     $implements = class_implements($listener);
     if (!isset($implements['Kaula\TelegramBundle\Telegram\Listener\EventListenerInterface'])) {
-      throw new KaulaTelegramBundleException('Listener object should implement EventListenerInterface.');
+      throw new KaulaTelegramBundleException(
+        'Listener object should implement EventListenerInterface.'
+      );
     }
 
     $this->listeners[] = [
@@ -419,7 +474,8 @@ class Bot {
    * @param \unreal4u\TelegramAPI\Abstracts\TelegramMethods $method
    * @return \unreal4u\TelegramAPI\Abstracts\TelegramTypes
    */
-  private function performRequest(TelegramMethods $method) {
+  private function performRequest(TelegramMethods $method)
+  {
     /** @var LoggerInterface $l */
     $l = $this->getContainer()
       ->get('logger');
@@ -429,9 +485,15 @@ class Bot {
       $config = $this->getContainer()
         ->getParameter('kaula_telegram');
 
-      $tgLog = new TgLog($config['api_token'], $l);
+      // Throttle control to avoid flood
+      if ($this->getThrottleSingleton()->wait()) {
+        $tgLog = new TgLog($config['api_token'], $l);
+        $this->getThrottleSingleton()->requestSent();
 
-      return $tgLog->performApiRequest($method);
+        return $tgLog->performApiRequest($method);
+      } else {
+        throw new ThrottleControlException('Throttle control exception: was unable to wait()');
+      }
     } catch (ClientException $e) {
 
       // User blocked the bot
@@ -444,15 +506,17 @@ class Bot {
           $chat_id = '(undefined)';
         }
 
-        $l->notice('Bot is blocked in the chat {chat_id}',
-          ['chat_id' => $chat_id]);
+        $l->notice(
+          'Bot is blocked in the chat {chat_id}',
+          ['chat_id' => $chat_id]
+        );
       } else {
         // Other errors
         throw $e;
       }
     }
 
-    return NULL;
+    return null;
   }
 
   /**
@@ -478,7 +542,15 @@ class Bot {
    *
    * @return Message
    */
-  public function sendMessage($chat_id, $text, $parse_mode = '', $reply_markup = NULL, $disable_web_page_preview = FALSE, $disable_notification = FALSE, $reply_to_message_id = NULL) {
+  public function sendMessage(
+    $chat_id,
+    $text,
+    $parse_mode = '',
+    $reply_markup = null,
+    $disable_web_page_preview = false,
+    $disable_notification = false,
+    $reply_to_message_id = null
+  ) {
     /** @var LoggerInterface $l */
     $l = $this->container->get('logger');
 
@@ -492,13 +564,110 @@ class Bot {
     $send_message->reply_markup = $reply_markup;
 
     // Allow some debug info
-    $l->debug('Bot is sending message',
-      ['message' => print_r($send_message, TRUE)]);
+    $l->debug(
+      'Bot is sending message',
+      ['message' => print_r($send_message, true)]
+    );
 
     /** @var Message $message */
     $message = $this->performRequest($send_message);
 
     return $message;
+  }
+
+  /**
+   * Use this method to edit only the reply markup of messages sent by the bot
+   * or via the bot (for inline bots). On success, if edited message is sent by
+   * the bot, the edited Message is returned, otherwise True is returned.
+   *
+   * @param integer|string $chat_id Required if inline_message_id is not
+   *   specified. Unique identifier for the target chat or username of the
+   *   target channel (in the format @channelusername)
+   * @param integer $message_id Required if inline_message_id is not specified.
+   *   Identifier of the sent message
+   * @param string $inline_message_id Required if chat_id and message_id are
+   *   not specified. Identifier of the inline message
+   * @param \unreal4u\TelegramAPI\Telegram\Types\Inline\Keyboard\Markup $reply_markup A
+   *   JSON-serialized object for an inline keyboard.
+   * @return \unreal4u\TelegramAPI\Telegram\Types\Message
+   */
+  public function editMessageReplyMarkup(
+    $chat_id = null,
+    $message_id = null,
+    $inline_message_id = null,
+    $reply_markup = null
+  ) {
+    /** @var LoggerInterface $l */
+    $l = $this->container->get('logger');
+
+    $edit_message_markup = new EditMessageReplyMarkup();
+    $edit_message_markup->chat_id = $chat_id;
+    $edit_message_markup->message_id = $message_id;
+    $edit_message_markup->inline_message_id = $inline_message_id;
+    $edit_message_markup->reply_markup = $reply_markup;
+
+    // Allow some debug info
+    $l->debug(
+      'Bot is editing reply markup keyboard',
+      ['message' => print_r($edit_message_markup, true)]
+    );
+
+    /** @var Message $message */
+    $message = $this->performRequest($edit_message_markup);
+
+    return $message;
+  }
+
+  /**
+   * Use this method to send answers to callback queries sent from inline
+   * keyboards. The answer will be displayed to the user as a notification at
+   * the top of the chat screen or as an alert. On success, True is returned.
+   *
+   * @param string $callback_query_id Unique identifier for the query to be
+   *   answered
+   * @param string $text Text of the notification. If not specified, nothing
+   *   will be shown to the user, 0-200 characters
+   * @param bool $show_alert If true, an alert will be shown by the client
+   *   instead of a notification at the top of the chat screen. Defaults to
+   *   false.
+   * @param string $url URL that will be opened by the user's client. If you
+   *   have created a Game and accepted the conditions via @Botfather, specify
+   *   the URL that opens your game – note that this will only work if the
+   *   query comes from a callback_game button. Otherwise, you may use links
+   *   like telegram.me/your_bot?start=XXXX that open your bot with a
+   *   parameter.
+   * @param int $cache_time The maximum amount of time in seconds that the
+   *   result of the callback query may be cached client-side. Telegram apps
+   *   will support caching starting in version 3.14. Defaults to 0.
+   * @return bool
+   */
+  public function answerCallbackQuery(
+    $callback_query_id,
+    $text = null,
+    $show_alert = false,
+    $url = null,
+    $cache_time = 0
+  ) {
+    /** @var LoggerInterface $l */
+    $l = $this->container->get('logger');
+
+    $answer_cb_query = new AnswerCallbackQuery();
+    $answer_cb_query->callback_query_id = $callback_query_id;
+    $answer_cb_query->text = $text;
+    $answer_cb_query->show_alert = $show_alert;
+    $answer_cb_query->url = $url;
+    $answer_cb_query->cache_time = $cache_time;
+
+    // Allow some debug info
+    $l->debug(
+      'Bot is answering callback query',
+      ['message' => print_r($answer_cb_query, true)]
+    );
+
+    /** @var bool $result */
+    $result = $this->performRequest($answer_cb_query);
+
+    return $result;
   }
 
   /**
@@ -524,7 +693,8 @@ class Bot {
    *   record_audio or upload_audio for audio files, upload_document for
    *   general files, find_location for location data.
    */
-  public function sendAction($chat_id, $action = 'typing') {
+  public function sendAction($chat_id, $action = 'typing')
+  {
     $send_chat_action = new SendChatAction();
     $send_chat_action->chat_id = $chat_id;
     $send_chat_action->action = $action;
@@ -532,4 +702,109 @@ class Bot {
     /** @var Message $message */
     $this->performRequest($send_chat_action);
   }
+
+  /**
+   * Returns collection of Permissions for telegram user.
+   *
+   * @param \unreal4u\TelegramAPI\Telegram\Types\User $tu
+   * @return \Doctrine\Common\Collections\Collection
+   */
+  public function getUserPermissions(User $tu)
+  {
+    $permissions = new ArrayCollection();
+    $d = $this->getContainer()
+      ->get('doctrine');
+
+    // Load user and his permissions
+    /** @var \Kaula\TelegramBundle\Entity\User $user */
+    $user = $d->getRepository('KaulaTelegramBundle:User')
+      ->findOneBy(['telegram_id' => $tu->id]);
+    if (is_null($user)) {
+      return $permissions;
+    }
+    // Load roles and each role's permissions
+    $roles = $user->getRoles();
+    /** @var \Kaula\TelegramBundle\Entity\Role $role_item */
+    foreach ($roles as $role_item) {
+      $role_perms = $role_item->getPermissions();
+      /** @var \Kaula\TelegramBundle\Entity\Permission $role_perm_item */
+      foreach ($role_perms as $role_perm_item) {
+        if (!$permissions->contains($role_perm_item)) {
+          $permissions->add($role_perm_item);
+        }
+      }
+    }
+
+    return $permissions;
+  }
+
+  /**
+   * Returns collection of Notification for telegram user.
+   *
+   * @param \unreal4u\TelegramAPI\Telegram\Types\User $tu
+   * @return \Doctrine\Common\Collections\Collection
+   */
+  public function getUserNotifications(User $tu)
+  {
+    $d = $this->getContainer()
+      ->get('doctrine');
+
+    // Load user and his notifications
+    /** @var \Kaula\TelegramBundle\Entity\User $user */
+    $user = $d->getRepository('KaulaTelegramBundle:User')
+      ->findOneBy(['telegram_id' => $tu->id]);
+    if (is_null($user)) {
+      return new ArrayCollection();
+    }
+
+    // Load roles and each role's permissions
+    return $user->getNotifications();
+  }
+
+  /**
+   * Push notification to users.
+   *
+   * @param string $name Notification name
+   * @param string $text Text of the message to be sent
+   * @param string $parse_mode Send Markdown or HTML, if you want Telegram apps
+   *   to show bold, italic, fixed-width text or inline URLs in your bot's
+   *   message.
+   * @param bool $disable_web_page_preview Disables link previews for links in
+   *   this message
+   * @param bool $disable_notification Sends the message silently. iOS users
+   *   will not receive a notification, Android users will receive a
+   *   notification with no sound.
+   */
+  public function pushNotification(
+    $name,
+    $text,
+    $parse_mode = '',
+    $disable_web_page_preview = false,
+    $disable_notification = false
+  ) {
+    $d = $this->getContainer()
+      ->get('doctrine');
+
+    // Load notification and users
+    /** @var \Kaula\TelegramBundle\Entity\Notification $notification */
+    $notification = $d->getRepository('KaulaTelegramBundle:Notification')
+      ->findOneBy(['name' => $name]);
+    if (is_null($notification)) {
+      return;
+    }
+    $users = $notification->getUsers();
+    /** @var \Kaula\TelegramBundle\Entity\User $user_item */
+    foreach ($users as $user_item) {
+      $this->sendMessage(
+        $user_item->getTelegramId(),
+        $text,
+        $parse_mode,
+        null,
+        $disable_web_page_preview,
+        $disable_notification
+      );
+    }
+  }
+
+
 }

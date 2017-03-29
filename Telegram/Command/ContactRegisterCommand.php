@@ -11,7 +11,7 @@ namespace Kaula\TelegramBundle\Telegram\Command;
 
 use Kaula\TelegramBundle\Entity\User;
 use Tallanto\Api\Aggregator\ContactAggregator;
-use Tallanto\Api\Intruder\ContactIntruder;
+
 use Tallanto\Api\Provider\Http\Request;
 use Tallanto\Api\Provider\Http\ServiceProvider;
 use unreal4u\TelegramAPI\Telegram\Types\Contact AS TelegramContact;
@@ -161,15 +161,16 @@ class ContactRegisterCommand extends RegisterCommand
    * @return string Returns Tallanto ID
    */
   protected function createTallantoContact(
-    ContactAggregator $contact_aggregator,
+    /** @noinspection PhpUnusedParameterInspection */ ContactAggregator $contact_aggregator,
     $phone
   ) {
-    $c = $this->getBus()
+/*    $c = $this->getBus()
       ->getBot()
-      ->getContainer();
+      ->getContainer();*/
     $tu = $this->getUpdate()->message->from;
 
     // Create Contact object
+    /** @noinspection PhpUnusedLocalVariableInspection */
     $contact = new TallantoContact(
       [
         'first_name' => $tu->first_name,
@@ -177,9 +178,10 @@ class ContactRegisterCommand extends RegisterCommand
         'phone_mobile' => $phone,
       ]
     );
-    $contact_aggregator->add($contact);
+    // TODO implement ContactAggregator::add() method
+    //$contact_aggregator->add($contact);
 
-    return $intruder->saveContact();
+    return 'mock';
   }
 
 

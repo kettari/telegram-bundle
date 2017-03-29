@@ -16,7 +16,8 @@ use Kaula\TelegramBundle\Exception\HookException;
 use Kaula\TelegramBundle\Telegram\Command\AbstractCommand;
 use unreal4u\TelegramAPI\Telegram\Types\Update;
 
-class Hooker {
+class Hooker
+{
 
   /**
    * @var CommandBus
@@ -28,7 +29,8 @@ class Hooker {
    *
    * @param CommandBus $bus
    */
-  public function __construct(CommandBus $bus) {
+  public function __construct(CommandBus $bus)
+  {
     $this->bus = $bus;
   }
 
@@ -40,16 +42,20 @@ class Hooker {
    * @param string $method_name
    * @param string $parameters
    */
-  public function createHook(Update $update, $class_name, $method_name, $parameters = NULL) {
-    if (is_null($update->message)) {
+  public function createHook(
+    Update $update,
+    $class_name,
+    $method_name,
+    $parameters = null
+  ) {
+    if (is_null($tm = $this->getMessage($update))) {
       throw new HookException('Unable to create hook: Message is NULL');
     }
-    if (is_null($update->message->from)) {
+    if (is_null($tu = $this->getUser($update))) {
       throw new HookException('Unable to create hook: Message->From is NULL');
     }
 
-    $tc = $update->message->chat;
-    $tu = $update->message->from;
+    $tc = $tm->chat;
     $d = $this->getBus()
       ->getBot()
       ->getContainer()
@@ -97,21 +103,59 @@ class Hooker {
   }
 
   /**
+   * Try to return correct Message object.
+   *
+   * @param \unreal4u\TelegramAPI\Telegram\Types\Update $update
+   * @return \unreal4u\TelegramAPI\Telegram\Types\Message
+   */
+  private function getMessage(Update $update)
+  {
+    if (!is_null($update->message)) {
+      return $update->message;
+    } elseif (!is_null($update->callback_query) &&
+      (!is_null($update->callback_query->message))
+    ) {
+      return $update->callback_query->message;
+    } else {
+      return null;
+    }
+  }
+
+  /**
+   * Try to return correct User object.
+   *
+   * @param \unreal4u\TelegramAPI\Telegram\Types\Update $update
+   * @return \unreal4u\TelegramAPI\Telegram\Types\User
+   */
+  private function getUser(Update $update)
+  {
+    if (!is_null($update->callback_query)) {
+      return $update->callback_query->from;
+    } elseif (!is_null($m = $this->getMessage($update))) {
+      return $m->from;
+    } else {
+      return null;
+    }
+  }
+
+  /**
    * Finds hook.
    *
    * @param \unreal4u\TelegramAPI\Telegram\Types\Update $update
    * @return null
    */
-  public function findHook(Update $update) {
-    if (is_null($update->message)) {
-      return NULL;
+  public function findHook(Update $update)
+  {
+    // Try to find Message object
+    if (is_null($tm = $this->getMessage($update))) {
+      return null;
     }
-    if (is_null($update->message->from)) {
-      return NULL;
+    // Try to find User object
+    if (is_null($tu = $this->getUser($update))) {
+      return null;
     }
 
-    $tc = $update->message->chat;
-    $tu = $update->message->from;
+    $tc = $tm->chat;
     $d = $this->getBus()
       ->getBot()
       ->getContainer()
@@ -121,22 +165,24 @@ class Hooker {
     $chat = $d->getRepository('KaulaTelegramBundle:Chat')
       ->findOneBy(['telegram_id' => $tc->id]);
     if (!$chat) {
-      return NULL;
+      return null;
     }
 
     // Find user object. If not found, nothing to do
     $user = $d->getRepository('KaulaTelegramBundle:User')
       ->findOneBy(['telegram_id' => $tu->id]);
     if (!$user) {
-      return NULL;
+      return null;
     }
 
     // Find hook object
     $many_hooks = $d->getRepository('KaulaTelegramBundle:Hook')
-      ->findBy([
-        'chat' => $chat->getId(),
-        'user' => $user->getId(),
-      ]);
+      ->findBy(
+        [
+          'chat' => $chat->getId(),
+          'user' => $user->getId(),
+        ]
+      );
     if (count($many_hooks) == 1) {
       return reset($many_hooks);
     } elseif (count($many_hooks) > 1) {
@@ -144,8 +190,10 @@ class Hooker {
         ->getBot()
         ->getContainer()
         ->get('logger');
-      $l->warning('Multiple hooks found for user={user_id} and chat_id={chat_id}',
-        ['user_id' => $tu->id, 'chat_id' => $tc->id]);
+      $l->warning(
+        'Multiple hooks found for user={user_id} and chat_id={chat_id}',
+        ['user_id' => $tu->id, 'chat_id' => $tc->id]
+      );
 
       // Try to delete all hooks
       $em = $d->getManager();
@@ -156,7 +204,7 @@ class Hooker {
       $em->flush();
     }
 
-    return NULL;
+    return null;
   }
 
   /**
@@ -166,7 +214,8 @@ class Hooker {
    * @param \unreal4u\TelegramAPI\Telegram\Types\Update $update
    * @return Hooker
    */
-  public function executeHook(Hook $hook, Update $update) {
+  public function executeHook(Hook $hook, Update $update)
+  {
     if (class_exists($hook->getClassName())) {
       if (method_exists($hook->getClassName(), $hook->getMethodName())) {
         $command_name = $hook->getClassName();
@@ -176,12 +225,15 @@ class Hooker {
         $command = new $command_name($this->getBus(), $update);
         $command->$method_name($hook->getParameters());
       } else {
-        throw new HookException('Unable to execute the hook. Method not exists "'.
-          $hook->getMethodName().'"" for the class: '.$hook->getClassName());
+        throw new HookException(
+          'Unable to execute the hook. Method not exists "'.
+          $hook->getMethodName().'"" for the class: '.$hook->getClassName()
+        );
       }
     } else {
-      throw new HookException('Unable to execute the hook. Class not exists: '.
-        $hook->getClassName());
+      throw new HookException(
+        'Unable to execute the hook. Class not exists: '.$hook->getClassName()
+      );
     }
 
     return $this;
@@ -192,7 +244,8 @@ class Hooker {
    *
    * @param \Kaula\TelegramBundle\Entity\Hook $hook
    */
-  public function deleteHook(Hook $hook) {
+  public function deleteHook(Hook $hook)
+  {
     $d = $this->getBus()
       ->getBot()
       ->getContainer()
@@ -207,7 +260,8 @@ class Hooker {
   /**
    * @return CommandBus
    */
-  public function getBus(): CommandBus {
+  public function getBus(): CommandBus
+  {
     return $this->bus;
   }
 }

@@ -17,7 +17,8 @@ use Doctrine\ORM\Mapping\Index;
  * @ORM\Entity
  * @ORM\Table(name="user",indexes={@Index(name="tallanto_idx",columns={"tallanto_contact_id","tallanto_user_id"})})
  */
-class User {
+class User
+{
 
   /**
    * @ORM\Column(type="integer")
@@ -64,6 +65,14 @@ class User {
   private $roles;
 
   /**
+   * Many Users have Many Notifications.
+   *
+   * @var Collection
+   * @ORM\ManyToMany(targetEntity="Kaula\TelegramBundle\Entity\Notification",inversedBy="users")
+   */
+  private $notifications;
+
+  /**
    * @ORM\Column(type="string",length=255,nullable=true)
    *
    */
@@ -80,7 +89,8 @@ class User {
    *
    * @return integer
    */
-  public function getId() {
+  public function getId()
+  {
     return $this->id;
   }
 
@@ -91,7 +101,8 @@ class User {
    *
    * @return User
    */
-  public function setFirstName($firstName) {
+  public function setFirstName($firstName)
+  {
     $this->first_name = $firstName;
 
     return $this;
@@ -102,7 +113,8 @@ class User {
    *
    * @return string
    */
-  public function getFirstName() {
+  public function getFirstName()
+  {
     return $this->first_name;
   }
 
@@ -113,7 +125,8 @@ class User {
    *
    * @return User
    */
-  public function setLastName($lastName) {
+  public function setLastName($lastName)
+  {
     $this->last_name = $lastName;
 
     return $this;
@@ -124,7 +137,8 @@ class User {
    *
    * @return string
    */
-  public function getLastName() {
+  public function getLastName()
+  {
     return $this->last_name;
   }
 
@@ -135,7 +149,8 @@ class User {
    *
    * @return User
    */
-  public function setUsername($username) {
+  public function setUsername($username)
+  {
     $this->username = $username;
 
     return $this;
@@ -146,14 +161,16 @@ class User {
    *
    * @return string
    */
-  public function getUsername() {
+  public function getUsername()
+  {
     return $this->username;
   }
 
   /**
    * Constructor
    */
-  public function __construct() {
+  public function __construct()
+  {
     $this->roles = new ArrayCollection();
   }
 
@@ -164,7 +181,8 @@ class User {
    *
    * @return User
    */
-  public function setPhone($phone) {
+  public function setPhone($phone)
+  {
     $this->phone = $phone;
 
     return $this;
@@ -175,7 +193,8 @@ class User {
    *
    * @return string
    */
-  public function getPhone() {
+  public function getPhone()
+  {
     return $this->phone;
   }
 
@@ -186,7 +205,8 @@ class User {
    *
    * @return User
    */
-  public function addRole(Role $role) {
+  public function addRole(Role $role)
+  {
     if (!$this->getRoles()
       ->contains($role)
     ) {
@@ -201,7 +221,8 @@ class User {
    *
    * @param Role $role
    */
-  public function removeRole(Role $role) {
+  public function removeRole(Role $role)
+  {
     $this->roles->removeElement($role);
   }
 
@@ -210,10 +231,10 @@ class User {
    *
    * @return \Doctrine\Common\Collections\Collection
    */
-  public function getRoles() {
+  public function getRoles()
+  {
     return $this->roles;
   }
-
 
   /**
    * Set tallantoContactId
@@ -222,7 +243,8 @@ class User {
    *
    * @return User
    */
-  public function setTallantoContactId($tallantoContactId) {
+  public function setTallantoContactId($tallantoContactId)
+  {
     $this->tallanto_contact_id = $tallantoContactId;
 
     return $this;
@@ -233,7 +255,8 @@ class User {
    *
    * @return string
    */
-  public function getTallantoContactId() {
+  public function getTallantoContactId()
+  {
     return $this->tallanto_contact_id;
   }
 
@@ -244,7 +267,8 @@ class User {
    *
    * @return User
    */
-  public function setTallantoUserId($tallantoUserId) {
+  public function setTallantoUserId($tallantoUserId)
+  {
     $this->tallanto_user_id = $tallantoUserId;
 
     return $this;
@@ -255,31 +279,67 @@ class User {
    *
    * @return string
    */
-  public function getTallantoUserId() {
+  public function getTallantoUserId()
+  {
     return $this->tallanto_user_id;
   }
 
-    /**
-     * Set telegramId
-     *
-     * @param integer $telegramId
-     *
-     * @return User
-     */
-    public function setTelegramId($telegramId)
-    {
-        $this->telegram_id = $telegramId;
+  /**
+   * Set telegramId
+   *
+   * @param integer $telegramId
+   *
+   * @return User
+   */
+  public function setTelegramId($telegramId)
+  {
+    $this->telegram_id = $telegramId;
 
-        return $this;
-    }
+    return $this;
+  }
 
-    /**
-     * Get telegramId
-     *
-     * @return integer
-     */
-    public function getTelegramId()
-    {
-        return $this->telegram_id;
-    }
+  /**
+   * Get telegramId
+   *
+   * @return integer
+   */
+  public function getTelegramId()
+  {
+    return $this->telegram_id;
+  }
+
+  /**
+   * Add notification
+   *
+   * @param Notification $notification
+   *
+   * @return User
+   */
+  public function addNotification(Notification $notification)
+  {
+    $this->notifications[] = $notification;
+
+    return $this;
+  }
+
+  /**
+   * Remove notification
+   *
+   * @param Notification $notification
+   */
+  public function removeNotification(
+    Notification $notification
+  ) {
+    $this->notifications->removeElement($notification);
+  }
+
+  /**
+   * Get notifications
+   *
+   * @return \Doctrine\Common\Collections\Collection
+   */
+  public function getNotifications()
+  {
+    return $this->notifications;
+  }
 }

@@ -36,13 +36,15 @@ class IdentityWatchdogEvent implements EventListenerInterface {
     if (!is_null($update->message->from)) {
       $tu = $update->message->from;
 
+      // Get user and optionally mark it for update
       $user = $this->getUser($d, $tu);
+      // Load anonymous roles and assign them to the user
       $roles = $this->getAnonymousRoles($d);
       $this->assignRoles($d, $roles, $user);
     }
 
     // Update chat
-    $this->getChat($d, $tc);
+    $this->updateChat($d, $tc);
 
     // Commit changes
     $d->getManager()
@@ -126,7 +128,7 @@ class IdentityWatchdogEvent implements EventListenerInterface {
    * @param \unreal4u\TelegramAPI\Telegram\Types\Chat $tc
    * @return \Kaula\TelegramBundle\Entity\Chat|null|object
    */
-  private function getChat(Registry $d, Chat $tc) {
+  private function updateChat(Registry $d, Chat $tc) {
     $em = $d->getManager();
 
     // Find chat object. If not found, create new

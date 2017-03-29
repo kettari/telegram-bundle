@@ -32,7 +32,7 @@ class Permission {
   private $name;
 
   /**
-   * @ORM\ManyToMany(targetEntity="Kaula\TelegramBundle\Entity\Role",inversedBy="permissions")
+   * @ORM\ManyToMany(targetEntity="Kaula\TelegramBundle\Entity\Role",mappedBy="permissions")
    */
   private $roles;
 

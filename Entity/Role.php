@@ -35,7 +35,7 @@ class Role {
 
   /**
    * @var Collection
-   * @ORM\ManyToMany(targetEntity="Kaula\TelegramBundle\Entity\Permission",mappedBy="roles")
+   * @ORM\ManyToMany(targetEntity="Kaula\TelegramBundle\Entity\Permission",inversedBy="roles")
    */
   private $permissions;
 
