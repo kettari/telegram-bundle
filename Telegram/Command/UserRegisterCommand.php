@@ -18,7 +18,8 @@ use Tallanto\Api\Provider\Http\ServiceProvider;
 use unreal4u\TelegramAPI\Telegram\Types\Contact AS TelegramContact;
 
 
-class UserRegisterCommand extends RegisterCommand {
+class UserRegisterCommand extends RegisterCommand
+{
 
   /**
    * Registers user in the database.
@@ -26,14 +27,15 @@ class UserRegisterCommand extends RegisterCommand {
    * @param \unreal4u\TelegramAPI\Telegram\Types\Contact $contact
    * @return bool
    */
-  protected function registerUser(TelegramContact $contact) {
+  protected function registerUser(TelegramContact $contact)
+  {
     $phone = $this->sanitizePhone($contact->phone_number);
     $user_aggregator = $this->loadTallantoUsers($phone);
     if ($this->bindTallantoUser($user_aggregator, $phone)) {
       return parent::registerUser($contact);
     }
 
-    return FALSE;
+    return false;
   }
 
   /**
@@ -42,7 +44,8 @@ class UserRegisterCommand extends RegisterCommand {
    * @param $phone
    * @return \Tallanto\Api\Aggregator\UserAggregator
    */
-  private function loadTallantoUsers($phone) {
+  private function loadTallantoUsers($phone)
+  {
     $c = $this->getBus()
       ->getBot()
       ->getContainer();
@@ -73,24 +76,29 @@ class UserRegisterCommand extends RegisterCommand {
    * @param string $phone
    * @return bool
    */
-  private function bindTallantoUser(UserAggregator $user_aggregator, $phone) {
+  private function bindTallantoUser(UserAggregator $user_aggregator, $phone)
+  {
     if (0 == $user_aggregator->count()) {
 
       // User not found in the Tallanto CRM, deny
-      $this->replyWithMessage('К сожалению, я не нашёл сотрудника по указанному номеру телефона в базе данных ЦРМ.'.
+      $this->replyWithMessage(
+        'К сожалению, я не нашёл сотрудника по указанному номеру телефона в базе данных ЦРМ.'.
         PHP_EOL.PHP_EOL.
-        'Регистрация не завершена. Обратитесь в службу технической поддержки Школы, пожалуйста.');
+        'Регистрация не завершена. Обратитесь в службу технической поддержки Школы, пожалуйста.'
+      );
 
-      return FALSE;
+      return false;
 
     } elseif ($user_aggregator->count() > 1) {
 
       // Several contacts found, deny
-      $this->replyWithMessage('К сожалению, я нашёл несколько человек по указанному номеру телефона в базе данных ЦРМ.'.
+      $this->replyWithMessage(
+        'К сожалению, я нашёл несколько человек по указанному номеру телефона в базе данных ЦРМ.'.
         PHP_EOL.PHP_EOL.
-        'Регистрация не завершена. Обратитесь в службу технической поддержки Школы, пожалуйста.');
+        'Регистрация не завершена. Обратитесь в службу технической поддержки Школы, пожалуйста.'
+      );
 
-      return FALSE;
+      return false;
 
     } else {
 
@@ -101,17 +109,31 @@ class UserRegisterCommand extends RegisterCommand {
       if (($tallanto_user->getPhoneMobile() != $phone) &&
         ($tallanto_user->getPhoneWork() != $phone)
       ) {
-        throw new \RuntimeException('Mobile and Work phones from Tallanto do not match Telegram contact phone '.
-          $phone);
+        throw new \RuntimeException(
+          'Mobile and Work phones from Tallanto do not match Telegram contact phone '.
+          $phone
+        );
       }
 
+      // Check if user is active
+      if ('Active' != $tallanto_user->getUserStatus()) {
+        $this->replyWithMessage(
+          'К сожалению, вы не являетесь действующим сотрудником Школы.'.PHP_EOL.
+          PHP_EOL.
+          'Регистрация не завершена. Обратитесь в службу технической поддержки Школы, пожалуйста.'
+        );
+
+        return false;
+      }
+
+      // OK
       $tallanto_user_id = $tallanto_user->getId();
     }
 
     // Update user with Tallanto ID
     $this->updateTallantoUserInformation($tallanto_user_id);
 
-    return TRUE;
+    return true;
   }
 
   /**
@@ -119,7 +141,8 @@ class UserRegisterCommand extends RegisterCommand {
    *
    * @param string $tallanto_user_id
    */
-  protected function updateTallantoUserInformation($tallanto_user_id) {
+  protected function updateTallantoUserInformation($tallanto_user_id)
+  {
     $tu = $this->getUpdate()->message->from;
     $d = $this->getBus()
       ->getBot()
