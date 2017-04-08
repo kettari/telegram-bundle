@@ -21,7 +21,7 @@ class WebhookDeleteCommand extends AbstractCommand {
    * Configures the current command.
    */
   protected function configure() {
-    $this->setName('telegram:webhook-delete')
+    $this->setName('telegram:webhook:delete')
       ->setDescription('Deletes Telegram webhook')
       ->setHelp('Use this method to remove webhook integration if you decide to switch back to getUpdates.');
   }

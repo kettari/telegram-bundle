@@ -21,7 +21,7 @@ class WebhookSetCommand extends AbstractCommand {
    * Configures the current command.
    */
   protected function configure() {
-    $this->setName('telegram:webhook-set')
+    $this->setName('telegram:webhook:set')
       ->setDescription('Sets Telegram webhook')
       ->setHelp('Use this method to specify a url and receive incoming updates via an outgoing webhook. Whenever there is an update for the bot, we will send an HTTPS POST request to the specified url, containing a JSON-serialized Update. In case of an unsuccessful request, we will give up after a reasonable amount of attempts.');
   }

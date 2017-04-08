@@ -19,7 +19,7 @@ class WebhookInfoCommand extends AbstractCommand {
    * Configures the current command.
    */
   protected function configure() {
-    $this->setName('telegram:webhook-info')
+    $this->setName('telegram:webhook:info')
       ->setDescription('Prints webhook information')
       ->setHelp('Use this method to get current webhook status.');
   }
