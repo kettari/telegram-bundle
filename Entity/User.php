@@ -15,7 +15,7 @@ use Doctrine\ORM\Mapping\Index;
 
 /**
  * @ORM\Entity
- * @ORM\Table(name="user",indexes={@Index(name="tallanto_idx",columns={"tallanto_contact_id","tallanto_user_id"})})
+ * @ORM\Table(name="user",indexes={@Index(name="tallanto_user_idx",columns={"tallanto_user_id","blocked"})})
  */
 class User
 {
@@ -83,6 +83,12 @@ class User
    *
    */
   private $tallanto_user_id;
+
+  /**
+   * @ORM\Column(type="boolean")
+   *
+   */
+  private $blocked = false;
 
   /**
    * Get id
@@ -341,5 +347,29 @@ class User
   public function getNotifications()
   {
     return $this->notifications;
+  }
+
+  /**
+   * Set blocked
+   *
+   * @param boolean $blocked
+   *
+   * @return User
+   */
+  public function setBlocked($blocked)
+  {
+    $this->blocked = $blocked;
+
+    return $this;
+  }
+
+  /**
+   * Is blocked
+   *
+   * @return boolean
+   */
+  public function isBlocked()
+  {
+    return $this->blocked;
   }
 }

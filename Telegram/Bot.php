@@ -165,8 +165,8 @@ class Bot
     $update_type = $this->whatUpdateType($update);
 
     // Allow some debug info
-    $l->debug(
-      'Bot is handling telegram update of type "{type}"',
+    $l->info(
+      'Handling telegram update of type "{type}"',
       ['type' => $update_type, 'update' => print_r($update, true)]
     );
 
@@ -331,10 +331,18 @@ class Bot
       $event_type = $this->whatEventType($update);
       $l->debug('Event type: "{type}"', ['type' => $event_type]);
 
-      // Execute registered event listeners
-      $this->executeListeners($event_type, $update);
+      if (!$this->isUserBlocked($update->message->from->id)) {
+        // Execute registered event listeners
+        $this->executeListeners($event_type, $update);
+      } else {
+        $this->sendMessage($update->message->chat->id, 'Извините, ваш аккаунт заблокирован.');
+      }
 
     } catch (\Exception $e) {
+      $l->critical(
+        'Exception while handling update with message: {error_message}',
+        ['error_message' => $e->getMessage(), 'error_object' => $e]
+      );
       try {
         $this->sendMessage(
           $update->message->chat->id,
@@ -343,8 +351,28 @@ class Bot
       } catch (\Exception $passthrough) {
         // Do nothing
       }
-      throw $e;
     }
+  }
+
+  /**
+   * Returns true if user is blocked.
+   *
+   * @param integer $telegram_user_id
+   * @return boolean
+   */
+  public function isUserBlocked($telegram_user_id)
+  {
+    $d = $this->getContainer()
+      ->get('doctrine');
+
+    // Load user and his permissions
+    /** @var \Kaula\TelegramBundle\Entity\User $user */
+    if (is_null($user = $d->getRepository('KaulaTelegramBundle:User')
+      ->findOneBy(['telegram_id' => $telegram_user_id]))) {
+      return false;
+    }
+
+    return $user->isBlocked();
   }
 
   /**
@@ -389,14 +417,25 @@ class Bot
   public function executeHook(Update $update)
   {
     // Check for hooks and execute if any found
+    /** @var \Kaula\TelegramBundle\Entity\Hook $hook */
     if ($hook = $this->getBus()
       ->getHooker()
       ->findHook($update)
     ) {
-      $this->getBus()
-        ->getHooker()
-        ->executeHook($hook, $update)
-        ->deleteHook($hook);
+
+      if (!$this->isUserBlocked($hook->getUser()->getTelegramId())) {
+        // User is active - execute & delete the hook
+        $this->getBus()
+          ->getHooker()
+          ->executeHook($hook, $update)
+          ->deleteHook($hook);
+      } else {
+        // User is blocked - just delete the hook
+        $this->getBus()
+          ->getHooker()
+          ->deleteHook($hook);
+      }
+
     }
   }
 
@@ -486,13 +525,18 @@ class Bot
         ->getParameter('kaula_telegram');
 
       // Throttle control to avoid flood
-      if ($this->getThrottleSingleton()->wait()) {
+      if ($this->getThrottleSingleton()
+        ->wait()
+      ) {
         $tgLog = new TgLog($config['api_token'], $l);
-        $this->getThrottleSingleton()->requestSent();
+        $this->getThrottleSingleton()
+          ->requestSent();
 
         return $tgLog->performApiRequest($method);
       } else {
-        throw new ThrottleControlException('Throttle control exception: was unable to wait()');
+        throw new ThrottleControlException(
+          'Throttle control exception: was unable to wait()'
+        );
       }
     } catch (ClientException $e) {
 
