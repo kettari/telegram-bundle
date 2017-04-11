@@ -20,7 +20,7 @@ class UserInvalidateCommand extends AbstractCommand
    */
   protected function configure()
   {
-    $this->setName('telegram:user:invalidate')
+    $this->setName('telegram:users:invalidate')
       ->setDescription('Invalidates employees')
       ->setHelp(
         'Blocks fired employees, checks inactive user accounts in the Tallanto.'
@@ -58,7 +58,8 @@ class UserInvalidateCommand extends AbstractCommand
 
     // Create ServiceProvider object
     $provider = new ServiceProvider($request);
-    $provider->setLogger($c->get('logger'));
+    $provider->setLogger($c->get('logger'))
+      ->setPageSize(1000);
 
     // Create contacts aggregator
     $user_aggregator = new UserAggregator($provider);
