@@ -13,6 +13,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 
 use GuzzleHttp\Exception\ClientException;
 use InvalidArgumentException;
+use Kaula\TelegramBundle\Entity\User as DoctrineUser;
 use Kaula\TelegramBundle\Exception\KaulaTelegramBundleException;
 use Kaula\TelegramBundle\Exception\ThrottleControlException;
 use Kaula\TelegramBundle\Telegram\Command\HelpCommand;
@@ -335,7 +336,10 @@ class Bot
         // Execute registered event listeners
         $this->executeListeners($event_type, $update);
       } else {
-        $this->sendMessage($update->message->chat->id, 'Извините, ваш аккаунт заблокирован.');
+        $this->sendMessage(
+          $update->message->chat->id,
+          'Извините, ваш аккаунт заблокирован.'
+        );
       }
 
     } catch (\Exception $e) {
@@ -348,6 +352,15 @@ class Bot
           $update->message->chat->id,
           'На сервере произошла ошибка, пожалуйста, сообщите системному администратору.'
         );
+
+        if ('dev' == $this->getContainer()
+            ->getParameter("kernel.environment")
+        ) {
+          $this->sendMessage(
+            $update->message->chat->id,
+            $e->getMessage()
+          );
+        }
       } catch (\Exception $passthrough) {
         // Do nothing
       }
@@ -367,8 +380,10 @@ class Bot
 
     // Load user and his permissions
     /** @var \Kaula\TelegramBundle\Entity\User $user */
-    if (is_null($user = $d->getRepository('KaulaTelegramBundle:User')
-      ->findOneBy(['telegram_id' => $telegram_user_id]))) {
+    if (is_null(
+      $user = $d->getRepository('KaulaTelegramBundle:User')
+        ->findOneBy(['telegram_id' => $telegram_user_id])
+    )) {
       return false;
     }
 
@@ -423,7 +438,11 @@ class Bot
       ->findHook($update)
     ) {
 
-      if (!$this->isUserBlocked($hook->getUser()->getTelegramId())) {
+      if (!$this->isUserBlocked(
+        $hook->getUser()
+          ->getTelegramId()
+      )
+      ) {
         // User is active - execute & delete the hook
         $this->getBus()
           ->getHooker()
@@ -500,7 +519,7 @@ class Bot
     }
 
     $this->listeners[] = [
-      'event_type'     => $event_type,
+      'event_type' => $event_type,
       'event_listener' => $listener,
     ];
 
@@ -808,7 +827,7 @@ class Bot
   /**
    * Push notification to users.
    *
-   * @param string $name Notification name
+   * @param string $notification Notification name
    * @param string $text Text of the message to be sent
    * @param string $parse_mode Send Markdown or HTML, if you want Telegram apps
    *   to show bold, italic, fixed-width text or inline URLs in your bot's
@@ -820,7 +839,7 @@ class Bot
    *   notification with no sound.
    */
   public function pushNotification(
-    $name,
+    $notification,
     $text,
     $parse_mode = '',
     $disable_web_page_preview = false,
@@ -830,17 +849,67 @@ class Bot
       ->get('doctrine');
 
     // Load notification and users
-    /** @var \Kaula\TelegramBundle\Entity\Notification $notification */
-    $notification = $d->getRepository('KaulaTelegramBundle:Notification')
-      ->findOneBy(['name' => $name]);
-    if (is_null($notification)) {
+    /** @var \Kaula\TelegramBundle\Entity\Notification $doctrine_notification */
+    $doctrine_notification = $d->getRepository('KaulaTelegramBundle:Notification')
+      ->findOneBy(['name' => $notification]);
+    if (is_null($doctrine_notification)) {
       return;
     }
-    $users = $notification->getUsers();
+    $users = $doctrine_notification->getUsers();
     /** @var \Kaula\TelegramBundle\Entity\User $user_item */
     foreach ($users as $user_item) {
       $this->sendMessage(
         $user_item->getTelegramId(),
+        $text,
+        $parse_mode,
+        null,
+        $disable_web_page_preview,
+        $disable_notification
+      );
+    }
+  }
+
+  /**
+   * Push notification to the single user.
+   *
+   * @param \Kaula\TelegramBundle\Entity\User $recipient
+   * @param string $notification Notification name
+   * @param string $text Text of the message to be sent
+   * @param string $parse_mode Send Markdown or HTML, if you want Telegram apps
+   *   to show bold, italic, fixed-width text or inline URLs in your bot's
+   *   message.
+   * @param bool $disable_web_page_preview Disables link previews for links in
+   *   this message
+   * @param bool $disable_notification Sends the message silently. iOS users
+   *   will not receive a notification, Android users will receive a
+   *   notification with no sound.
+   */
+  public function pushNotificationPrivate(
+    DoctrineUser $recipient,
+    $notification,
+    $text,
+    $parse_mode = '',
+    $disable_web_page_preview = false,
+    $disable_notification = false
+  ) {
+    $d = $this->getContainer()
+      ->get('doctrine');
+
+    // Load notification and subscribers
+    /** @var \Kaula\TelegramBundle\Entity\Notification $doctrine_notification */
+    if (is_null(
+      $doctrine_notification = $d->getRepository(
+        'KaulaTelegramBundle:Notification'
+      )
+        ->findOneBy(['name' => $notification])
+    )) {
+      return;
+    }
+
+    $subscribers = $doctrine_notification->getUsers();
+    if ($subscribers->contains($recipient)) {
+      $this->sendMessage(
+        $recipient->getTelegramId(),
         $text,
         $parse_mode,
         null,
