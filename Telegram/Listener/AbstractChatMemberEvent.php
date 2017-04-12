@@ -60,6 +60,7 @@ abstract class AbstractChatMemberEvent implements EventListenerInterface {
       ->findOneBy(['telegram_id' => $tc->id]);
     if (!$this->chat) {
       $this->chat = new Chat();
+      $this->entity_manager->persist($this->chat);
     }
     $this->chat->setTelegramId($tc->id)
       ->setType($tc->type)
@@ -68,7 +69,6 @@ abstract class AbstractChatMemberEvent implements EventListenerInterface {
       ->setFirstName($tc->first_name)
       ->setLastName($tc->last_name)
       ->setAllMembersAreAdministrators($tc->all_members_are_administrators);
-    $this->entity_manager->persist($this->chat);
 
     // Execute chat member operations
     $this->executeEvent($bot, $update);

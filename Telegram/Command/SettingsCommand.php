@@ -14,7 +14,6 @@ use unreal4u\TelegramAPI\Telegram\Types\Inline\Keyboard\Markup;
 use unreal4u\TelegramAPI\Telegram\Types\KeyboardButton;
 use unreal4u\TelegramAPI\Telegram\Types\ReplyKeyboardMarkup;
 use unreal4u\TelegramAPI\Telegram\Types\ReplyKeyboardRemove;
-use unreal4u\TelegramAPI\Telegram\Types\User;
 
 class SettingsCommand extends AbstractCommand
 {
@@ -89,7 +88,7 @@ class SettingsCommand extends AbstractCommand
         $this->replyWithMessage(
           'Отметьте уведомления, которые хотите получать:',
           '',
-          $this->getReplyKeyboardMarkup_Notifications($message->from)
+          $this->getReplyKeyboardMarkup_Notifications()
         );
         $this->getBus()
           ->getHooker()
@@ -119,18 +118,19 @@ class SettingsCommand extends AbstractCommand
   /**
    * Returns reply markup for notifications option.
    *
-   * @param \unreal4u\TelegramAPI\Telegram\Types\User $tu
    * @return \unreal4u\TelegramAPI\Telegram\Types\Inline\Keyboard\Markup
    */
-  private function getReplyKeyboardMarkup_Notifications(User $tu)
+  private function getReplyKeyboardMarkup_Notifications()
   {
     // Load user's permissions and notifications
     $user_permissions = $this->getBus()
       ->getBot()
-      ->getUserPermissions($tu);
+      ->getUserHq()
+      ->getUserPermissions();
     $user_notifications = $this->getBus()
       ->getBot()
-      ->getUserNotifications($tu);
+      ->getUserHq()
+      ->getUserNotifications();
 
     $d = $this->getBus()
       ->getBot()
@@ -177,29 +177,26 @@ class SettingsCommand extends AbstractCommand
       return;
     }
 
-    $d = $this->getBus()
+    $hq = $this->getBus()
       ->getBot()
-      ->getContainer()
-      ->get('doctrine');
+      ->getUserHq();
 
     // Load user's permissions and notifications
-    $tu = $cq->from;
     /** @var \Kaula\TelegramBundle\Entity\User $user */
-    $user = $d->getRepository('KaulaTelegramBundle:User')
-      ->findOneBy(['telegram_id' => $tu->id]);
+    $user = $hq->getCurrentUser();
     if (is_null($user)) {
       return;
     }
-    $user_permissions = $this->getBus()
-      ->getBot()
-      ->getUserPermissions($tu);
-    $user_notifications = $this->getBus()
-      ->getBot()
-      ->getUserNotifications($tu);
+    $user_permissions = $hq->getUserPermissions();
+    $user_notifications = $hq->getUserNotifications();
 
     // Load notification
     /** @var \Kaula\TelegramBundle\Entity\Notification $notification */
-    $notification = $d->getRepository('KaulaTelegramBundle:Notification')
+    $notification = $this->getBus()
+      ->getBot()
+      ->getContainer()
+      ->get('doctrine')
+      ->getRepository('KaulaTelegramBundle:Notification')
       ->findOneBy(['name' => $cq->data]);
     if (is_null($notification)) {
       return;
@@ -216,7 +213,11 @@ class SettingsCommand extends AbstractCommand
       $user->addNotification($notification);
     }
     // Save changes
-    $em = $d->getManager();
+    $em = $this->getBus()
+      ->getBot()
+      ->getContainer()
+      ->get('doctrine')
+      ->getManager();
     $em->persist($user);
     $em->flush();
 
@@ -227,7 +228,7 @@ class SettingsCommand extends AbstractCommand
         $cq->message->chat->id,
         $cq->message->message_id,
         null,
-        $this->getReplyKeyboardMarkup_Notifications($cq->from)
+        $this->getReplyKeyboardMarkup_Notifications()
       );
     // Answer callback
     $this->getBus()

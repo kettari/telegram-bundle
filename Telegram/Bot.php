@@ -9,8 +9,6 @@
 namespace Kaula\TelegramBundle\Telegram;
 
 
-use Doctrine\Common\Collections\ArrayCollection;
-
 use GuzzleHttp\Exception\ClientException;
 use InvalidArgumentException;
 use Kaula\TelegramBundle\Entity\User as DoctrineUser;
@@ -39,7 +37,6 @@ use unreal4u\TelegramAPI\Telegram\Methods\SendChatAction;
 use unreal4u\TelegramAPI\Telegram\Methods\SendMessage;
 use unreal4u\TelegramAPI\Telegram\Types\Message;
 use unreal4u\TelegramAPI\Telegram\Types\Update;
-use unreal4u\TelegramAPI\Telegram\Types\User;
 use unreal4u\TelegramAPI\TgLog;
 
 class Bot
@@ -99,6 +96,13 @@ class Bot
   protected $container;
 
   /**
+   * User manager.
+   *
+   * @var UserHq
+   */
+  private $user_hq;
+
+  /**
    * Array of listeners for events (EventListenerInterface)
    *
    * @var array
@@ -119,6 +123,9 @@ class Bot
       ->registerCommand(SettingsCommand::class)
       ->registerCommand(HelpCommand::class)
       ->registerCommand(ListRolesCommand::class);
+
+    // Instantiate user headquarters
+    $this->user_hq = new UserHq($container);
 
     // Throttle control
     $this->throttle_singleton = ThrottleSingleton::getInstance();
@@ -164,6 +171,8 @@ class Bot
       $update = $this->scrapIncomingData();
     }
     $update_type = $this->whatUpdateType($update);
+    $this->getUserHq()
+      ->stashUser($update_type, $update);
 
     // Allow some debug info
     $l->info(
@@ -332,7 +341,9 @@ class Bot
       $event_type = $this->whatEventType($update);
       $l->debug('Event type: "{type}"', ['type' => $event_type]);
 
-      if (!$this->isUserBlocked($update->message->from->id)) {
+      if (!$this->getUserHq()
+        ->isUserBlocked()
+      ) {
         // Execute registered event listeners
         $this->executeListeners($event_type, $update);
       } else {
@@ -367,28 +378,6 @@ class Bot
     }
   }
 
-  /**
-   * Returns true if user is blocked.
-   *
-   * @param integer $telegram_user_id
-   * @return boolean
-   */
-  public function isUserBlocked($telegram_user_id)
-  {
-    $d = $this->getContainer()
-      ->get('doctrine');
-
-    // Load user and his permissions
-    /** @var \Kaula\TelegramBundle\Entity\User $user */
-    if (is_null(
-      $user = $d->getRepository('KaulaTelegramBundle:User')
-        ->findOneBy(['telegram_id' => $telegram_user_id])
-    )) {
-      return false;
-    }
-
-    return $user->isBlocked();
-  }
 
   /**
    * Executes event listeners.
@@ -438,10 +427,8 @@ class Bot
       ->findHook($update)
     ) {
 
-      if (!$this->isUserBlocked(
-        $hook->getUser()
-          ->getTelegramId()
-      )
+      if (!$this->getUserHq()
+        ->isUserBlocked()
       ) {
         // User is active - execute & delete the hook
         $this->getBus()
@@ -503,6 +490,14 @@ class Bot
   }
 
   /**
+   * @return UserHq
+   */
+  public function getUserHq(): UserHq
+  {
+    return $this->user_hq;
+  }
+
+  /**
    * Adds event listener class to listeners collection.
    *
    * @param string $event_type
@@ -519,7 +514,7 @@ class Bot
     }
 
     $this->listeners[] = [
-      'event_type' => $event_type,
+      'event_type'     => $event_type,
       'event_listener' => $listener,
     ];
 
@@ -767,64 +762,6 @@ class Bot
   }
 
   /**
-   * Returns collection of Permissions for telegram user.
-   *
-   * @param \unreal4u\TelegramAPI\Telegram\Types\User $tu
-   * @return \Doctrine\Common\Collections\Collection
-   */
-  public function getUserPermissions(User $tu)
-  {
-    $permissions = new ArrayCollection();
-    $d = $this->getContainer()
-      ->get('doctrine');
-
-    // Load user and his permissions
-    /** @var \Kaula\TelegramBundle\Entity\User $user */
-    $user = $d->getRepository('KaulaTelegramBundle:User')
-      ->findOneBy(['telegram_id' => $tu->id]);
-    if (is_null($user)) {
-      return $permissions;
-    }
-    // Load roles and each role's permissions
-    $roles = $user->getRoles();
-    /** @var \Kaula\TelegramBundle\Entity\Role $role_item */
-    foreach ($roles as $role_item) {
-      $role_perms = $role_item->getPermissions();
-      /** @var \Kaula\TelegramBundle\Entity\Permission $role_perm_item */
-      foreach ($role_perms as $role_perm_item) {
-        if (!$permissions->contains($role_perm_item)) {
-          $permissions->add($role_perm_item);
-        }
-      }
-    }
-
-    return $permissions;
-  }
-
-  /**
-   * Returns collection of Notification for telegram user.
-   *
-   * @param \unreal4u\TelegramAPI\Telegram\Types\User $tu
-   * @return \Doctrine\Common\Collections\Collection
-   */
-  public function getUserNotifications(User $tu)
-  {
-    $d = $this->getContainer()
-      ->get('doctrine');
-
-    // Load user and his notifications
-    /** @var \Kaula\TelegramBundle\Entity\User $user */
-    $user = $d->getRepository('KaulaTelegramBundle:User')
-      ->findOneBy(['telegram_id' => $tu->id]);
-    if (is_null($user)) {
-      return new ArrayCollection();
-    }
-
-    // Load roles and each role's permissions
-    return $user->getNotifications();
-  }
-
-  /**
    * Push notification to users.
    *
    * @param string $notification Notification name
@@ -850,7 +787,9 @@ class Bot
 
     // Load notification and users
     /** @var \Kaula\TelegramBundle\Entity\Notification $doctrine_notification */
-    $doctrine_notification = $d->getRepository('KaulaTelegramBundle:Notification')
+    $doctrine_notification = $d->getRepository(
+      'KaulaTelegramBundle:Notification'
+    )
       ->findOneBy(['name' => $notification]);
     if (is_null($doctrine_notification)) {
       return;
