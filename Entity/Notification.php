@@ -17,8 +17,7 @@ use Doctrine\ORM\Mapping\Index;
 /**
  * @ORM\Entity
  * @ORM\Table(name="notification",indexes={@Index(name="order_idx",columns={"order"}),
- *   @Index(name="default_idx",columns={"default"}),
- *   @Index(name="name_idx",columns={"name"})})
+ *   @Index(name="default_idx",columns={"default"})})
  */
 class Notification
 {
@@ -36,7 +35,7 @@ class Notification
   private $order;
 
   /**
-   * @ORM\Column(type="string",length=50)
+   * @ORM\Column(type="string",length=50,unique=true)
    *
    */
   private $name;

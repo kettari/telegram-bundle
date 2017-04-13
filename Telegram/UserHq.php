@@ -74,9 +74,7 @@ class UserHq
   public function isUserBlocked()
   {
     if (is_null($this->current_user)) {
-      throw new CurrentUserNotDefinedException(
-        'Unable to tell if user is blocked'
-      );
+      return false;
     }
 
     return $this->getCurrentUser()
