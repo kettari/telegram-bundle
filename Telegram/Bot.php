@@ -797,6 +797,10 @@ class Bot
     $users = $doctrine_notification->getUsers();
     /** @var \Kaula\TelegramBundle\Entity\User $user_item */
     foreach ($users as $user_item) {
+      if ($user_item->isBlocked()) {
+        continue;
+      }
+
       $this->sendMessage(
         $user_item->getTelegramId(),
         $text,
@@ -841,7 +845,7 @@ class Bot
         'KaulaTelegramBundle:Notification'
       )
         ->findOneBy(['name' => $notification])
-    )) {
+    ) || $recipient->isBlocked()) {
       return;
     }
 

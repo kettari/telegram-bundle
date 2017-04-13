@@ -10,7 +10,7 @@ namespace Kaula\TelegramBundle\Telegram;
 
 
 use Doctrine\Common\Collections\ArrayCollection;
-use Kaula\TelegramBundle\Exception\CurrentUserNotDefinedException;
+
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use unreal4u\TelegramAPI\Telegram\Types\Update;
 
