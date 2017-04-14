@@ -12,7 +12,7 @@ namespace Kaula\TelegramBundle\Telegram;
 use GuzzleHttp\Exception\ClientException;
 use InvalidArgumentException;
 use Kaula\TelegramBundle\Entity\Queue;
-use Kaula\TelegramBundle\Entity\User as DoctrineUser;
+
 use Kaula\TelegramBundle\Entity\User;
 use Kaula\TelegramBundle\Exception\KaulaTelegramBundleException;
 use Kaula\TelegramBundle\Exception\ThrottleControlException;
@@ -80,6 +80,9 @@ class Bot
   const ET_MIGRATE_FROM_CHAT_ID = 1048576;
   const ET_PINNED_MESSAGE = 1048576;
   const ET_ANY = 2097151;
+
+  // Special notification type to send private push
+  const NOTIFICATION_PRIVATE = 'notification-private';
 
   /**
    * @var CommandBus
@@ -767,7 +770,8 @@ class Bot
   /**
    * Push notification to users.
    *
-   * @param string $notification Notification name
+   * @param string $notification Notification name. If $recipient is specified,
+   *   this option is ignored.
    * @param string $text Text of the message to be sent
    * @param string $parse_mode Send Markdown or HTML, if you want Telegram apps
    *   to show bold, italic, fixed-width text or inline URLs in your bot's
@@ -798,29 +802,25 @@ class Bot
     $now = new \DateTime('now', new \DateTimeZone('UTC'));
     $d = $this->getContainer()
       ->get('doctrine');
+    /** @var LoggerInterface $l */
+    $l = $this->getContainer()
+      ->get('logger');
 
-    // Load notification and users
-    /** @var \Kaula\TelegramBundle\Entity\Notification $doctrine_notification */
-    $doctrine_notification = $d->getRepository(
-      'KaulaTelegramBundle:Notification'
-    )
-      ->findOneBy(['name' => $notification]);
-    if (is_null($doctrine_notification)) {
-      return;
-    }
+    $l->debug(
+      'Pushing notification "{notification}"',
+      [
+        'notification'     => $notification,
+        'telegram_user_id' => !is_null($recipient) ? $recipient->getTelegramId(
+        ) : '(all)',
+        'chat_id'          => $chat_id,
+      ]
+    );
 
-    // If $recipient is specified, send only to him or all users otherwise
-    if (is_null($recipient)) {
-      $subscribers = $doctrine_notification->getUsers();
-    } else {
-      $all_subscribers = $doctrine_notification->getUsers();
-      // Check if recipient is subscribed for this notification
-      if ($all_subscribers->contains($recipient)) {
-        $subscribers[] = $recipient;
-      } else {
-        $subscribers = [];
-      }
-    }
+    $subscribers = $this->getEligibleSubscribers($notification, $recipient);
+    $l->debug(
+      'Subscribers to receive notification: {subscribers_count}',
+      ['subscribers_count' => count($subscribers)]
+    );
 
     /** @var \Kaula\TelegramBundle\Entity\User $user_item */
     foreach ($subscribers as $user_item) {
@@ -858,113 +858,45 @@ class Bot
         ->setDisableNotification($disable_notification);
       $d->getManager()
         ->persist($queue);
-
-      /*$this->sendMessage(
-        $user_item->getTelegramId(),
-        $text,
-        $parse_mode,
-        null,
-        $disable_web_page_preview,
-        $disable_notification
-      );*/
     }
     $d->getManager()
       ->flush();
   }
 
   /**
-   * Push notification to the single user.
+   * Returns array of subscribers who will receive notification.
    *
-   * @param integer $chat_id
-   * @param \Kaula\TelegramBundle\Entity\User $recipient
-   * @param string $notification Notification name
-   * @param string $text Text of the message to be sent
-   * @param string $parse_mode Send Markdown or HTML, if you want Telegram apps
-   *   to show bold, italic, fixed-width text or inline URLs in your bot's
-   *   message.
-   * @param KeyboardMethods $reply_markup Additional interface options. A
-   *   JSON-serialized object for an inline keyboard, custom reply keyboard,
-   *   instructions to remove reply keyboard or to force a reply from the user.
-   * @param bool $disable_web_page_preview Disables link previews for links in
-   *   this message
-   * @param bool $disable_notification Sends the message silently. iOS users
-   *   will not receive a notification, Android users will receive a
-   *   notification with no sound.
+   * @param string $notification Name of the notification
+   * @param User $recipient Recipient who intended to receive notification
+   * @return array|\Doctrine\Common\Collections\Collection
    */
-  /*public function pushNotificationPrivate(
-    $chat_id,
-    DoctrineUser $recipient,
-    $notification,
-    $text,
-    $parse_mode = '',
-    $reply_markup = null,
-    $disable_web_page_preview = false,
-    $disable_notification = false
-  ) {
-    $now = new \DateTime('now', new \DateTimeZone('UTC'));
-    $d = $this->getContainer()
-      ->get('doctrine');
-
-    // Load notification and subscribers
-    /** @var \Kaula\TelegramBundle\Entity\Notification $doctrine_notification
-    if (is_null(
-        $doctrine_notification = $d->getRepository(
-          'KaulaTelegramBundle:Notification'
-        )
-          ->findOneBy(['name' => $notification])
-      ) || $recipient->isBlocked()
-    ) {
-      return;
+  private function getEligibleSubscribers($notification, $recipient)
+  {
+    if (!is_null($recipient)) {
+      return [$recipient];
     }
 
-    $subscribers = $doctrine_notification->getUsers();
-    if ($subscribers->contains($recipient)) {
-
-      if (is_null(
-        $chat = $d->getRepository('KaulaTelegramBundle:Chat')
-          ->findOneBy(['telegram_id' => $chat_id])
-      )) {
-        throw new KaulaTelegramBundleException(
-          sprintf(
-            'Queue for private push failed: unable to find chat for given user (telegram_user_id=%s)',
-            $recipient->getTelegramId()
-          )
-        );
-      }
-
-      $queue = new Queue();
-      $queue->setStatus('pending')
-        ->setCreated($now)
-        ->setChat($chat)
-        ->setText($text)
-        ->setParseMode($parse_mode)
-        ->setReplyMarkup(
-          !is_null($reply_markup) ? serialize($reply_markup) : null
-        )
-        ->setDisableWebPagePreview($disable_web_page_preview)
-        ->setDisableNotification($disable_notification);
-      $d->getManager()
-        ->persist($queue);
-      $d->getManager()
-        ->flush();
-
-      /*$this->sendMessage(
-        $recipient->getTelegramId(),
-        $text,
-        $parse_mode,
-        null,
-        $disable_web_page_preview,
-        $disable_notification
-      );
+    // Load notification and users
+    /** @var \Kaula\TelegramBundle\Entity\Notification $doctrine_notification */
+    $doctrine_notification = $this->getContainer()
+      ->get('doctrine')
+      ->getRepository(
+        'KaulaTelegramBundle:Notification'
+      )
+      ->findOneBy(['name' => $notification]);
+    if (is_null($doctrine_notification)) {
+      return [];
     }
-  }*/
+
+    return $doctrine_notification->getUsers();
+  }
 
   /**
    * Send part of queued messages.
    *
    * @param int $bump_size Count of items to send in this bump operation
    */
-  public function bumpQueue($bump_size = 100)
+  public function bumpQueue($bump_size = 50)
   {
     $stopwatch = new Stopwatch();
     $stopwatch->start('bumpQueue');
@@ -999,8 +931,9 @@ class Bot
 
       } catch (\Exception $e) {
 
-        $queue_item->setStatus('error');
-        $l->error(
+        $queue_item->setStatus('error')
+          ->setExceptionMessage($e->getMessage());
+        $l->warning(
           'Exception while sending queued message #{id}: {exception_message}',
           [
             'id'                => $queue_item->getId(),
@@ -1023,11 +956,11 @@ class Bot
     $bump_event = $stopwatch->stop('bumpQueue');
     $elapsed = ($bump_event->getDuration() / 1000);
     $l->info(
-      'Bumped queue: processed {items_count} items, elapsed {time_elapsed} seconds. Average time to send one message: {average_time} seconds',
+      'Bumped queue: processed {items_count} items, elapsed {time_elapsed} seconds. Average items per second: {items_per_second}',
       [
-        'items_count'  => $items_count,
-        'time_elapsed' => sprintf('%.2f', $elapsed),
-        'average_time' => sprintf('%.2f', ($items_count / $elapsed)),
+        'items_count'      => $items_count,
+        'time_elapsed'     => sprintf('%.2f', $elapsed),
+        'items_per_second' => sprintf('%.2f', ($items_count / $elapsed)),
       ]
     );
   }

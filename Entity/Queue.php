@@ -73,6 +73,11 @@ class Queue
    */
   private $disable_notification;
 
+  /**
+   * @ORM\Column(type="text",nullable=true)
+   */
+  private $exception_message;
+
     /**
      * Get id
      *
@@ -298,4 +303,28 @@ class Queue
     {
         return $this->reply_markup;
     }
+
+  /**
+   * Set exceptionMessage
+   *
+   * @param string $exception_message
+   *
+   * @return Queue
+   */
+  public function setExceptionMessage($exception_message)
+  {
+    $this->exception_message = $exception_message;
+
+    return $this;
+  }
+
+  /**
+   * Get exceptionMessage
+   *
+   * @return string
+   */
+  public function getExceptionMessage()
+  {
+    return $this->exception_message;
+  }
 }
