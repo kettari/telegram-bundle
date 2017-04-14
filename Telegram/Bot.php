@@ -18,6 +18,7 @@ use Kaula\TelegramBundle\Exception\KaulaTelegramBundleException;
 use Kaula\TelegramBundle\Exception\ThrottleControlException;
 use Kaula\TelegramBundle\Telegram\Command\HelpCommand;
 use Kaula\TelegramBundle\Telegram\Command\ListRolesCommand;
+use Kaula\TelegramBundle\Telegram\Command\PushCommand;
 use Kaula\TelegramBundle\Telegram\Command\SettingsCommand;
 use Kaula\TelegramBundle\Telegram\Command\StartCommand;
 use Kaula\TelegramBundle\Telegram\Listener\GroupCreatedEvent;
@@ -128,7 +129,8 @@ class Bot
     $this->bus->registerCommand(StartCommand::class)
       ->registerCommand(SettingsCommand::class)
       ->registerCommand(HelpCommand::class)
-      ->registerCommand(ListRolesCommand::class);
+      ->registerCommand(ListRolesCommand::class)
+      ->registerCommand(PushCommand::class);
 
     // Instantiate user headquarters
     $this->user_hq = new UserHq($container);
@@ -609,7 +611,7 @@ class Bot
   public function sendMessage(
     $chat_id,
     $text,
-    $parse_mode = '',
+    $parse_mode = null,
     $reply_markup = null,
     $disable_web_page_preview = false,
     $disable_notification = false,
@@ -621,7 +623,7 @@ class Bot
     $send_message = new SendMessage();
     $send_message->chat_id = $chat_id;
     $send_message->text = $text;
-    $send_message->parse_mode = $parse_mode;
+    $send_message->parse_mode = $parse_mode ?? '';
     $send_message->disable_web_page_preview = $disable_web_page_preview;
     $send_message->disable_notification = $disable_notification;
     $send_message->reply_to_message_id = $reply_to_message_id;

@@ -14,7 +14,8 @@ use unreal4u\TelegramAPI\Abstracts\KeyboardMethods;
 use unreal4u\TelegramAPI\Telegram\Types\Message;
 use unreal4u\TelegramAPI\Telegram\Types\Update;
 
-abstract class AbstractCommand {
+abstract class AbstractCommand
+{
 
   const PARSE_MODE_PLAIN = '';
   const PARSE_MODE_HTML = 'HTML';
@@ -25,14 +26,14 @@ abstract class AbstractCommand {
    *
    * @var string
    */
-  static public $name = NULL;
+  static public $name = null;
 
   /**
    * Command description.
    *
    * @var string
    */
-  static public $description = NULL;
+  static public $description = null;
 
   /**
    * Array of REGEX patterns this command supports.
@@ -46,7 +47,7 @@ abstract class AbstractCommand {
    *
    * @var bool
    */
-  static public $visible = TRUE;
+  static public $visible = true;
 
   /**
    * Permissions required to execute this command.
@@ -75,7 +76,8 @@ abstract class AbstractCommand {
    *
    * @return string
    */
-  static public function getName(): string {
+  static public function getName(): string
+  {
     return static::$name;
   }
 
@@ -84,7 +86,8 @@ abstract class AbstractCommand {
    *
    * @return string
    */
-  static public function getDescription(): string {
+  static public function getDescription(): string
+  {
     return static::$description;
   }
 
@@ -93,7 +96,8 @@ abstract class AbstractCommand {
    *
    * @return array
    */
-  static public function getSupportedPatterns(): array {
+  static public function getSupportedPatterns(): array
+  {
     return static::$supported_patterns;
   }
 
@@ -102,7 +106,8 @@ abstract class AbstractCommand {
    *
    * @return bool
    */
-  static public function isVisible(): bool {
+  static public function isVisible(): bool
+  {
     return static::$visible;
   }
 
@@ -111,7 +116,8 @@ abstract class AbstractCommand {
    *
    * @return array
    */
-  static public function getRequiredPermissions(): array {
+  static public function getRequiredPermissions(): array
+  {
     return static::$required_permissions;
   }
 
@@ -121,7 +127,8 @@ abstract class AbstractCommand {
    * @param \Kaula\TelegramBundle\Telegram\CommandBus $bus
    * @param \unreal4u\TelegramAPI\Telegram\Types\Update $update
    */
-  public function __construct(CommandBus $bus, Update $update) {
+  public function __construct(CommandBus $bus, Update $update)
+  {
     $this->bus = $bus;
     $this->update = $update;
   }
@@ -131,10 +138,14 @@ abstract class AbstractCommand {
    *
    * @return AbstractCommand
    */
-  public function initialize() {
+  public function initialize()
+  {
     // Parse command "/start@BotName params"
-    if (preg_match('/^\/[a-z_]+@?[a-z_]*\s*(.*)$/i',
-      $this->getUpdate()->message->text, $matches)) {
+    if (preg_match(
+      '/^\/[a-z_]+@?[a-z_]*\s*(.*)$/i',
+      $this->getUpdate()->message->text,
+      $matches
+    )) {
       if (isset($matches[1])) {
         $this->parameter = $matches[1];
       }
@@ -170,14 +181,27 @@ abstract class AbstractCommand {
    *
    * @return Message
    */
-  public function replyWithMessage($text, $parse_mode = '', $reply_markup = NULL, $disable_web_page_preview = FALSE, $disable_notification = FALSE, $reply_to_message_id = NULL) {
+  public function replyWithMessage(
+    $text,
+    $parse_mode = null,
+    $reply_markup = null,
+    $disable_web_page_preview = false,
+    $disable_notification = false,
+    $reply_to_message_id = null
+  ) {
     $update = $this->getUpdate();
 
     return $this->getBus()
       ->getBot()
-      ->sendMessage($update->message->chat->id, $text, $parse_mode,
-        $reply_markup, $disable_web_page_preview, $disable_notification,
-        $reply_to_message_id);
+      ->sendMessage(
+        $update->message->chat->id,
+        $text,
+        $parse_mode,
+        $reply_markup,
+        $disable_web_page_preview,
+        $disable_notification,
+        $reply_to_message_id
+      );
   }
 
   /**
@@ -201,7 +225,8 @@ abstract class AbstractCommand {
    *   record_audio or upload_audio for audio files, upload_document for
    *   general files, find_location for location data.
    */
-  public function replyWithAction($action = 'typing') {
+  public function replyWithAction($action = 'typing')
+  {
     $update = $this->getUpdate();
     $this->getBus()
       ->getBot()
@@ -211,21 +236,24 @@ abstract class AbstractCommand {
   /**
    * @return \Kaula\TelegramBundle\Telegram\CommandBus
    */
-  public function getBus(): CommandBus {
+  public function getBus(): CommandBus
+  {
     return $this->bus;
   }
 
   /**
    * @return \unreal4u\TelegramAPI\Telegram\Types\Update
    */
-  public function getUpdate(): Update {
+  public function getUpdate(): Update
+  {
     return $this->update;
   }
 
   /**
    * @return string
    */
-  public function getParameter(): string {
+  public function getParameter(): string
+  {
     return $this->parameter;
   }
 
