@@ -102,7 +102,8 @@ class RegisterCommand extends AbstractCommand
       if ($this->registerUser($message->contact)) {
         $this->replyWithMessage(
           'Вы зарегистрированы с номером телефона '.
-          $message->contact->phone_number
+          $message->contact->phone_number.PHP_EOL.PHP_EOL.
+          'Теперь у вас есть доступ к командам для зарегистрированных пользователей, проверьте их список по команде /help'
         );
       }
     } elseif (self::BTN_CANCEL == $message->text) {
