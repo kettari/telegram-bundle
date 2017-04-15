@@ -96,7 +96,7 @@ class PushCommand extends AbstractCommand
       ->getContainer()
       ->get('doctrine');
     $notifications = $d->getRepository('KaulaTelegramBundle:Notification')
-      ->findAll();
+      ->findBy([], ['order' => 'ASC']);
     /** @var \Kaula\TelegramBundle\Entity\Notification $notification_item */
     foreach ($notifications as $notification_item) {
       $notification_btn = new KeyboardButton();
