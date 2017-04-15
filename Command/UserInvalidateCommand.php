@@ -25,6 +25,7 @@ class UserInvalidateCommand extends AbstractCommand
       ->setHelp(
         'Blocks fired employees, checks inactive user accounts in the Tallanto.'
       );
+    $this->setBlocking(true);
   }
 
   /**
