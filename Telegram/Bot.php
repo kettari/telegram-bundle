@@ -898,7 +898,7 @@ class Bot
    *
    * @param int $bump_size Count of items to send in this bump operation
    */
-  public function bumpQueue($bump_size = 50)
+  public function bumpQueue($bump_size = 10)
   {
     $stopwatch = new Stopwatch();
     $stopwatch->start('bumpQueue');

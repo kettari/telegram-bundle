@@ -36,7 +36,7 @@ class QueueBumpCommand extends AbstractCommand
 
     $bot = $this->getContainer()
       ->get('telegram_bot');
-    $bot->bumpQueue();
+    $bot->bumpQueue(200);
 
     $this->io->success('Queue bumped');
   }
