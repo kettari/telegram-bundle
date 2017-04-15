@@ -962,7 +962,7 @@ class Bot
       [
         'items_count'      => $items_count,
         'time_elapsed'     => sprintf('%.2f', $elapsed),
-        'items_per_second' => sprintf('%.2f', ($items_count / $elapsed)),
+        'items_per_second' => sprintf('%.2f', ($elapsed > 0) ? ($items_count / $elapsed) : 0),
       ]
     );
   }

@@ -11,6 +11,7 @@ namespace Kaula\TelegramBundle\Telegram\Command;
 
 use unreal4u\TelegramAPI\Telegram\Types\KeyboardButton;
 use unreal4u\TelegramAPI\Telegram\Types\ReplyKeyboardMarkup;
+use unreal4u\TelegramAPI\Telegram\Types\ReplyKeyboardRemove;
 
 class PushCommand extends AbstractCommand
 {
@@ -240,14 +241,8 @@ class PushCommand extends AbstractCommand
 
       return;
     }
-    $this->replyWithMessage(
-      sprintf(
-        'Рассылка в канал «%s» подтверждена и выслана (%d символов).',
-        $push_info['notification'],
-        mb_strlen($push_info['push_text'])
-      )
-    );
 
+    // Push the message
     $this->getBus()
       ->getBot()
       ->pushNotification(
@@ -258,6 +253,17 @@ class PushCommand extends AbstractCommand
     $this->getBus()
       ->getBot()
       ->bumpQueue();
+
+    // Report job done
+    $this->replyWithMessage(
+      sprintf(
+        'Рассылка в канал «%s» подтверждена и выслана (%d символов).',
+        $push_info['notification'],
+        mb_strlen($push_info['push_text'])
+      ),
+      null,
+      new ReplyKeyboardRemove()
+    );
   }
 
 }
