@@ -59,17 +59,17 @@ abstract class AbstractCommand
   /**
    * @var CommandBus
    */
-  protected $bus;
+  private $bus;
 
   /**
    * @var Update
    */
-  protected $update;
+  private $update;
 
   /**
    * @var string
    */
-  protected $parameter = '';
+  private $parameter = '';
 
   /**
    * Returns name of the command.

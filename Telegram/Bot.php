@@ -22,6 +22,7 @@ use Kaula\TelegramBundle\Telegram\Command\ListRolesCommand;
 use Kaula\TelegramBundle\Telegram\Command\PushCommand;
 use Kaula\TelegramBundle\Telegram\Command\SettingsCommand;
 use Kaula\TelegramBundle\Telegram\Command\StartCommand;
+use Kaula\TelegramBundle\Telegram\Command\UserManCommand;
 use Kaula\TelegramBundle\Telegram\Listener\GroupCreatedEvent;
 use Kaula\TelegramBundle\Telegram\Listener\IdentityWatchdogEvent;
 use Kaula\TelegramBundle\Telegram\Listener\LeftChatMemberEvent;
@@ -131,7 +132,8 @@ class Bot
       ->registerCommand(SettingsCommand::class)
       ->registerCommand(HelpCommand::class)
       ->registerCommand(ListRolesCommand::class)
-      ->registerCommand(PushCommand::class);
+      ->registerCommand(PushCommand::class)
+      ->registerCommand(UserManCommand::class);
 
     // Instantiate user headquarters
     $this->user_hq = new UserHq($container);

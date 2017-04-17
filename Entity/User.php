@@ -14,7 +14,7 @@ use Doctrine\ORM\Mapping as ORM;
 use Doctrine\ORM\Mapping\Index;
 
 /**
- * @ORM\Entity
+ * @ORM\Entity(repositoryClass="Kaula\TelegramBundle\Repository\UserRepository")
  * @ORM\Table(name="user",indexes={@Index(name="tallanto_user_idx",columns={"tallanto_user_id","blocked"})})
  */
 class User
