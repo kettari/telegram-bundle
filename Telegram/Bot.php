@@ -11,6 +11,7 @@ namespace Kaula\TelegramBundle\Telegram;
 
 use GuzzleHttp\Exception\ClientException;
 use InvalidArgumentException;
+use Kaula\TelegramBundle\Entity\Log;
 use Kaula\TelegramBundle\Entity\Queue;
 
 use Kaula\TelegramBundle\Entity\User;
@@ -178,6 +179,9 @@ class Bot
     if (is_null($update)) {
       $update = $this->scrapIncomingData();
     }
+    // Log incoming message
+    $this->log($update);
+    // Process it
     $update_type = $this->whatUpdateType($update);
     $this->getUserHq()
       ->stashUser($update_type, $update);
@@ -553,6 +557,9 @@ class Bot
         $tgLog = new TgLog($config['api_token'], $l);
         $this->getThrottleSingleton()
           ->requestSent();
+
+        // Log transaction
+        $this->log($method);
 
         return $tgLog->performApiRequest($method);
       } else {
@@ -962,9 +969,87 @@ class Bot
       [
         'items_count'      => $items_count,
         'time_elapsed'     => sprintf('%.2f', $elapsed),
-        'items_per_second' => sprintf('%.2f', ($elapsed > 0) ? ($items_count / $elapsed) : 0),
+        'items_per_second' => sprintf(
+          '%.2f',
+          ($elapsed > 0) ? ($items_count / $elapsed) : 0
+        ),
       ]
     );
+  }
+
+  /**
+   * Log transaction to the database.
+   *
+   * @param mixed $telegram_data
+   */
+  private function log($telegram_data)
+  {
+    $direction = 'undefined';
+    $type = null;
+    $chat_id = null;
+    $content = null;
+
+    // If $telegram_data instance of TelegramMethods, it is always outbound message
+    if ($telegram_data instanceof TelegramMethods) {
+      $direction = 'out';
+      $type = get_class($telegram_data);
+      $content = json_encode(
+        $telegram_data->export(),
+        JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE
+      );
+    }
+    // We can get Update only from Telegram, so it's always inbound
+    if ($telegram_data instanceof Update) {
+      $direction = 'in';
+      $type = $this->whatUpdateType($telegram_data);
+      $content = json_encode(
+        get_object_vars($telegram_data),
+        JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE
+      );
+    }
+
+    /**
+     * INBOUND
+     */
+    if ($telegram_data instanceof Update) {
+      if (!is_null($telegram_data->message)) {
+        $chat_id = $telegram_data->message->chat->id;
+      } elseif (!is_null($telegram_data->edited_message)) {
+        $chat_id = $telegram_data->edited_message->chat->id;
+      } elseif (!is_null($telegram_data->channel_post)) {
+        $chat_id = $telegram_data->channel_post->chat->id;
+      } elseif (!is_null($telegram_data->callback_query)) {
+        if (!is_null($telegram_data->callback_query->message)) {
+          $chat_id = $telegram_data->callback_query->message->chat->id;
+        }
+      }
+    }
+
+    /**
+     * OUTBOUND
+     **/
+    if ($telegram_data instanceof SendMessage) {
+      $chat_id = $telegram_data->chat_id;
+    }
+    if ($telegram_data instanceof SendChatAction) {
+      $chat_id = $telegram_data->chat_id;
+    }
+    if ($telegram_data instanceof EditMessageReplyMarkup) {
+      $chat_id = $telegram_data->chat_id;
+    }
+
+    $log = new Log();
+    $log->setCreated(new \DateTime('now', new \DateTimeZone('UTC')))
+      ->setDirection($direction)
+      ->setType($type)
+      ->setTelegramChatId($chat_id)
+      ->setContent($content);
+
+    $em = $this->getContainer()
+      ->get('doctrine')
+      ->getManager();
+    $em->persist($log);
+    $em->flush();
   }
 
 }
