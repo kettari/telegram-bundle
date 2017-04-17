@@ -38,7 +38,7 @@ class RegisterCommand extends AbstractCommand
     if ('private' == $this->getUpdate()->message->chat->type) {
       $this->replyWithMessage(
         'Чтобы зарегистрироваться, мне нужно узнать ваш телефон.'.PHP_EOL.
-        PHP_EOL.'Пришлите его мне с помощью кнопки «Сообщить номер телефона».',
+        PHP_EOL.'Пришлите мне его, нажав кнопку «Сообщить номер телефона» и подтвердите своё согласие.',
         self::PARSE_MODE_PLAIN,
         $this->getReplyKeyboardMarkup()
       );
