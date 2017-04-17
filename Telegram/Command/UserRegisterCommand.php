@@ -100,38 +100,34 @@ class UserRegisterCommand extends RegisterCommand
 
       return false;
 
-    } else {
+    }
 
-      // Single contact found in the Tallanto CRM, proceed
-      $iterator = $user_aggregator->getIterator();
-      /** @var \Tallanto\Api\Entity\User $tallanto_user */
-      $tallanto_user = $iterator->current();
-      if (($tallanto_user->getPhoneMobile() != $phone) &&
-        ($tallanto_user->getPhoneWork() != $phone)
-      ) {
-        throw new \RuntimeException(
-          'Mobile and Work phones from Tallanto do not match Telegram contact phone '.
-          $phone
-        );
-      }
+    // Single contact found in the Tallanto CRM, proceed
+    $iterator = $user_aggregator->getIterator();
+    /** @var \Tallanto\Api\Entity\User $tallanto_user */
+    $tallanto_user = $iterator->current();
+    if (($tallanto_user->getPhoneMobile() != $phone) &&
+      ($tallanto_user->getPhoneWork() != $phone)
+    ) {
+      throw new \RuntimeException(
+        'Mobile and Work phones from Tallanto do not match Telegram contact phone '.
+        $phone
+      );
+    }
 
-      // Check if user is active
-      if ('Active' != $tallanto_user->getUserStatus()) {
-        $this->replyWithMessage(
-          'К сожалению, вы не являетесь действующим сотрудником Школы.'.PHP_EOL.
-          PHP_EOL.
-          'Регистрация не завершена. Обратитесь в службу технической поддержки Школы, пожалуйста.'
-        );
+    // Check if user is active
+    if ('Active' != $tallanto_user->getUserStatus()) {
+      $this->replyWithMessage(
+        'К сожалению, вы не являетесь действующим сотрудником Школы.'.PHP_EOL.
+        PHP_EOL.
+        'Регистрация не завершена. Обратитесь в службу технической поддержки Школы, пожалуйста.'
+      );
 
-        return false;
-      }
-
-      // OK
-      $tallanto_user_id = $tallanto_user->getId();
+      return false;
     }
 
     // Update user with Tallanto ID
-    $this->updateTallantoUserInformation($tallanto_user_id);
+    $this->updateTallantoUserInformation($tallanto_user);
 
     return true;
   }
@@ -139,9 +135,9 @@ class UserRegisterCommand extends RegisterCommand
   /**
    * Updates user information in the database.
    *
-   * @param string $tallanto_user_id
+   * @param \Tallanto\Api\Entity\User $tallanto_user
    */
-  protected function updateTallantoUserInformation($tallanto_user_id)
+  protected function updateTallantoUserInformation($tallanto_user)
   {
     $tu = $this->getUpdate()->message->from;
     $d = $this->getBus()
@@ -157,8 +153,9 @@ class UserRegisterCommand extends RegisterCommand
     if (!$user) {
       throw new \RuntimeException('User is expected to exist at this point.');
     }
-    $user->setTallantoUserId($tallanto_user_id);
-    $em->persist($user);
+    $user->setTallantoUserId($tallanto_user->getId())
+      ->setExternalLastName($tallanto_user->getLastName())
+      ->setExternalFirstName($tallanto_user->getFirstName());
 
     // Commit changes
     $em->flush();

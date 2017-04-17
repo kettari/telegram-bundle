@@ -91,6 +91,18 @@ class User
   private $blocked = false;
 
   /**
+   * @ORM\Column(type="string",length=255,nullable=true)
+   *
+   */
+  private $external_last_name;
+
+  /**
+   * @ORM\Column(type="string",length=255,nullable=true)
+   *
+   */
+  private $external_first_name;
+
+  /**
    * Get id
    *
    * @return integer
@@ -371,5 +383,53 @@ class User
   public function isBlocked()
   {
     return $this->blocked;
+  }
+
+  /**
+   * Set externalLastName
+   *
+   * @param string $externalLastName
+   *
+   * @return User
+   */
+  public function setExternalLastName($externalLastName)
+  {
+    $this->external_last_name = $externalLastName;
+
+    return $this;
+  }
+
+  /**
+   * Get externalLastName
+   *
+   * @return string
+   */
+  public function getExternalLastName()
+  {
+    return $this->external_last_name;
+  }
+
+  /**
+   * Set externalFirstName
+   *
+   * @param string $externalFirstName
+   *
+   * @return User
+   */
+  public function setExternalFirstName($externalFirstName)
+  {
+    $this->external_first_name = $externalFirstName;
+
+    return $this;
+  }
+
+  /**
+   * Get externalFirstName
+   *
+   * @return string
+   */
+  public function getExternalFirstName()
+  {
+    return $this->external_first_name;
   }
 }
