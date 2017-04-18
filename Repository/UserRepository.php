@@ -4,7 +4,7 @@ namespace Kaula\TelegramBundle\Repository;
 
 
 use Doctrine\ORM\EntityRepository;
-use Psr\Log\LoggerInterface;
+
 
 /**
  * UserRepository
@@ -29,7 +29,7 @@ class UserRepository extends EntityRepository
     $parameters = [];
     $i = 1;
     foreach ($parts as $part) {
-      $param = 'needle_'.$i;
+      $param_name = 'needle_'.$i++;
       $where .= sprintf(
         ' AND (u.first_name LIKE :%s OR 
           u.last_name LIKE :%s OR 
@@ -38,15 +38,15 @@ class UserRepository extends EntityRepository
           u.phone LIKE :%s OR
           u.external_last_name LIKE :%s OR 
           u.external_first_name LIKE :%s)',
-        $param,
-        $param,
-        $param,
-        $param,
-        $param,
-        $param,
-        $param
+        $param_name,
+        $param_name,
+        $param_name,
+        $param_name,
+        $param_name,
+        $param_name,
+        $param_name
       );
-      $parameters[$i] = $part;
+      $parameters[$param_name] = $part;
     }
     $sql = sprintf(
       'SELECT u FROM KaulaTelegramBundle:User u WHERE %s
@@ -58,9 +58,8 @@ class UserRepository extends EntityRepository
     $query = $this->getEntityManager()
       ->createQuery($sql);
     // Populate parameters
-    foreach ($parameters as $index => $part) {
-      $param = 'needle_'.$index;
-      $query->setParameter($param, '%'.$part.'%');
+    foreach ($parameters as $param_name => $part) {
+      $query->setParameter($param_name, '%'.$part.'%');
     }
 
     return $query->getResult();
