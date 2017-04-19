@@ -126,7 +126,7 @@ class CommandBus
               'Извините, у вас недостаточно прав для доступа к этой команде.'
             );
 
-          return false;
+          return true;
         }
 
         // User is authorized

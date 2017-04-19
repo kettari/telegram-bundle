@@ -435,25 +435,20 @@ class Bot
   public function executeHook(Update $update)
   {
     // Check for hooks and execute if any found
+    $hooker = $this->getBus()
+      ->getHooker();
     /** @var \Kaula\TelegramBundle\Entity\Hook $hook */
-    if ($hook = $this->getBus()
-      ->getHooker()
-      ->findHook($update)
-    ) {
+    if ($hook = $hooker->findHook($update)) {
 
       if (!$this->getUserHq()
         ->isUserBlocked()
       ) {
         // User is active - execute & delete the hook
-        $this->getBus()
-          ->getHooker()
-          ->executeHook($hook, $update)
+        $hooker->executeHook($hook, $update)
           ->deleteHook($hook);
       } else {
         // User is blocked - just delete the hook
-        $this->getBus()
-          ->getHooker()
-          ->deleteHook($hook);
+        $hooker->deleteHook($hook);
       }
 
     }
