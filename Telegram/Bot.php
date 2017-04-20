@@ -39,6 +39,7 @@ use unreal4u\TelegramAPI\Abstracts\KeyboardMethods;
 use unreal4u\TelegramAPI\Abstracts\TelegramMethods;
 use unreal4u\TelegramAPI\Telegram\Methods\AnswerCallbackQuery;
 use unreal4u\TelegramAPI\Telegram\Methods\EditMessageReplyMarkup;
+use unreal4u\TelegramAPI\Telegram\Methods\EditMessageText;
 use unreal4u\TelegramAPI\Telegram\Methods\SendChatAction;
 use unreal4u\TelegramAPI\Telegram\Methods\SendMessage;
 use unreal4u\TelegramAPI\Telegram\Types\Message;
@@ -646,6 +647,62 @@ class Bot
 
     /** @var Message $message */
     $message = $this->performRequest($send_message);
+
+    return $message;
+  }
+
+  /**
+   * Use this method to edit only the reply markup of messages sent by the bot
+   * or via the bot (for inline bots). On success, if edited message is sent by
+   * the bot, the edited Message is returned, otherwise True is returned.
+   *
+   * @param integer|string $chat_id Required if inline_message_id is not
+   *   specified. Unique identifier for the target chat or username of the
+   *   target channel (in the format @channelusername)
+   * @param integer $message_id Required if inline_message_id is not specified.
+   *   Identifier of the sent message
+   * @param string $inline_message_id Required if chat_id and message_id are
+   *   not specified. Identifier of the inline message
+   * @param string $text Text of the message to be sent
+   * @param string $parse_mode Send Markdown or HTML, if you want Telegram apps
+   *   to show bold, italic, fixed-width text or inline URLs in your bot's
+   *   message.
+   * @param KeyboardMethods $reply_markup Additional interface options. A
+   *   JSON-serialized object for an inline keyboard, custom reply keyboard,
+   *   instructions to remove reply keyboard or to force a reply from the user.
+   * @param bool $disable_web_page_preview Disables link previews for links in
+   *   this message
+   * @return \unreal4u\TelegramAPI\Telegram\Types\Message
+   */
+  public function editMessageText(
+    $chat_id = null,
+    $message_id = null,
+    $inline_message_id = null,
+    $text,
+    $parse_mode = null,
+    $reply_markup = null,
+    $disable_web_page_preview = false
+  ) {
+    /** @var LoggerInterface $l */
+    $l = $this->container->get('logger');
+
+    $edit_message_text = new EditMessageText();
+    $edit_message_text->chat_id = $chat_id;
+    $edit_message_text->message_id = $message_id;
+    $edit_message_text->inline_message_id = $inline_message_id;
+    $edit_message_text->text = $text;
+    $edit_message_text->parse_mode = $parse_mode;
+    $edit_message_text->reply_markup = $reply_markup;
+    $edit_message_text->disable_web_page_preview = $disable_web_page_preview;
+
+    // Allow some debug info
+    $l->debug(
+      'Bot is editing message text',
+      ['message' => print_r($edit_message_text, true)]
+    );
+
+    /** @var Message $message */
+    $message = $this->performRequest($edit_message_text);
 
     return $message;
   }
