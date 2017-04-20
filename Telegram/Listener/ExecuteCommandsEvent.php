@@ -13,7 +13,8 @@ use Kaula\TelegramBundle\Telegram\Bot;
 use Psr\Log\LoggerInterface;
 use unreal4u\TelegramAPI\Telegram\Types\Update;
 
-class ExecuteCommandsEvent implements EventListenerInterface {
+class ExecuteCommandsEvent implements EventListenerInterface
+{
 
   /**
    * Executes event.
@@ -22,22 +23,35 @@ class ExecuteCommandsEvent implements EventListenerInterface {
    * @param \unreal4u\TelegramAPI\Telegram\Types\Update $update
    * @return void
    */
-  public function execute(Bot $bot, Update $update) {
+  public function execute(Bot $bot, Update $update)
+  {
     /** @var LoggerInterface $l */
     $l = $bot->getContainer()
       ->get('logger');
 
     // Parse command "/start@BotName params"
-    if (preg_match('/^\/([a-z_]+)@?([a-z_]*)\s*(.*)$/i', $update->message->text,
-      $matches)) {
+    if (preg_match(
+      '/^\/([a-z_]+)@?([a-z_]*)\s*(.*)$/i',
+      $update->message->text,
+      $matches
+    )) {
 
       if (isset($matches[1]) && ($command_name = $matches[1])) {
-        $l->debug('Detected incoming command /{command_name}',
-          ['command_name' => $command_name]);
+        $l->debug(
+          'Detected incoming command /{command_name}',
+          ['command_name' => $command_name]
+        );
 
         // Execute command
-        $bot->getBus()
-          ->executeCommand($command_name, $update);
+        if (!$bot->getBus()
+          ->executeCommand($command_name, $update)
+        ) {
+          // Command not found
+          $bot->sendMessage(
+            $update->message->chat->id,
+            'Извините, такой команды я не знаю.'
+          );
+        }
 
         return;
       }
