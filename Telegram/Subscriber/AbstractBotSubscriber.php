@@ -23,7 +23,6 @@ abstract class AbstractBotSubscriber
    * AbstractBotSubscriber constructor.
    *
    * @param Bot $bot
-   * @param Registry $doctrine
    */
   public function __construct(Bot $bot)
   {

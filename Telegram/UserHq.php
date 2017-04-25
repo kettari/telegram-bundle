@@ -9,7 +9,7 @@
 namespace Kaula\TelegramBundle\Telegram;
 
 
-use Doctrine\Bundle\DoctrineBundle\Registry;
+
 use Doctrine\Common\Collections\ArrayCollection;
 use Kaula\TelegramBundle\Entity\User;
 use unreal4u\TelegramAPI\Telegram\Types\Update;

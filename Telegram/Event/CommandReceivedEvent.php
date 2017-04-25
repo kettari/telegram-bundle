@@ -9,10 +9,7 @@
 namespace Kaula\TelegramBundle\Telegram\Event;
 
 
-
-
-
-class UpdateIncomingEvent extends AbstractUpdateEvent
+class CommandReceivedEvent extends AbstractMessageEvent
 {
-  const NAME = 'telegram.update.incoming';
+  const NAME = 'telegram.command.received';
 }

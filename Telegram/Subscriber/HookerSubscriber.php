@@ -9,6 +9,7 @@
 namespace Kaula\TelegramBundle\Telegram\Subscriber;
 
 
+use Kaula\TelegramBundle\Entity\Hook;
 use Kaula\TelegramBundle\Telegram\Event\UpdateReceivedEvent;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use unreal4u\TelegramAPI\Telegram\Types\Update;
@@ -36,7 +37,7 @@ class HookerSubscriber extends AbstractBotSubscriber implements EventSubscriberI
    */
   public static function getSubscribedEvents()
   {
-    return [UpdateReceivedEvent::NAME => ['onUpdateReceived', 89000]];
+    return [UpdateReceivedEvent::NAME => ['onUpdateReceived', 70000]];
   }
 
   /**
@@ -60,20 +61,16 @@ class HookerSubscriber extends AbstractBotSubscriber implements EventSubscriberI
     $hooker = $this->getBot()
       ->getBus()
       ->getHooker();
-    /** @var \Kaula\TelegramBundle\Entity\Hook $hook */
+    /** @var Hook $hook */
     if ($hook = $hooker->findHook($update)) {
 
-      if (!$this->getBot()
-        ->getUserHq()
-        ->isUserBlocked()
-      ) {
-        // User is active - execute & delete the hook
-        $hooker->executeHook($hook, $update)
-          ->deleteHook($hook);
-      } else {
-        // User is blocked - just delete the hook
-        $hooker->deleteHook($hook);
-      }
+      // Set flag that request is handled
+      $this->getBot()
+        ->setRequestHandled(true);
+      // Execute & delete the hook
+      $hooker->executeHook($hook, $update)
+        ->deleteHook($hook);
+
 
     }
   }

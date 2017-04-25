@@ -3,16 +3,13 @@
  * Created by PhpStorm.
  * User: ant
  * Date: 25.04.2017
- * Time: 13:15
+ * Time: 19:03
  */
 
 namespace Kaula\TelegramBundle\Telegram\Event;
 
 
-
-
-
-class UpdateIncomingEvent extends AbstractUpdateEvent
+class GroupCreatedEvent extends AbstractMessageEvent
 {
-  const NAME = 'telegram.update.incoming';
+  const NAME = 'telegram.group.created';
 }

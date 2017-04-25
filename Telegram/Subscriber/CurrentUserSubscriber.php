@@ -35,7 +35,7 @@ class CurrentUserSubscriber extends AbstractBotSubscriber implements EventSubscr
    */
   public static function getSubscribedEvents()
   {
-    return [UpdateReceivedEvent::NAME => ['onUpdateReceived', 89000]];
+    return [UpdateReceivedEvent::NAME => ['onUpdateReceived', 80000]];
   }
 
   /**

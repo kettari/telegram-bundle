@@ -10,7 +10,13 @@ namespace Kaula\TelegramBundle\Telegram\Subscriber;
 
 
 use Exception;
+use Kaula\TelegramBundle\Telegram\Bot;
+use Kaula\TelegramBundle\Telegram\Event\JoinChatMemberEvent;
+use Kaula\TelegramBundle\Telegram\Event\LeftChatMemberEvent;
 use Kaula\TelegramBundle\Telegram\Event\MessageReceivedEvent;
+use Kaula\TelegramBundle\Telegram\Event\MigrateFromChatIdEvent;
+use Kaula\TelegramBundle\Telegram\Event\MigrateToChatIdEvent;
+use Kaula\TelegramBundle\Telegram\Event\TextReceivedEvent;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
@@ -58,6 +64,7 @@ class MessageSubscriber extends AbstractBotSubscriber implements EventSubscriber
         ->whatMessageType($event->getMessage());
       $l->debug('Message type: "{type}"', ['type' => $message_type]);
 
+      // Dispatch specific message types: text, document, audio, etc.
       $this->dispatchSpecificMessageTypes($event, $message_type);
 
     } catch (Exception $e) {
@@ -65,36 +72,7 @@ class MessageSubscriber extends AbstractBotSubscriber implements EventSubscriber
         'Exception while handling update with message: {error_message}',
         ['error_message' => $e->getMessage(), 'error_object' => $e]
       );
-      $this->sendVerboseMessage($event, $e);
-    }
-  }
-
-  /**
-   * Tries to send verbose message if debug environment detected.
-   *
-   * @param MessageReceivedEvent $event
-   * @param \Exception $e
-   */
-  private function sendVerboseMessage(MessageReceivedEvent $event, Exception $e) {
-    try {
-      $this->getBot()
-        ->sendMessage(
-          $event->getMessage()->chat->id,
-          'На сервере произошла ошибка, пожалуйста, сообщите системному администратору.'
-        );
-
-      if ('dev' == $this->getBot()
-          ->getContainer()
-          ->getParameter("kernel.environment")
-      ) {
-        $this->getBot()
-          ->sendMessage(
-            $event->getMessage()->chat->id,
-            $e->getMessage()
-          );
-      }
-    } catch (Exception $passthrough) {
-      // Do nothing
+      $this->sendVerboseReply($event, $e);
     }
   }
 
@@ -104,10 +82,67 @@ class MessageSubscriber extends AbstractBotSubscriber implements EventSubscriber
    * @param MessageReceivedEvent $event
    * @param integer $message_type
    */
-  private function dispatchSpecificMessageTypes(MessageReceivedEvent $event, $message_type)
-  {
-    switch ($message_type) {
+  private function dispatchSpecificMessageTypes(
+    MessageReceivedEvent $event,
+    $message_type
+  ) {
+    $dispatcher = $this->getBot()
+      ->getEventDispatcher();
 
+    // Dispatch text event
+    if ($message_type & Bot::MT_TEXT) {
+      $text_received_event = new TextReceivedEvent($event->getUpdate());
+      $dispatcher->dispatch(TextReceivedEvent::NAME, $text_received_event);
+    }
+    // Dispatch chat member joined event
+    if ($message_type & Bot::MT_NEW_CHAT_MEMBER) {
+      $join_member_event = new JoinChatMemberEvent($event->getUpdate());
+      $dispatcher->dispatch(JoinChatMemberEvent::NAME, $join_member_event);
+    }
+    // Dispatch chat member left event
+    if ($message_type & Bot::MT_LEFT_CHAT_MEMBER) {
+      $left_member_event = new LeftChatMemberEvent($event->getUpdate());
+      $dispatcher->dispatch(LeftChatMemberEvent::NAME, $left_member_event);
+    }
+    // Dispatch migration to chat ID event
+    if ($message_type & Bot::MT_MIGRATE_TO_CHAT_ID) {
+      $migrate_to_chat_event = new MigrateToChatIdEvent($event->getUpdate());
+      $dispatcher->dispatch(MigrateToChatIdEvent::NAME, $migrate_to_chat_event);
+    }
+    // Dispatch migration from chat ID event
+    if ($message_type & Bot::MT_MIGRATE_FROM_CHAT_ID) {
+      $migrate_from_chat_event = new MigrateFromChatIdEvent($event->getUpdate());
+      $dispatcher->dispatch(MigrateFromChatIdEvent::NAME, $migrate_from_chat_event);
+    }
+  }
+
+  /**
+   * Tries to send verbose message if debug environment detected.
+   *
+   * @param MessageReceivedEvent $event
+   * @param \Exception $e
+   */
+  private function sendVerboseReply(MessageReceivedEvent $event, Exception $e)
+  {
+    try {
+      $this->getBot()
+        ->sendMessage(
+          $event->getMessage()->chat->id,
+          'На сервере произошла ошибка, пожалуйста, сообщите системному администратору.'
+        );
+
+      if ('dev' == $this->getBot()
+          ->getContainer()
+          ->getParameter('kernel.environment')
+      ) {
+        $this->getBot()
+          ->sendMessage(
+            $event->getMessage()->chat->id,
+            $e->getMessage()
+          );
+      }
+    } catch (Exception $passthrough) {
+      // Do nothing
     }
   }
 
