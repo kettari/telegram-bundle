@@ -9,7 +9,7 @@
 namespace Kaula\TelegramBundle\Telegram\Event;
 
 
-use SensioLabs\Security\Exception\RuntimeException;
+use RuntimeException;
 use unreal4u\TelegramAPI\Telegram\Types\Update;
 
 class TextReceivedEvent extends AbstractMessageEvent

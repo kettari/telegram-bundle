@@ -10,6 +10,7 @@ namespace Kaula\TelegramBundle\Telegram\Subscriber;
 
 
 use Kaula\TelegramBundle\Entity\Log;
+use Kaula\TelegramBundle\Telegram\Event\RequestSentEvent;
 use Kaula\TelegramBundle\Telegram\Event\UpdateReceivedEvent;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use unreal4u\TelegramAPI\Telegram\Types\Update;
@@ -37,17 +38,28 @@ class LogSubscriber extends AbstractBotSubscriber implements EventSubscriberInte
    */
   public static function getSubscribedEvents()
   {
-    return [UpdateReceivedEvent::NAME => ['onUpdateReceived', 90000]];
+    return [UpdateReceivedEvent::NAME => ['onUpdateReceived', 90000],
+      RequestSentEvent::NAME => ['onRequestSent', -90000]];
   }
 
   /**
    * Writes incoming message to the log table in the database.
    *
-   * @param UpdateReceivedEvent $e
+   * @param UpdateReceivedEvent $event
    */
-  public function onUpdateReceived(UpdateReceivedEvent $e)
+  public function onUpdateReceived(UpdateReceivedEvent $event)
   {
-    $this->logInput($e->getUpdate());
+    $this->logInput($event->getUpdate());
+  }
+
+  /**
+   * Writes outgoing message to the log table in the database.
+   *
+   * @param RequestSentEvent $event
+   */
+  public function onRequestSent(RequestSentEvent $event)
+  {
+    //$this->logOutput($event);
   }
 
   /**

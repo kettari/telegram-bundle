@@ -10,13 +10,18 @@ namespace Kaula\TelegramBundle\Telegram;
 
 
 use Doctrine\Bundle\DoctrineBundle\Registry;
+use GuzzleHttp\Client;
 use GuzzleHttp\Exception\ClientException;
+use GuzzleHttp\Exception\RequestException;
 use Kaula\TelegramBundle\Entity\Log;
 use Kaula\TelegramBundle\Entity\Queue;
 use Kaula\TelegramBundle\Entity\User;
 use Kaula\TelegramBundle\Exception\KaulaTelegramBundleException;
-use Kaula\TelegramBundle\Exception\ThrottleControlException;
 use Kaula\TelegramBundle\Telegram\Event\MessageReceivedEvent;
+use Kaula\TelegramBundle\Telegram\Event\RequestBlockedEvent;
+use Kaula\TelegramBundle\Telegram\Event\RequestExceptionEvent;
+use Kaula\TelegramBundle\Telegram\Event\RequestSentEvent;
+use Kaula\TelegramBundle\Telegram\Event\RequestThrottleEvent;
 use Kaula\TelegramBundle\Telegram\Event\TerminateEvent;
 use Kaula\TelegramBundle\Telegram\Event\UpdateIncomingEvent;
 use Kaula\TelegramBundle\Telegram\Event\UpdateReceivedEvent;
@@ -31,9 +36,10 @@ use Kaula\TelegramBundle\Telegram\Subscriber\MessageSubscriber;
 use Kaula\TelegramBundle\Telegram\Subscriber\MigrationSubscriber;
 use Kaula\TelegramBundle\Telegram\Subscriber\TextSubscriber;
 use Psr\Log\LoggerInterface;
-use SensioLabs\Security\Exception\RuntimeException;
+use RuntimeException;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
+use Symfony\Component\HttpFoundation\Response as HttpResponse;
 use Symfony\Component\Stopwatch\Stopwatch;
 use unreal4u\TelegramAPI\Abstracts\KeyboardMethods;
 use unreal4u\TelegramAPI\Abstracts\TelegramMethods;
@@ -240,7 +246,7 @@ class Bot
     // Get update type
     $update_type = $this->whatUpdateType($update);
     $l->info(
-      'Handling update of type "{type}"',
+      'Handling update of the type "{type}"',
       ['type' => $update_type]
     );
 
@@ -388,49 +394,49 @@ class Bot
     /** @var LoggerInterface $l */
     $l = $this->getContainer()
       ->get('logger');
+    // Get configuration
+    $config = $this->getContainer()
+      ->getParameter('kaula_telegram');
+    $dispatcher = $this->getEventDispatcher();
+    $client = new Client();
 
     try {
-      // Get configuration
-      $config = $this->getContainer()
-        ->getParameter('kaula_telegram');
-
       // Throttle control to avoid flood
       if ($this->getThrottleSingleton()
         ->wait()
       ) {
-        $tgLog = new TgLog($config['api_token'], $l);
+        $tg_log = new TgLog($config['api_token'], $l, $client);
         $this->getThrottleSingleton()
           ->requestSent();
 
-        // Log transaction
-        $this->log($method);
+        // Perform request to the Telegram API
+        $response = $tg_log->performApiRequest($method);
 
-        return $tgLog->performApiRequest($method);
+        // Dispatch event when method is sent
+        $request_sent_event = new RequestSentEvent($method, $response);
+        $dispatcher->dispatch(RequestSentEvent::NAME, $request_sent_event);
+
+        return $response;
       } else {
-        throw new ThrottleControlException(
-          'Throttle control exception: was unable to wait()'
-        );
+        $this->dispatchThrottleException($method);
       }
     } catch (ClientException $e) {
-
-      // User blocked the bot
-      if (403 == $e->getCode()) {
-
-        if (method_exists($method, 'chat_id')) {
-          /** @noinspection PhpUndefinedFieldInspection */
-          $chat_id = $method->chat_id;
-        } else {
-          $chat_id = '(undefined)';
-        }
-
-        $l->notice(
-          'Bot is blocked in the chat {chat_id}',
-          ['chat_id' => $chat_id]
-        );
-      } else {
-        // Other errors
-        throw $e;
+      switch ($e->getCode()) {
+        case HttpResponse::HTTP_FORBIDDEN:
+          // User blocked the bot or bot is kicked out of the group
+          $this->dispatchBlockedException($method, $e);
+          break;
+        case HttpResponse::HTTP_TOO_MANY_REQUESTS:
+          // Flooded the server with requests :(
+          $this->dispatchThrottleException($method);
+          break;
+        default:
+          // Other 4xx HTTP code
+          $this->dispatchMethodException($method, $e);
+          break;
       }
+    } catch (RequestException $e) {
+      $this->dispatchMethodException($method, $e);
     }
 
     return null;
@@ -445,78 +451,70 @@ class Bot
   }
 
   /**
-   * Log transaction to the database.
-   *
-   * @param mixed $telegram_data
+   * @param mixed $method
    */
-  private function log($telegram_data)
+  private function dispatchThrottleException($method)
   {
-    $direction = 'undefined';
-    $type = null;
-    $chat_id = null;
-    $content = null;
+    $l = $this->getContainer()
+      ->get('logger');
+    $dispatcher = $this->getEventDispatcher();
 
-    // If $telegram_data instance of TelegramMethods, it is always outbound message
-    if ($telegram_data instanceof TelegramMethods) {
-      $direction = 'out';
-      $type = get_class($telegram_data);
-      $content = json_encode(
-        $telegram_data->export(),
-        JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE
-      );
-    }
-    // We can get Update only from Telegram, so it's always inbound
-    if ($telegram_data instanceof Update) {
-      $direction = 'in';
-      $type = $this->whatUpdateType($telegram_data);
-      $content = json_encode(
-        get_object_vars($telegram_data),
-        JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE
-      );
-    }
+    $l->error('Throttle exception');
 
-    /**
-     * INBOUND
-     */
-    if ($telegram_data instanceof Update) {
-      if (!is_null($telegram_data->message)) {
-        $chat_id = $telegram_data->message->chat->id;
-      } elseif (!is_null($telegram_data->edited_message)) {
-        $chat_id = $telegram_data->edited_message->chat->id;
-      } elseif (!is_null($telegram_data->channel_post)) {
-        $chat_id = $telegram_data->channel_post->chat->id;
-      } elseif (!is_null($telegram_data->callback_query)) {
-        if (!is_null($telegram_data->callback_query->message)) {
-          $chat_id = $telegram_data->callback_query->message->chat->id;
-        }
-      }
+    // Dispatch event when bot is blocked
+    $throttle_event = new RequestThrottleEvent($method, null);
+    $dispatcher->dispatch(RequestThrottleEvent::NAME, $throttle_event);
+  }
+
+  /**
+   * @param mixed $method
+   * @param ClientException $exception
+   */
+  private function dispatchBlockedException($method, ClientException $exception)
+  {
+    $l = $this->getContainer()
+      ->get('logger');
+    $dispatcher = $this->getEventDispatcher();
+
+    if (method_exists($method, 'chat_id')) {
+      /** @noinspection PhpUndefinedFieldInspection */
+      $chat_id = $method->chat_id;
+    } else {
+      $chat_id = null;
     }
 
-    /**
-     * OUTBOUND
-     **/
-    if ($telegram_data instanceof SendMessage) {
-      $chat_id = $telegram_data->chat_id;
-    }
-    if ($telegram_data instanceof SendChatAction) {
-      $chat_id = $telegram_data->chat_id;
-    }
-    if ($telegram_data instanceof EditMessageReplyMarkup) {
-      $chat_id = $telegram_data->chat_id;
-    }
+    $l->notice(
+      'Bot is blocked or kicked out of the chat "{chat_id}"',
+      ['chat_id' => $chat_id ?? '(undefined)']
+    );
 
-    $log = new Log();
-    $log->setCreated(new \DateTime('now', new \DateTimeZone('UTC')))
-      ->setDirection($direction)
-      ->setType($type)
-      ->setTelegramChatId($chat_id)
-      ->setContent($content);
+    // Dispatch event when bot is blocked
+    $blocked_event = new RequestBlockedEvent(
+      $chat_id, $method, $exception->getResponse()
+    );
+    $dispatcher->dispatch(RequestBlockedEvent::NAME, $blocked_event);
+  }
 
-    $em = $this->getContainer()
-      ->get('doctrine')
-      ->getManager();
-    $em->persist($log);
-    $em->flush();
+  /**
+   * @param mixed $method
+   * @param RequestException $exception
+   */
+  private function dispatchMethodException($method, RequestException $exception)
+  {
+    $l = $this->getContainer()
+      ->get('logger');
+    $dispatcher = $this->getEventDispatcher();
+
+    $l->error(
+      'Request exception: {code} {message}',
+      ['code' => $exception->getCode(), 'message' => $exception->getMessage()]
+    );
+
+    // Dispatch event when bot is blocked
+    $exception_event = new RequestExceptionEvent(
+      $method, $exception->getResponse()
+    );
+    $dispatcher->dispatch(RequestExceptionEvent::NAME, $exception_event);
   }
 
   /**
@@ -1001,6 +999,81 @@ class Bot
     }
 
     return $message_type;
+  }
+
+  /**
+   * Log transaction to the database.
+   *
+   * @param mixed $telegram_data
+   */
+  private function log($telegram_data)
+  {
+    $direction = 'undefined';
+    $type = null;
+    $chat_id = null;
+    $content = null;
+
+    // If $telegram_data instance of TelegramMethods, it is always outbound message
+    if ($telegram_data instanceof TelegramMethods) {
+      $direction = 'out';
+      $type = get_class($telegram_data);
+      $content = json_encode(
+        $telegram_data->export(),
+        JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE
+      );
+    }
+    // We can get Update only from Telegram, so it's always inbound
+    if ($telegram_data instanceof Update) {
+      $direction = 'in';
+      $type = $this->whatUpdateType($telegram_data);
+      $content = json_encode(
+        get_object_vars($telegram_data),
+        JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE
+      );
+    }
+
+    /**
+     * INBOUND
+     */
+    if ($telegram_data instanceof Update) {
+      if (!is_null($telegram_data->message)) {
+        $chat_id = $telegram_data->message->chat->id;
+      } elseif (!is_null($telegram_data->edited_message)) {
+        $chat_id = $telegram_data->edited_message->chat->id;
+      } elseif (!is_null($telegram_data->channel_post)) {
+        $chat_id = $telegram_data->channel_post->chat->id;
+      } elseif (!is_null($telegram_data->callback_query)) {
+        if (!is_null($telegram_data->callback_query->message)) {
+          $chat_id = $telegram_data->callback_query->message->chat->id;
+        }
+      }
+    }
+
+    /**
+     * OUTBOUND
+     **/
+    if ($telegram_data instanceof SendMessage) {
+      $chat_id = $telegram_data->chat_id;
+    }
+    if ($telegram_data instanceof SendChatAction) {
+      $chat_id = $telegram_data->chat_id;
+    }
+    if ($telegram_data instanceof EditMessageReplyMarkup) {
+      $chat_id = $telegram_data->chat_id;
+    }
+
+    $log = new Log();
+    $log->setCreated(new \DateTime('now', new \DateTimeZone('UTC')))
+      ->setDirection($direction)
+      ->setType($type)
+      ->setTelegramChatId($chat_id)
+      ->setContent($content);
+
+    $em = $this->getContainer()
+      ->get('doctrine')
+      ->getManager();
+    $em->persist($log);
+    $em->flush();
   }
 
 }

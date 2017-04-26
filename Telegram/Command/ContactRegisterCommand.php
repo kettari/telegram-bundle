@@ -10,6 +10,7 @@ namespace Kaula\TelegramBundle\Telegram\Command;
 
 
 use Kaula\TelegramBundle\Entity\User;
+use RuntimeException;
 use Tallanto\Api\Aggregator\ContactAggregator;
 
 use Tallanto\Api\Provider\Http\Request;
@@ -110,7 +111,7 @@ class ContactRegisterCommand extends RegisterCommand
       if (($tallanto_contact->getPhoneMobile() != $phone) &&
         ($tallanto_contact->getPhoneWork() != $phone)
       ) {
-        throw new \RuntimeException(
+        throw new RuntimeException(
           'Mobile and Work phones from Tallanto do not match Telegram contact phone '.
           $phone
         );
