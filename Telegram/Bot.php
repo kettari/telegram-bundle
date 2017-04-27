@@ -17,6 +17,12 @@ use Kaula\TelegramBundle\Entity\Log;
 use Kaula\TelegramBundle\Entity\Queue;
 use Kaula\TelegramBundle\Entity\User;
 use Kaula\TelegramBundle\Exception\KaulaTelegramBundleException;
+use Kaula\TelegramBundle\Telegram\Command\HelpCommand;
+use Kaula\TelegramBundle\Telegram\Command\ListRolesCommand;
+use Kaula\TelegramBundle\Telegram\Command\PushCommand;
+use Kaula\TelegramBundle\Telegram\Command\SettingsCommand;
+use Kaula\TelegramBundle\Telegram\Command\StartCommand;
+use Kaula\TelegramBundle\Telegram\Command\UserManCommand;
 use Kaula\TelegramBundle\Telegram\Event\MessageReceivedEvent;
 use Kaula\TelegramBundle\Telegram\Event\RequestBlockedEvent;
 use Kaula\TelegramBundle\Telegram\Event\RequestExceptionEvent;
@@ -26,6 +32,7 @@ use Kaula\TelegramBundle\Telegram\Event\TerminateEvent;
 use Kaula\TelegramBundle\Telegram\Event\UpdateIncomingEvent;
 use Kaula\TelegramBundle\Telegram\Event\UpdateReceivedEvent;
 use Kaula\TelegramBundle\Telegram\Subscriber\ChatMemberSubscriber;
+use Kaula\TelegramBundle\Telegram\Subscriber\CommandSubscriber;
 use Kaula\TelegramBundle\Telegram\Subscriber\CurrentUserSubscriber;
 use Kaula\TelegramBundle\Telegram\Subscriber\FilterSubscriber;
 use Kaula\TelegramBundle\Telegram\Subscriber\GroupSubscriber;
@@ -92,11 +99,6 @@ class Bot
   const MT_ANY = 2097151;
 
   /**
-   * @var CommandBus
-   */
-  protected $bus;
-
-  /**
    * @var ThrottleSingleton
    */
   protected $throttle_singleton;
@@ -155,7 +157,9 @@ class Bot
   }
 
   /**
-   * Add default subscribers to the dispatcher.
+   * Adds default subscribers to the dispatcher.
+   *
+   * @return Bot
    */
   public function addDefaultSubscribers()
   {
@@ -181,6 +185,10 @@ class Bot
     $this->getEventDispatcher()
       ->addSubscriber(new TextSubscriber($this));
 
+    // telegram.command.received
+    $this->getEventDispatcher()
+      ->addSubscriber(new CommandSubscriber($this));
+
     // telegram.chatmember.*
     $this->getEventDispatcher()
       ->addSubscriber(new ChatMemberSubscriber($this));
@@ -192,6 +200,8 @@ class Bot
     // telegram.chat.*
     $this->getEventDispatcher()
       ->addSubscriber(new MigrationSubscriber($this));
+
+    return $this;
   }
 
   /**
@@ -211,6 +221,33 @@ class Bot
     $this->event_dispatcher = $event_dispatcher;
 
     return $this;
+  }
+
+  /**
+   * Adds default commands to the CommandBus.
+   *
+   * @return Bot
+   */
+  public function addDefaultCommands()
+  {
+    $this->getBus()
+      ->registerCommand(StartCommand::class)
+      ->registerCommand(SettingsCommand::class)
+      ->registerCommand(HelpCommand::class)
+      ->registerCommand(ListRolesCommand::class)
+      ->registerCommand(PushCommand::class)
+      ->registerCommand(UserManCommand::class);
+
+    return $this;
+  }
+
+  /**
+   * @return \Kaula\TelegramBundle\Telegram\CommandBus
+   */
+  public function getBus(): CommandBus
+  {
+    return $this->getContainer()
+      ->get('kaula_telegram.bus');
   }
 
   /**
@@ -239,7 +276,7 @@ class Bot
     $dispatcher->dispatch(UpdateIncomingEvent::NAME, $update_incoming_event);
     if (is_null($update = $update_incoming_event->getUpdate())) {
       throw new RuntimeException(
-        'Update object is null after "telegram.update.incoming" event.'
+        'Update object is null after "telegram.update.incoming" event'
       );
     }
 
@@ -317,14 +354,6 @@ class Bot
   public function getUserHq(): UserHq
   {
     return $this->user_hq;
-  }
-
-  /**
-   * @return \Kaula\TelegramBundle\Telegram\CommandBus
-   */
-  public function getBus(): CommandBus
-  {
-    return $this->bus;
   }
 
   /**

@@ -11,14 +11,13 @@ namespace Kaula\TelegramBundle\Telegram;
 
 use Kaula\TelegramBundle\Entity\Permission;
 use Kaula\TelegramBundle\Entity\Role;
-
 use Kaula\TelegramBundle\Exception\InvalidCommand;
 use Kaula\TelegramBundle\Telegram\Command\AbstractCommand;
+use Kaula\TelegramBundle\Telegram\Event\CommandUnauthorizedEvent;
 use Psr\Log\LoggerInterface;
-
-
 use unreal4u\TelegramAPI\Telegram\Types\Update;
 use unreal4u\TelegramAPI\Telegram\Types\User as TelegramUser;
+
 
 class CommandBus
 {
@@ -87,22 +86,31 @@ class CommandBus
   /**
    * Return TRUE if command is registered.
    *
-   * @param string $command_class
+   * @param string $command_name
    * @return bool
    */
-  public function isCommandRegistered($command_class)
+  public function isCommandRegistered($command_name)
   {
-    return isset($this->commands_classes[$command_class]);
+    foreach ($this->commands_classes as $command_class => $placeholder) {
+      /** @var AbstractCommand $command_class */
+      if ($command_class::getName() == $command_name) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   /**
    * Executes command that is registered with CommandBus.
    *
-   * @param $command_name
+   * @param $name
+   * @param string $parameter
    * @param \unreal4u\TelegramAPI\Telegram\Types\Update $update
-   * @return bool Returns TRUE if appropriate command was found.
+   * @return bool Returns true if command was executed; false if not found or
+   *   user has insufficient permissions.
    */
-  public function executeCommand($command_name, Update $update)
+  public function executeCommand($name, $parameter = null, Update $update)
   {
     /** @var LoggerInterface $l */
     $l = $this->getBot()
@@ -111,44 +119,47 @@ class CommandBus
 
     foreach ($this->commands_classes as $command_class => $placeholder) {
       /** @var AbstractCommand $command_class */
-      if ($command_class::getName() == $command_name) {
+      if ($command_class::getName() == $name) {
 
         // Check permissions for current user
         if (!$this->isAuthorized($update->message->from, $command_class)) {
           $l->notice(
             'User is not authorized to execute /{command_name} command with the class "{class_name}"',
-            ['command_name' => $command_name, 'class_name' => $command_class]
+            ['command_name' => $name, 'class_name' => $command_class]
           );
 
-          $this->getBot()
-            ->sendMessage(
-              $update->message->chat->id,
-              'Извините, у вас недостаточно прав для доступа к этой команде.'
-            );
+          // Dispatch command is unauthorized
+          $this->dispatchUnauthorizedCommand($update, $name, $parameter);
 
-          return true;
+          return false;
         }
 
-        // User is authorized
+        // User is authorized, OK
         $l->info(
           'Executing /{command_name} command with the class "{class_name}"',
-          ['command_name' => $command_name, 'class_name' => $command_class]
+          ['command_name' => $name, 'class_name' => $command_class]
         );
 
         /** @var AbstractCommand $command */
         $command = new $command_class($this, $update);
-        $command->initialize()
+        $command->initialize($parameter)
           ->execute();
 
         return true;
       }
     }
-    $l->notice(
-      'No class registered to handle /{command_name} command',
-      ['command_name' => $command_name]
-    );
 
     return false;
+  }
+
+  /**
+   * Returns bot object.
+   *
+   * @return \Kaula\TelegramBundle\Telegram\Bot
+   */
+  public function getBot()
+  {
+    return $this->bot;
   }
 
   /**
@@ -167,11 +178,6 @@ class CommandBus
     $l = $this->getBot()
       ->getContainer()
       ->get('logger');
-
-    // Special utility to check equality of arrays
-    /*function array_equal_values(array $a, array $b) {
-      return !array_diff($a, $b) && !array_diff($b, $a);
-    }*/
 
     $d = $this->getBot()
       ->getContainer()
@@ -202,26 +208,50 @@ class CommandBus
 
     // First check required permissions against existing permissions
     // and then check all required permissions are present
-    /*dump($required_permissions);
-    dump($existing_permissions);
-    die;*/
     $applicable_permissions = array_intersect(
       $required_permissions,
       $user_permissions
     );
+    $result = !array_diff($applicable_permissions, $required_permissions) &&
+      !array_diff($required_permissions, $applicable_permissions);
 
     // Write to the log permissions check result
     $l->info(
-      'Authorization check',
+      'Authorization check: {auth_check}',
       [
+        'auth_check'             => $result ? 'OK' : 'not authorized',
         'required_permissions'   => $required_permissions,
         'user_permissions'       => $user_permissions,
         'applicable_permissions' => $applicable_permissions,
       ]
     );
 
-    return !array_diff($applicable_permissions, $required_permissions) &&
-      !array_diff($required_permissions, $applicable_permissions);
+    return $result;
+  }
+
+  /**
+   * Dispatches command is unauthorized.
+   *
+   * @param Update $update
+   * @param string $command_name
+   * @param string $parameter
+   */
+  private function dispatchUnauthorizedCommand(
+    Update $update,
+    $command_name,
+    $parameter
+  ) {
+    $dispatcher = $this->getBot()
+      ->getEventDispatcher();
+
+    // Dispatch command event
+    $command_unauthorized_event = new CommandUnauthorizedEvent(
+      $update, $command_name, $parameter
+    );
+    $dispatcher->dispatch(
+      CommandUnauthorizedEvent::NAME,
+      $command_unauthorized_event
+    );
   }
 
   /**
@@ -232,16 +262,6 @@ class CommandBus
   public function getCommands()
   {
     return $this->commands_classes;
-  }
-
-  /**
-   * Returns bot object.
-   *
-   * @return \Kaula\TelegramBundle\Telegram\Bot
-   */
-  public function getBot()
-  {
-    return $this->bot;
   }
 
   /**

@@ -53,7 +53,7 @@ abstract class AbstractCommandEvent extends AbstractMessageEvent
   /**
    * @return string
    */
-  public function getText(): string
+  public function getText()
   {
     return $this->getMessage()->text;
   }
@@ -61,7 +61,7 @@ abstract class AbstractCommandEvent extends AbstractMessageEvent
   /**
    * @return string
    */
-  public function getCommand(): string
+  public function getCommand()
   {
     return $this->command;
   }
@@ -69,7 +69,7 @@ abstract class AbstractCommandEvent extends AbstractMessageEvent
   /**
    * @return string
    */
-  public function getParameter(): string
+  public function getParameter()
   {
     return $this->parameter;
   }

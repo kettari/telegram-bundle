@@ -9,7 +9,8 @@
 namespace Kaula\TelegramBundle\Telegram\Command;
 
 
-class HelpCommand extends AbstractCommand {
+class HelpCommand extends AbstractCommand
+{
 
   static public $name = 'help';
   static public $description = 'Показать список команд бота';
@@ -18,7 +19,8 @@ class HelpCommand extends AbstractCommand {
   /**
    * Executes command.
    */
-  public function execute() {
+  public function execute()
+  {
     $text = 'Список команд бота: '.PHP_EOL.PHP_EOL;
     $commands = $this->getBus()
       ->getCommands();
@@ -29,7 +31,9 @@ class HelpCommand extends AbstractCommand {
         continue;
       }
       // Has user permissions?
-      if (!$this->getBus()->isAuthorized($this->getUpdate()->message->from, $command)) {
+      if (!$this->getBus()
+        ->isAuthorized($this->getUpdate()->message->from, $command)
+      ) {
         continue;
       }
       $text .= sprintf('/%s %s', $command::$name, $command::$description).

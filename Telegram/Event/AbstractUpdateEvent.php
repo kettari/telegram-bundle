@@ -22,7 +22,7 @@ abstract class AbstractUpdateEvent extends AbstractTelegramEvent
   /**
    * @return Update
    */
-  public function getUpdate(): Update
+  public function getUpdate()
   {
     return $this->update;
   }

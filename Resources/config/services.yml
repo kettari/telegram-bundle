@@ -3,5 +3,12 @@ services:
         class: Kaula\TelegramBundle\Telegram\Bot
         arguments: ['@service_container']
 
+    kaula_telegram.bus:
+        class: Kaula\TelegramBundle\Telegram\CommandBus
+        arguments: ['@kaula_telegram.bot']
+
     telegram_bot:
         alias: kaula_telegram.bot
+
+    command_bus:
+        alias: kaula_telegram.bus

@@ -9,15 +9,17 @@
 namespace Kaula\TelegramBundle\Telegram\Subscriber;
 
 
-use Kaula\TelegramBundle\Telegram\Event\CommandExecutedEvent;
 use Kaula\TelegramBundle\Telegram\Event\CommandReceivedEvent;
 use Kaula\TelegramBundle\Telegram\Event\TextReceivedEvent;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+use unreal4u\TelegramAPI\Telegram\Types\ReplyKeyboardRemove;
 use unreal4u\TelegramAPI\Telegram\Types\Update;
 
 class TextSubscriber extends AbstractBotSubscriber implements EventSubscriberInterface
 {
+  const EMOJI_TRY_AGAIN = "\xF0\x9F\x99\x83";
+
   /**
    * Returns an array of event names this subscriber wants to listen to.
    *
@@ -39,7 +41,12 @@ class TextSubscriber extends AbstractBotSubscriber implements EventSubscriberInt
    */
   public static function getSubscribedEvents()
   {
-    return [TextReceivedEvent::NAME => 'onTextReceived'];
+    return [
+      TextReceivedEvent::NAME => [
+        ['onTextReceived'],
+        ['onTextUnhandled', -90000],
+      ],
+    ];
   }
 
   /**
@@ -81,27 +88,11 @@ class TextSubscriber extends AbstractBotSubscriber implements EventSubscriberInt
         );
 
         // Dispatch command event
-        $this->dispatchCommandReceived($event->getUpdate(), $command_name, $parameter);
-
-        // Execute the command
-        if ($this->getBot()
-          ->getBus()
-          ->executeCommand($command_name, $event->getUpdate())
-        ) {
-          // Set flag that request is handled
-          $this->getBot()
-            ->setRequestHandled(true);
-        } else {
-          // Command not found
-          $this->getBot()
-            ->sendMessage(
-              $event->getMessage()->chat->id,
-              'Извините, такой команды я не знаю.'
-            );
-        }
-
-        // Dispatch command event
-        $this->dispatchCommandExecuted($event->getUpdate(), $command_name, $parameter);
+        $this->dispatchCommandReceived(
+          $event->getUpdate(),
+          $command_name,
+          $parameter
+        );
       }
     } else {
       $l->debug('No commands detected within the update');
@@ -115,8 +106,11 @@ class TextSubscriber extends AbstractBotSubscriber implements EventSubscriberInt
    * @param string $command_name
    * @param string $parameter
    */
-  private function dispatchCommandReceived(Update $update, $command_name, $parameter)
-  {
+  private function dispatchCommandReceived(
+    Update $update,
+    $command_name,
+    $parameter
+  ) {
     $dispatcher = $this->getBot()
       ->getEventDispatcher();
 
@@ -128,22 +122,29 @@ class TextSubscriber extends AbstractBotSubscriber implements EventSubscriberInt
   }
 
   /**
-   * Dispatches command is executed.
+   * Handles situation when user sent us message and it is not handled.
    *
-   * @param Update $update
-   * @param string $command_name
-   * @param string $parameter
+   * @param \Kaula\TelegramBundle\Telegram\Event\TextReceivedEvent $event
    */
-  private function dispatchCommandExecuted(Update $update, $command_name, $parameter)
+  public function onTextUnhandled(TextReceivedEvent $event)
   {
-    $dispatcher = $this->getBot()
-      ->getEventDispatcher();
+    if (!$this->getBot()
+      ->isRequestHandled()
+    ) {
+      $l = $this->getBot()
+        ->getContainer()
+        ->get('logger');
+      $l->info('Request was not handled');
 
-    // Dispatch command event
-    $command_executed_event = new CommandExecutedEvent(
-      $update, $command_name, $parameter
-    );
-    $dispatcher->dispatch(CommandExecutedEvent::NAME, $command_executed_event);
+      // Tell user we do not understand him/her
+      $this->getBot()
+        ->sendMessage(
+          $event->getMessage()->chat->id,
+          self::EMOJI_TRY_AGAIN.' попробуйте начать с команды /help',
+          null,
+          new ReplyKeyboardRemove()
+        );
+    }
   }
 
 }
