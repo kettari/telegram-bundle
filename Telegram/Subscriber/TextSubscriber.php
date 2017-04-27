@@ -13,13 +13,10 @@ use Kaula\TelegramBundle\Telegram\Event\CommandReceivedEvent;
 use Kaula\TelegramBundle\Telegram\Event\TextReceivedEvent;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
-use unreal4u\TelegramAPI\Telegram\Types\ReplyKeyboardRemove;
 use unreal4u\TelegramAPI\Telegram\Types\Update;
 
 class TextSubscriber extends AbstractBotSubscriber implements EventSubscriberInterface
 {
-  const EMOJI_TRY_AGAIN = "\xF0\x9F\x99\x83";
-
   /**
    * Returns an array of event names this subscriber wants to listen to.
    *
@@ -42,10 +39,7 @@ class TextSubscriber extends AbstractBotSubscriber implements EventSubscriberInt
   public static function getSubscribedEvents()
   {
     return [
-      TextReceivedEvent::NAME => [
-        ['onTextReceived'],
-        ['onTextUnhandled', -90000],
-      ],
+      TextReceivedEvent::NAME => 'onTextReceived',
     ];
   }
 
@@ -119,32 +113,6 @@ class TextSubscriber extends AbstractBotSubscriber implements EventSubscriberInt
       $update, $command_name, $parameter
     );
     $dispatcher->dispatch(CommandReceivedEvent::NAME, $command_received_event);
-  }
-
-  /**
-   * Handles situation when user sent us message and it is not handled.
-   *
-   * @param \Kaula\TelegramBundle\Telegram\Event\TextReceivedEvent $event
-   */
-  public function onTextUnhandled(TextReceivedEvent $event)
-  {
-    if (!$this->getBot()
-      ->isRequestHandled()
-    ) {
-      $l = $this->getBot()
-        ->getContainer()
-        ->get('logger');
-      $l->info('Request was not handled');
-
-      // Tell user we do not understand him/her
-      $this->getBot()
-        ->sendMessage(
-          $event->getMessage()->chat->id,
-          self::EMOJI_TRY_AGAIN.' попробуйте начать с команды /help',
-          null,
-          new ReplyKeyboardRemove()
-        );
-    }
   }
 
 }

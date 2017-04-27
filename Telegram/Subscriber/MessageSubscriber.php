@@ -19,9 +19,12 @@ use Kaula\TelegramBundle\Telegram\Event\MigrateToChatIdEvent;
 use Kaula\TelegramBundle\Telegram\Event\TextReceivedEvent;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+use unreal4u\TelegramAPI\Telegram\Types\ReplyKeyboardRemove;
 
 class MessageSubscriber extends AbstractBotSubscriber implements EventSubscriberInterface
 {
+  const EMOJI_TRY_AGAIN = "\xF0\x9F\x99\x83";
+
   /**
    * Returns an array of event names this subscriber wants to listen to.
    *
@@ -43,7 +46,12 @@ class MessageSubscriber extends AbstractBotSubscriber implements EventSubscriber
    */
   public static function getSubscribedEvents()
   {
-    return [MessageReceivedEvent::NAME => ['onMessageReceived', 0]];
+    return [
+      MessageReceivedEvent::NAME => [
+        ['onMessageReceived'],
+        ['onMessageCheckUnhandled', -90000],
+      ],
+    ];
   }
 
   /**
@@ -111,8 +119,13 @@ class MessageSubscriber extends AbstractBotSubscriber implements EventSubscriber
     }
     // Dispatch migration from chat ID event
     if ($message_type & Bot::MT_MIGRATE_FROM_CHAT_ID) {
-      $migrate_from_chat_event = new MigrateFromChatIdEvent($event->getUpdate());
-      $dispatcher->dispatch(MigrateFromChatIdEvent::NAME, $migrate_from_chat_event);
+      $migrate_from_chat_event = new MigrateFromChatIdEvent(
+        $event->getUpdate()
+      );
+      $dispatcher->dispatch(
+        MigrateFromChatIdEvent::NAME,
+        $migrate_from_chat_event
+      );
     }
   }
 
@@ -143,6 +156,32 @@ class MessageSubscriber extends AbstractBotSubscriber implements EventSubscriber
       }
     } catch (Exception $passthrough) {
       // Do nothing
+    }
+  }
+
+  /**
+   * Handles situation when user sent us message and it is not handled.
+   *
+   * @param \Kaula\TelegramBundle\Telegram\Event\MessageReceivedEvent $event
+   */
+  public function onMessageCheckUnhandled(MessageReceivedEvent $event)
+  {
+    if (!$this->getBot()
+      ->isRequestHandled()
+    ) {
+      $l = $this->getBot()
+        ->getContainer()
+        ->get('logger');
+      $l->info('Request was not handled');
+
+      // Tell user we do not understand him/her
+      $this->getBot()
+        ->sendMessage(
+          $event->getMessage()->chat->id,
+          self::EMOJI_TRY_AGAIN.' попробуйте начать с команды /help',
+          null,
+          new ReplyKeyboardRemove()
+        );
     }
   }
 
