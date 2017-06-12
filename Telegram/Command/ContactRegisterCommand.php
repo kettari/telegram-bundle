@@ -12,11 +12,10 @@ namespace Kaula\TelegramBundle\Telegram\Command;
 use Kaula\TelegramBundle\Entity\User;
 use RuntimeException;
 use Tallanto\Api\Aggregator\ContactAggregator;
-
+use Tallanto\Api\Entity\Contact as TallantoContact;
 use Tallanto\Api\Provider\Http\Request;
 use Tallanto\Api\Provider\Http\ServiceProvider;
-use unreal4u\TelegramAPI\Telegram\Types\Contact AS TelegramContact;
-use Tallanto\Api\Entity\Contact AS TallantoContact;
+use unreal4u\TelegramAPI\Telegram\Types\Contact as TelegramContact;
 
 
 class ContactRegisterCommand extends RegisterCommand
@@ -62,9 +61,6 @@ class ContactRegisterCommand extends RegisterCommand
     // Create ServiceProvider object
     $provider = new ServiceProvider($request);
     $provider->setLogger($c->get('logger'));
-    /*if ($provider instanceof ExpandableInterface) {
-      $provider->setExpand(TRUE);
-    }*/
 
     // Create contacts aggregator
     $contacts_aggregator = new ContactAggregator($provider);
@@ -74,7 +70,7 @@ class ContactRegisterCommand extends RegisterCommand
   }
 
   /**
-   * Connects Telegram and Tallanto users.
+   * Connects Telegram user and Tallanto contact.
    *
    * @param \Tallanto\Api\Aggregator\ContactAggregator $contact_aggregator
    * @param string $phone
@@ -86,11 +82,20 @@ class ContactRegisterCommand extends RegisterCommand
   ) {
     if (0 == $contact_aggregator->count()) {
 
+      // Contact not found in the Tallanto CRM, deny
+      $this->replyWithMessage(
+        'К сожалению, я не нашёл людей по указанному номеру телефона в базе данных ЦРМ.'.
+        PHP_EOL.PHP_EOL.
+        'Регистрация не завершена. Обратитесь в администрацию Школы, пожалуйста.'
+      );
+
+      return false;
+
       // Contact not found in the Tallanto CRM, create it
-      $tallanto_contact_id = $this->createTallantoContact(
+      /*$tallanto_contact_id = $this->createTallantoContact(
         $contact_aggregator,
         $phone
-      );
+      );*/
 
     } elseif ($contact_aggregator->count() > 1) {
 
@@ -127,6 +132,38 @@ class ContactRegisterCommand extends RegisterCommand
   }
 
   /**
+   * Creates contact in the Tallanto CRM.
+   *
+   * @param \Tallanto\Api\Aggregator\ContactAggregator $contact_aggregator
+   * @param string $phone
+   * @return string Returns Tallanto ID
+   */
+  protected function createTallantoContact(
+    /** @noinspection PhpUnusedParameterInspection */
+    ContactAggregator $contact_aggregator,
+    $phone
+  ) {
+    /*    $c = $this->getBus()
+          ->getBot()
+          ->getContainer();*/
+    $tu = $this->getUpdate()->message->from;
+
+    // Create Contact object
+    /** @noinspection PhpUnusedLocalVariableInspection */
+    $contact = new TallantoContact(
+      [
+        'first_name'   => $tu->first_name,
+        'last_name'    => $tu->last_name,
+        'phone_mobile' => $phone,
+      ]
+    );
+    // TODO implement ContactAggregator::add() method
+    //$contact_aggregator->add($contact);
+
+    return 'mock';
+  }
+
+  /**
    * Updates user information in the database.
    *
    * @param string $tallanto_contact_id
@@ -152,37 +189,6 @@ class ContactRegisterCommand extends RegisterCommand
 
     // Commit changes
     $em->flush();
-  }
-
-  /**
-   * Creates contact in the Tallanto CRM.
-   *
-   * @param \Tallanto\Api\Aggregator\ContactAggregator $contact_aggregator
-   * @param string $phone
-   * @return string Returns Tallanto ID
-   */
-  protected function createTallantoContact(
-    /** @noinspection PhpUnusedParameterInspection */ ContactAggregator $contact_aggregator,
-    $phone
-  ) {
-/*    $c = $this->getBus()
-      ->getBot()
-      ->getContainer();*/
-    $tu = $this->getUpdate()->message->from;
-
-    // Create Contact object
-    /** @noinspection PhpUnusedLocalVariableInspection */
-    $contact = new TallantoContact(
-      [
-        'first_name' => $tu->first_name,
-        'last_name' => $tu->last_name,
-        'phone_mobile' => $phone,
-      ]
-    );
-    // TODO implement ContactAggregator::add() method
-    //$contact_aggregator->add($contact);
-
-    return 'mock';
   }
 
 

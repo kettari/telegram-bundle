@@ -39,7 +39,7 @@ class TextSubscriber extends AbstractBotSubscriber implements EventSubscriberInt
   public static function getSubscribedEvents()
   {
     return [
-      TextReceivedEvent::NAME => 'onTextReceived',
+      TextReceivedEvent::NAME => ['onTextReceived', 90000],
     ];
   }
 

@@ -10,13 +10,11 @@ namespace Kaula\TelegramBundle\Telegram\Command;
 
 
 use Kaula\TelegramBundle\Entity\User;
-
 use RuntimeException;
 use Tallanto\Api\Aggregator\UserAggregator;
-
 use Tallanto\Api\Provider\Http\Request;
 use Tallanto\Api\Provider\Http\ServiceProvider;
-use unreal4u\TelegramAPI\Telegram\Types\Contact AS TelegramContact;
+use unreal4u\TelegramAPI\Telegram\Types\Contact as TelegramContact;
 
 
 class UserRegisterCommand extends RegisterCommand

@@ -59,6 +59,7 @@ class LogSubscriber extends AbstractBotSubscriber implements EventSubscriberInte
    */
   public function onRequestSent(RequestSentEvent $event)
   {
+    // TODO Log output (sent) messages
     //$this->logOutput($event);
   }
 

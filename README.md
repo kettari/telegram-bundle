@@ -17,7 +17,7 @@
     * 0:MessageSubscriber -- if text is not empty, dispatch further events.
     * –90000:MessageSubscriber -- checks if request was handled. If not, sends to the user a message.
   * **telegram.text.received** -- when text is not empty within Message object.
-    * 0:TextSubscriber -- checks for command and dispatches further events. 
+    * 90000:TextSubscriber -- checks for command and dispatches further events. 
   * **telegram.command.received** -- when a command is detected in the text.
     * 0:CommandSubscriber -- CommandBus service which executes command.
   * **telegram.command.unknown** -- command is unknown for CommandBus.
