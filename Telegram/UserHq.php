@@ -152,5 +152,20 @@ class UserHq
     return $user->getNotifications();
   }
 
+  /**
+   * Returns database User entity by telegram User object.
+   *
+   * @param \unreal4u\TelegramAPI\Telegram\Types\User $telegram_user
+   * @return \Kaula\TelegramBundle\Entity\User|null
+   */
+  public function getEntityByTelegram($telegram_user)
+  {
+    /** @var User $user */
+    return $this->getBot()
+        ->getDoctrine()
+        ->getRepository('KaulaTelegramBundle:User')
+        ->findOneBy(['telegram_id' => $telegram_user->id]);
+  }
+
 
 }
