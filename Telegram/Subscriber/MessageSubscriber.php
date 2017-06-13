@@ -191,7 +191,8 @@ class MessageSubscriber extends AbstractBotSubscriber implements EventSubscriber
       $this->getBot()
         ->sendMessage(
           $event->getMessage()->chat->id,
-          self::EMOJI_TRY_AGAIN.' попробуйте начать с команды /help',
+          'Извините, я не понял, что вы имели в виду '.self::EMOJI_TRY_AGAIN.
+          ' Попробуйте начать с команды /help',
           null,
           new ReplyKeyboardRemove()
         );
