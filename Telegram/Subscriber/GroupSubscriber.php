@@ -48,6 +48,10 @@ class GroupSubscriber extends AbstractBotSubscriber implements EventSubscriberIn
   public function onGroupCreated(GroupCreatedEvent $event)
   {
     $this->processGroupCreation($event->getUpdate());
+
+    // Tell the Bot this request is handled
+    $this->getBot()
+      ->setRequestHandled(true);
   }
 
   /**

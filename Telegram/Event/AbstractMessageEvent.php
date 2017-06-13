@@ -22,7 +22,7 @@ abstract class AbstractMessageEvent extends AbstractUpdateEvent
   /**
    * @return Message
    */
-  public function getMessage(): Message
+  public function getMessage()
   {
     return $this->message;
   }

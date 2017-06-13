@@ -125,7 +125,7 @@ class UserRegisterCommand extends RegisterCommand
       return false;
     }
 
-    // Update user with Tallanto ID
+    // Update User object
     $this->updateTallantoUserInformation($tallanto_user);
 
     return true;

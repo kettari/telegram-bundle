@@ -11,6 +11,7 @@ namespace Kaula\TelegramBundle\Telegram\Subscriber;
 
 use Exception;
 use Kaula\TelegramBundle\Telegram\Bot;
+use Kaula\TelegramBundle\Telegram\Event\GroupCreatedEvent;
 use Kaula\TelegramBundle\Telegram\Event\JoinChatMemberEvent;
 use Kaula\TelegramBundle\Telegram\Event\LeftChatMemberEvent;
 use Kaula\TelegramBundle\Telegram\Event\MessageReceivedEvent;
@@ -70,7 +71,14 @@ class MessageSubscriber extends AbstractBotSubscriber implements EventSubscriber
       // Detect message type
       $message_type = $this->getBot()
         ->whatMessageType($event->getMessage());
-      $l->debug('Message type: "{type}"', ['type' => $message_type]);
+      $l->info(
+        'Message type: "{type_title}"',
+        [
+          'type_title' => $this->getBot()
+            ->getMessageTypeTitle($message_type),
+          'type'       => $message_type,
+        ]
+      );
 
       // Dispatch specific message types: text, document, audio, etc.
       $this->dispatchSpecificMessageTypes($event, $message_type);
@@ -111,6 +119,11 @@ class MessageSubscriber extends AbstractBotSubscriber implements EventSubscriber
     if ($message_type & Bot::MT_LEFT_CHAT_MEMBER) {
       $left_member_event = new LeftChatMemberEvent($event->getUpdate());
       $dispatcher->dispatch(LeftChatMemberEvent::NAME, $left_member_event);
+    }
+    // Dispatch group created event
+    if ($message_type & Bot::MT_GROUP_CHAT_CREATED) {
+      $group_created_event = new GroupCreatedEvent($event->getUpdate());
+      $dispatcher->dispatch(GroupCreatedEvent::NAME, $group_created_event);
     }
     // Dispatch migration to chat ID event
     if ($message_type & Bot::MT_MIGRATE_TO_CHAT_ID) {

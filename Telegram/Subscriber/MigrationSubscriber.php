@@ -11,6 +11,7 @@ namespace Kaula\TelegramBundle\Telegram\Subscriber;
 
 use Kaula\TelegramBundle\Telegram\Event\MigrateFromChatIdEvent;
 use Kaula\TelegramBundle\Telegram\Event\MigrateToChatIdEvent;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
 class MigrationSubscriber extends AbstractBotSubscriber implements EventSubscriberInterface
@@ -37,7 +38,7 @@ class MigrationSubscriber extends AbstractBotSubscriber implements EventSubscrib
   public static function getSubscribedEvents()
   {
     return [
-      MigrateToChatIdEvent::NAME   => 'onMigrateToChatId',
+      MigrateToChatIdEvent::NAME => 'onMigrateToChatId',
       MigrateFromChatIdEvent::NAME => 'onMigrateFromChatId',
     ];
   }
@@ -49,6 +50,11 @@ class MigrationSubscriber extends AbstractBotSubscriber implements EventSubscrib
    */
   public function onMigrateToChatId(MigrateToChatIdEvent $event)
   {
+    /** @var LoggerInterface $l */
+    $l = $this->getBot()
+      ->getContainer()
+      ->get('logger');
+
     // Prepare Doctrine and EntityManager
     $em = $this->getDoctrine()
       ->getManager();
@@ -57,7 +63,7 @@ class MigrationSubscriber extends AbstractBotSubscriber implements EventSubscrib
     $chat_from_id = $event->getMessage()->chat->id;
     $chat_to_id = $event->getMessage()->migrate_to_chat_id;
 
-    // Find chat object. If not found, create new
+    // Find chat object
     $chat = $this->getDoctrine()
       ->getRepository('KaulaTelegramBundle:Chat')
       ->findOneBy(['telegram_id' => $chat_from_id]);
@@ -69,6 +75,14 @@ class MigrationSubscriber extends AbstractBotSubscriber implements EventSubscrib
 
     // Commit changes
     $em->flush();
+
+    // Tell the Bot this request is handled
+    $this->getBot()
+      ->setRequestHandled(true);
+    $l->notice(
+      'Migrated to chat with id "{chat_id}"',
+      ['chat_id' => $chat_to_id]
+    );
   }
 
   /**
@@ -78,6 +92,11 @@ class MigrationSubscriber extends AbstractBotSubscriber implements EventSubscrib
    */
   public function onMigrateFromChatId(MigrateFromChatIdEvent $event)
   {
+    /** @var LoggerInterface $l */
+    $l = $this->getBot()
+      ->getContainer()
+      ->get('logger');
+
     // Prepare Doctrine and EntityManager
     $em = $this->getDoctrine()
       ->getManager();
@@ -85,7 +104,8 @@ class MigrationSubscriber extends AbstractBotSubscriber implements EventSubscrib
     // Get telegram chat
     $tc = $event->getMessage()->chat;
 
-    // Find chat object. If not found, create new
+    // Find chat object
+    /** @var \Kaula\TelegramBundle\Entity\Chat $chat */
     $chat = $this->getDoctrine()
       ->getRepository('KaulaTelegramBundle:Chat')
       ->findOneBy(['telegram_id' => $tc->id]);
@@ -102,5 +122,13 @@ class MigrationSubscriber extends AbstractBotSubscriber implements EventSubscrib
 
     // Commit changes
     $em->flush();
+
+    // Tell the Bot this request is handled
+    $this->getBot()
+      ->setRequestHandled(true);
+    $l->notice(
+      'Migrated from chat with id "{chat_id}"',
+      ['chat_id' => $tc->id]
+    );
   }
 }

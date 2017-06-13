@@ -23,26 +23,32 @@ class ListRolesCommand extends AbstractCommand
    */
   public function execute()
   {
-    $d = $this->getBus()
-      ->getBot()
-      ->getContainer()
-      ->get('doctrine');
-    $roles_and_permissions = $this->getRolesAndPermissions($d);
+    if ('private' == $this->getUpdate()->message->chat->type) {
+      $d = $this->getBus()
+        ->getBot()
+        ->getContainer()
+        ->get('doctrine');
+      $roles_and_permissions = $this->getRolesAndPermissions($d);
 
-    $text = 'Список ролей и разрешений:'.PHP_EOL.PHP_EOL;
-    if (count($roles_and_permissions)) {
-      foreach ($roles_and_permissions as $role_name => $permissions) {
-        $text .= '<b>'.$role_name.'</b>'.PHP_EOL;
-        foreach ($permissions as $permission_item) {
-          $text .= $permission_item.PHP_EOL;
+      $text = 'Список ролей и разрешений:'.PHP_EOL.PHP_EOL;
+      if (count($roles_and_permissions)) {
+        foreach ($roles_and_permissions as $role_name => $permissions) {
+          $text .= '<b>'.$role_name.'</b>'.PHP_EOL;
+          foreach ($permissions as $permission_item) {
+            $text .= $permission_item.PHP_EOL;
+          }
+          $text .= PHP_EOL;
         }
-        $text .= PHP_EOL;
+      } else {
+        $text .= 'Роли в системе не определены.';
       }
-    } else {
-      $text .= 'Роли в системе не определены.';
-    }
 
-    $this->replyWithMessage($text, self::PARSE_MODE_HTML);
+      $this->replyWithMessage($text, self::PARSE_MODE_HTML);
+    } else {
+      $this->replyWithMessage(
+        'Эта команда работает только в личной переписке с ботом. В общем канале просмотр ролей невозможен.'
+      );
+    }
   }
 
 

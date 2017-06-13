@@ -107,28 +107,55 @@ class ContactRegisterCommand extends RegisterCommand
       );
 
       return false;
-    } else {
 
-      // Single contact found in the Tallanto CRM, proceed
-      $iterator = $contact_aggregator->getIterator();
-      /** @var \Tallanto\Api\Entity\Contact $tallanto_contact */
-      $tallanto_contact = $iterator->current();
-      if (($tallanto_contact->getPhoneMobile() != $phone) &&
-        ($tallanto_contact->getPhoneWork() != $phone)
-      ) {
-        throw new RuntimeException(
-          'Mobile and Work phones from Tallanto do not match Telegram contact phone '.
-          $phone
-        );
-      }
-
-      $tallanto_contact_id = $tallanto_contact->getId();
     }
 
-    // Update user with Tallanto ID
-    $this->updateTallantoUserInformation($tallanto_contact_id);
+    // Single contact found in the Tallanto CRM, proceed
+    $iterator = $contact_aggregator->getIterator();
+    /** @var \Tallanto\Api\Entity\Contact $tallanto_contact */
+    $tallanto_contact = $iterator->current();
+    if (($tallanto_contact->getPhoneMobile() != $phone) &&
+      ($tallanto_contact->getPhoneWork() != $phone)
+    ) {
+      throw new RuntimeException(
+        'Mobile and Work phones from Tallanto do not match Telegram contact phone '.
+        $phone
+      );
+    }
+
+    // Update User object
+    $this->updateTallantoUserInformation($tallanto_contact);
 
     return true;
+  }
+
+  /**
+   * Updates user information in the database.
+   *
+   * @param \Tallanto\Api\Entity\Contact $tallanto_contact
+   */
+  protected function updateTallantoUserInformation($tallanto_contact)
+  {
+    $tu = $this->getUpdate()->message->from;
+    $d = $this->getBus()
+      ->getBot()
+      ->getContainer()
+      ->get('doctrine');
+    $em = $d->getManager();
+
+    // Find user object. If not found, create new
+    /** @var User $user */
+    $user = $d->getRepository('KaulaTelegramBundle:User')
+      ->findOneBy(['telegram_id' => $tu->id]);
+    if (!$user) {
+      throw new \RuntimeException('User is expected to exist at this point.');
+    }
+    $user->setTallantoContactId($tallanto_contact->getId())
+      ->setExternalLastName($tallanto_contact->getLastName())
+      ->setExternalFirstName($tallanto_contact->getFirstName());
+
+    // Commit changes
+    $em->flush();
   }
 
   /**
@@ -161,34 +188,6 @@ class ContactRegisterCommand extends RegisterCommand
     //$contact_aggregator->add($contact);
 
     return 'mock';
-  }
-
-  /**
-   * Updates user information in the database.
-   *
-   * @param string $tallanto_contact_id
-   */
-  protected function updateTallantoUserInformation($tallanto_contact_id)
-  {
-    $tu = $this->getUpdate()->message->from;
-    $d = $this->getBus()
-      ->getBot()
-      ->getContainer()
-      ->get('doctrine');
-    $em = $d->getManager();
-
-    // Find user object. If not found, create new
-    /** @var User $user */
-    $user = $d->getRepository('KaulaTelegramBundle:User')
-      ->findOneBy(['telegram_id' => $tu->id]);
-    if (!$user) {
-      throw new \RuntimeException('User is expected to exist at this point.');
-    }
-    $user->setTallantoContactId($tallanto_contact_id);
-    $em->persist($user);
-
-    // Commit changes
-    $em->flush();
   }
 
 

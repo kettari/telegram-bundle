@@ -72,7 +72,6 @@ class Bot
   const UT_CALLBACK_QUERY = 'callback_query';
 
   // Event types
-
   const MT_NOTHING = 0;
   const MT_TEXT = 1;
   const MT_AUDIO = 2;
@@ -95,9 +94,10 @@ class Bot
   const MT_CHANNEL_CHAT_CREATED = 262144;
   const MT_MIGRATE_TO_CHAT_ID = 524288;
   const MT_MIGRATE_FROM_CHAT_ID = 1048576;
-  const MT_PINNED_MESSAGE = 1048576;
-  const MT_ANY = 2097151;
+  const MT_PINNED_MESSAGE = 2097152;
+  const MT_ANY = 4194303;
 
+  // Captions of the event types
   /**
    * @var ThrottleSingleton
    */
@@ -109,6 +109,36 @@ class Bot
    * @var ContainerInterface
    */
   protected $container;
+
+  /**
+   * Message type titles.
+   *
+   * @var array
+   */
+  private $mt_captions = [
+    self::MT_TEXT                    => 'MT_TEXT',
+    self::MT_AUDIO                   => 'MT_AUDIO',
+    self::MT_DOCUMENT                => 'MT_DOCUMENT',
+    self::MT_GAME                    => 'MT_GAME',
+    self::MT_PHOTO                   => 'MT_PHOTO',
+    self::MT_STICKER                 => 'MT_STICKER',
+    self::MT_VIDEO                   => 'MT_VIDEO',
+    self::MT_VOICE                   => 'MT_VOICE',
+    self::MT_CONTACT                 => 'MT_CONTACT',
+    self::MT_LOCATION                => 'MT_LOCATION',
+    self::MT_VENUE                   => 'MT_VENUE',
+    self::MT_NEW_CHAT_MEMBER         => 'MT_NEW_CHAT_MEMBER',
+    self::MT_LEFT_CHAT_MEMBER        => 'MT_LEFT_CHAT_MEMBER',
+    self::MT_NEW_CHAT_TITLE          => 'MT_NEW_CHAT_TITLE',
+    self::MT_NEW_CHAT_PHOTO          => 'MT_NEW_CHAT_PHOTO',
+    self::MT_DELETE_CHAT_PHOTO       => 'MT_DELETE_CHAT_PHOTO',
+    self::MT_GROUP_CHAT_CREATED      => 'MT_GROUP_CHAT_CREATED',
+    self::MT_SUPERGROUP_CHAT_CREATED => 'MT_SUPERGROUP_CHAT_CREATED',
+    self::MT_CHANNEL_CHAT_CREATED    => 'MT_CHANNEL_CHAT_CREATED',
+    self::MT_MIGRATE_TO_CHAT_ID      => 'MT_MIGRATE_TO_CHAT_ID',
+    self::MT_MIGRATE_FROM_CHAT_ID    => 'MT_MIGRATE_FROM_CHAT_ID',
+    self::MT_PINNED_MESSAGE          => 'MT_PINNED_MESSAGE',
+  ];
 
   /**
    * User manager.
@@ -260,6 +290,17 @@ class Bot
   }
 
   /**
+   * Returns title of the message type.
+   *
+   * @param int $message_type
+   * @return string
+   */
+  public function getMessageTypeTitle($message_type)
+  {
+    return $this->mt_captions[$message_type] ?? 'MT_UNKNOWN';
+  }
+
+  /**
    * Handles update.
    *
    * @return void
@@ -283,8 +324,8 @@ class Bot
     // Get update type
     $update_type = $this->whatUpdateType($update);
     $l->info(
-      'Handling update of the type "{type}"',
-      ['type' => $update_type]
+      'Handling update of type "{type}"',
+      ['type' => $update_type, 'update' => $update]
     );
 
     // Dispatch event when we got the Update object

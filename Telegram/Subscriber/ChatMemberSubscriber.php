@@ -60,10 +60,17 @@ class ChatMemberSubscriber extends AbstractBotSubscriber implements EventSubscri
     $this->getDoctrine()
       ->getManager()
       ->flush();
+
+    // Tell the Bot this request is handled
+    $this->getBot()
+      ->setRequestHandled(true);
   }
 
   /**
+   * Returns the Chat object.
+   *
    * @param AbstractMessageEvent $event
+   * @return \Kaula\TelegramBundle\Entity\Chat
    */
   private function prepareChat(AbstractMessageEvent $event)
   {
@@ -87,6 +94,8 @@ class ChatMemberSubscriber extends AbstractBotSubscriber implements EventSubscri
       ->setFirstName($tc->first_name)
       ->setLastName($tc->last_name)
       ->setAllMembersAreAdministrators($tc->all_members_are_administrators);
+
+    return $chat;
   }
 
   /**
@@ -151,6 +160,10 @@ class ChatMemberSubscriber extends AbstractBotSubscriber implements EventSubscri
     $this->getDoctrine()
       ->getManager()
       ->flush();
+
+    // Tell the Bot this request is handled
+    $this->getBot()
+      ->setRequestHandled(true);
   }
 
   /**
@@ -161,8 +174,8 @@ class ChatMemberSubscriber extends AbstractBotSubscriber implements EventSubscri
     AbstractMessageEvent $event,
     Chat $chat
   ) {
-    // User joined the group
-    $tu = $event->getMessage()->new_chat_member;
+    // User left the group
+    $tu = $event->getMessage()->left_chat_member;
     $em = $this->getDoctrine()
       ->getManager();
 

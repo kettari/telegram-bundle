@@ -33,19 +33,25 @@ class SettingsCommand extends AbstractCommand
    */
   public function execute()
   {
-    $this->replyWithMessage(
-      'Какие настройки бота вы хотите изменить?',
-      '',
-      $this->getReplyKeyboardMarkup_MainMenu()
-    );
-
-    $this->getBus()
-      ->getHooker()
-      ->createHook(
-        $this->getUpdate(),
-        get_class($this),
-        'handleSettingsMainMenu'
+    if ('private' == $this->getUpdate()->message->chat->type) {
+      $this->replyWithMessage(
+        'Какие настройки бота вы хотите изменить?',
+        '',
+        $this->getReplyKeyboardMarkup_MainMenu()
       );
+
+      $this->getBus()
+        ->getHooker()
+        ->createHook(
+          $this->getUpdate(),
+          get_class($this),
+          'handleSettingsMainMenu'
+        );
+    } else {
+      $this->replyWithMessage(
+        'Эта команда работает только в личной переписке с ботом. В общем канале управление настройками невозможно.'
+      );
+    }
   }
 
   /**

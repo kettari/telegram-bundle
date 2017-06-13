@@ -33,27 +33,33 @@ class UserManCommand extends AbstractCommand
    */
   public function execute()
   {
-    $parameter = $this->getParameter();
-    if (!empty($parameter)) {
-      $this->showUserManMenu($parameter);
+    if ('private' == $this->getUpdate()->message->chat->type) {
+      $parameter = $this->getParameter();
+      if (!empty($parameter)) {
+        $this->showUserManMenu($parameter);
 
-      return;
-    }
+        return;
+      }
 
-    $this->replyWithMessage(
-      'Укажите часть ФИО, никнейма либо номер телефона:',
-      null,
-      $this->getReplyKeyboardMarkup_Cancel()
-    );
-
-    // Create the hook to handle user's reply
-    $this->getBus()
-      ->getHooker()
-      ->createHook(
-        $this->getUpdate(),
-        get_class($this),
-        'showUserManMenu'
+      $this->replyWithMessage(
+        'Укажите часть ФИО, никнейма либо номер телефона:',
+        null,
+        $this->getReplyKeyboardMarkup_Cancel()
       );
+
+      // Create the hook to handle user's reply
+      $this->getBus()
+        ->getHooker()
+        ->createHook(
+          $this->getUpdate(),
+          get_class($this),
+          'showUserManMenu'
+        );
+    } else {
+      $this->replyWithMessage(
+        'Эта команда работает только в личной переписке с ботом. В общем канале управление пользователями невозможно.'
+      );
+    }
   }
 
   /**
