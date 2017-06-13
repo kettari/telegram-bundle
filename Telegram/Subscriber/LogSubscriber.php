@@ -38,8 +38,10 @@ class LogSubscriber extends AbstractBotSubscriber implements EventSubscriberInte
    */
   public static function getSubscribedEvents()
   {
-    return [UpdateReceivedEvent::NAME => ['onUpdateReceived', 90000],
-      RequestSentEvent::NAME => ['onRequestSent', -90000]];
+    return [
+      UpdateReceivedEvent::NAME => ['onUpdateReceived', 90000],
+      RequestSentEvent::NAME    => ['onRequestSent', -90000],
+    ];
   }
 
   /**
@@ -50,17 +52,6 @@ class LogSubscriber extends AbstractBotSubscriber implements EventSubscriberInte
   public function onUpdateReceived(UpdateReceivedEvent $event)
   {
     $this->logInput($event->getUpdate());
-  }
-
-  /**
-   * Writes outgoing message to the log table in the database.
-   *
-   * @param RequestSentEvent $event
-   */
-  public function onRequestSent(RequestSentEvent $event)
-  {
-    // TODO Log output (sent) messages
-    //$this->logOutput($event);
   }
 
   /**
@@ -104,6 +95,17 @@ class LogSubscriber extends AbstractBotSubscriber implements EventSubscriberInte
       ->getManager();
     $em->persist($log);
     $em->flush();
+  }
+
+  /**
+   * Writes outgoing message to the log table in the database.
+   *
+   * @param RequestSentEvent $event
+   */
+  public function onRequestSent(RequestSentEvent $event)
+  {
+    // TODO Log output (sent) messages
+    //$this->logOutput($event);
   }
 
 }

@@ -15,6 +15,7 @@ use Kaula\TelegramBundle\Entity\User;
 use Kaula\TelegramBundle\Telegram\Event\AbstractMessageEvent;
 use Kaula\TelegramBundle\Telegram\Event\JoinChatMemberEvent;
 use Kaula\TelegramBundle\Telegram\Event\LeftChatMemberEvent;
+use Kaula\TelegramBundle\Telegram\Event\TextReceivedEvent;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
 class ChatMemberSubscriber extends AbstractBotSubscriber implements EventSubscriberInterface
@@ -43,6 +44,7 @@ class ChatMemberSubscriber extends AbstractBotSubscriber implements EventSubscri
     return [
       JoinChatMemberEvent::NAME => 'onMemberJoined',
       LeftChatMemberEvent::NAME => 'onMemberLeft',
+      TextReceivedEvent::NAME   => 'onMemberTexted',
     ];
   }
 
@@ -147,7 +149,7 @@ class ChatMemberSubscriber extends AbstractBotSubscriber implements EventSubscri
   }
 
   /**
-   * When somebody joined the chat, updates database.
+   * When somebody left the chat, updates database.
    *
    * @param LeftChatMemberEvent $event
    */
@@ -211,6 +213,71 @@ class ChatMemberSubscriber extends AbstractBotSubscriber implements EventSubscri
       ->setUser($user)
       ->setLeaveDate(new \DateTime('now', new \DateTimeZone('UTC')))
       ->setStatus('left');
+  }
+
+  /**
+   * When somebody posted text in the chat, updates database.
+   *
+   * @param TextReceivedEvent $event
+   */
+  public function onMemberTexted(TextReceivedEvent $event)
+  {
+    $chat = $this->prepareChat($event);
+    $this->processTextedMember($event, $chat);
+
+    // Flush changes
+    $this->getDoctrine()
+      ->getManager()
+      ->flush();
+
+    // NB: This handler SHALL NOT mark request as handled. We just update ChatMember
+    // silently
+  }
+
+  /**
+   * @param AbstractMessageEvent $event
+   * @param Chat $chat
+   */
+  private function processTextedMember(
+    AbstractMessageEvent $event,
+    Chat $chat
+  ) {
+    // User left the group
+    $tu = $event->getMessage()->from;
+    $em = $this->getDoctrine()
+      ->getManager();
+
+    // Find user object. If not found, create new
+    $user = $this->getDoctrine()
+      ->getRepository('KaulaTelegramBundle:User')
+      ->findOneBy(['telegram_id' => $tu->id]);
+    if (!$user) {
+      $user = new User();
+      $em->persist($user);
+    }
+    $user->setTelegramId($tu->id)
+      ->setFirstName($tu->first_name)
+      ->setLastName($tu->last_name)
+      ->setUsername($tu->username);
+
+    // Find chat member object. If not found, create new
+    $chat_member = $this->getDoctrine()
+      ->getRepository(
+        'KaulaTelegramBundle:ChatMember'
+      )
+      ->findOneBy(
+        [
+          'chat' => $chat,
+          'user' => $user,
+        ]
+      );
+    if (!$chat_member) {
+      $chat_member = new ChatMember();
+      $em->persist($chat_member);
+    }
+    $chat_member->setChat($chat)
+      ->setUser($user)
+      ->setStatus('member');
   }
 
 }
