@@ -57,6 +57,13 @@ abstract class AbstractCommand
   static public $required_permissions = [];
 
   /**
+   * Notifications declared in this command.
+   *
+   * @var array
+   */
+  static public $declared_notifications = [];
+
+  /**
    * @var CommandBus
    */
   private $bus;
@@ -119,6 +126,16 @@ abstract class AbstractCommand
   static public function getRequiredPermissions(): array
   {
     return static::$required_permissions;
+  }
+
+  /**
+   * Returns notifications declared in the command.
+   *
+   * @return array
+   */
+  static public function getDeclaredNotifications(): array
+  {
+    return static::$declared_notifications;
   }
 
   /**

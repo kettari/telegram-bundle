@@ -9,6 +9,6 @@
 namespace Kaula\TelegramBundle\Exception;
 
 
-class HookException extends KaulaTelegramBundleException {
+class HookException extends TelegramBundleException {
 
 }

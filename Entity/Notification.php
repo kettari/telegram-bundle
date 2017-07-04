@@ -16,8 +16,8 @@ use Doctrine\ORM\Mapping\Index;
 
 /**
  * @ORM\Entity
- * @ORM\Table(name="notification",indexes={@Index(name="order_idx",columns={"order"}),
- *   @Index(name="default_idx",columns={"default"})})
+ * @ORM\Table(name="notification",indexes={@Index(name="order_idx",columns={"sort_order"}),
+ *   @Index(name="default_idx",columns={"guest_default"})})
  */
 class Notification
 {
@@ -32,7 +32,7 @@ class Notification
   /**
    * @ORM\Column(type="integer",nullable=true)
    */
-  private $order;
+  private $sortOrder;
 
   /**
    * @ORM\Column(type="string",length=50,unique=true)
@@ -49,7 +49,7 @@ class Notification
   /**
    * @ORM\Column(type="boolean")
    */
-  private $default = false;
+  private $guestDefault = false;
 
   /**
    * @ORM\ManyToOne(targetEntity="Kaula\TelegramBundle\Entity\Permission")
@@ -85,13 +85,13 @@ class Notification
   /**
    * Set order
    *
-   * @param integer $order
+   * @param integer $sortOrder
    *
    * @return Notification
    */
-  public function setOrder($order)
+  public function setSortOrder($sortOrder)
   {
-    $this->order = $order;
+    $this->sortOrder = $sortOrder;
 
     return $this;
   }
@@ -101,9 +101,9 @@ class Notification
    *
    * @return integer
    */
-  public function getOrder()
+  public function getSortOrder()
   {
-    return $this->order;
+    return $this->sortOrder;
   }
 
   /**
@@ -157,13 +157,13 @@ class Notification
   /**
    * Set default
    *
-   * @param boolean $default
+   * @param boolean $guestDefault
    *
    * @return Notification
    */
-  public function setDefault($default)
+  public function setGuestDefault($guestDefault)
   {
-    $this->default = $default;
+    $this->guestDefault = $guestDefault;
 
     return $this;
   }
@@ -173,9 +173,9 @@ class Notification
    *
    * @return boolean
    */
-  public function getDefault()
+  public function getGuestDefault()
   {
-    return $this->default;
+    return $this->guestDefault;
   }
 
   /**

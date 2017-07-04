@@ -9,6 +9,6 @@
 namespace Kaula\TelegramBundle\Exception;
 
 
-class KaulaTelegramBundleException extends \RuntimeException {
+class TelegramBundleException extends \RuntimeException {
 
 }

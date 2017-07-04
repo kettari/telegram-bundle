@@ -16,7 +16,7 @@ use GuzzleHttp\Exception\RequestException;
 use Kaula\TelegramBundle\Entity\Log;
 use Kaula\TelegramBundle\Entity\Queue;
 use Kaula\TelegramBundle\Entity\User;
-use Kaula\TelegramBundle\Exception\KaulaTelegramBundleException;
+use Kaula\TelegramBundle\Exception\TelegramBundleException;
 use Kaula\TelegramBundle\Telegram\Command\HelpCommand;
 use Kaula\TelegramBundle\Telegram\Command\ListRolesCommand;
 use Kaula\TelegramBundle\Telegram\Command\PushCommand;
@@ -360,7 +360,7 @@ class Bot
    *
    * @param \unreal4u\TelegramAPI\Telegram\Types\Update $update
    * @return string
-   * @throws KaulaTelegramBundleException
+   * @throws TelegramBundleException
    */
   public function whatUpdateType(Update $update)
   {
@@ -386,7 +386,7 @@ class Bot
       return self::UT_CALLBACK_QUERY;
     }
 
-    throw new KaulaTelegramBundleException('Unknown update type.');
+    throw new TelegramBundleException('Unknown update type.');
   }
 
   /**
@@ -785,7 +785,7 @@ class Bot
             ]
           )
       )) {
-        throw new KaulaTelegramBundleException(
+        throw new TelegramBundleException(
           sprintf(
             'Queue for push failed: unable to find chat for given user (telegram_user_id=%s)',
             $user_item->getTelegramId()

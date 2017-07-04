@@ -23,6 +23,7 @@ class RegisterCommand extends AbstractCommand
   static public $name = 'register';
   static public $description = 'Зарегистрироваться у бота';
   static public $required_permissions = ['execute command register'];
+  static public $declared_notifications = [self::NOTIFICATION_NEW_REGISTER];
 
   const BTN_PHONE = 'Сообщить номер телефона';
   const BTN_CANCEL = 'Отмена';
