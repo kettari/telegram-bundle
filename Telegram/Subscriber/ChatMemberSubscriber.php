@@ -42,8 +42,8 @@ class ChatMemberSubscriber extends AbstractBotSubscriber implements EventSubscri
   public static function getSubscribedEvents()
   {
     return [
-      JoinChatMemberEvent::NAME => 'onMemberJoined',
-      LeftChatMemberEvent::NAME => 'onMemberLeft',
+      JoinChatMemberEvent::NAME => ['onMemberJoined', -90000],
+      LeftChatMemberEvent::NAME => ['onMemberLeft', -90000],
       TextReceivedEvent::NAME   => 'onMemberTexted',
     ];
   }
