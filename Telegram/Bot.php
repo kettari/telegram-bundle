@@ -95,7 +95,9 @@ class Bot
   const MT_MIGRATE_TO_CHAT_ID = 524288;
   const MT_MIGRATE_FROM_CHAT_ID = 1048576;
   const MT_PINNED_MESSAGE = 2097152;
-  const MT_ANY = 4194303;
+  const MT_NEW_CHAT_MEMBERS_MANY = 4194304;
+  const MT_SUCCESSFUL_PAYMENT = 8388608;
+  const MT_ANY = 16777215;
 
   // Captions of the event types
   /**
@@ -138,6 +140,8 @@ class Bot
     self::MT_MIGRATE_TO_CHAT_ID      => 'MT_MIGRATE_TO_CHAT_ID',
     self::MT_MIGRATE_FROM_CHAT_ID    => 'MT_MIGRATE_FROM_CHAT_ID',
     self::MT_PINNED_MESSAGE          => 'MT_PINNED_MESSAGE',
+    self::MT_NEW_CHAT_MEMBERS_MANY   => 'MT_NEW_CHAT_MEMBERS_MANY',
+    self::MT_SUCCESSFUL_PAYMENT      => 'MT_SUCCESSFUL_PAYMENT',
   ];
 
   /**
@@ -297,7 +301,14 @@ class Bot
    */
   public function getMessageTypeTitle($message_type)
   {
-    return $this->mt_captions[$message_type] ?? 'MT_UNKNOWN';
+    $types = [];
+    foreach ($this->mt_captions as $key => $caption) {
+      if ($key & $message_type) {
+        $types[] = $caption;
+      }
+    }
+
+    return (count($types) > 0) ? implode(', ', $types) : 'MT_UNKNOWN';
   }
 
   /**
@@ -1037,6 +1048,11 @@ class Bot
     if (is_object($message->new_chat_member)) {
       $message_type = $message_type | self::MT_NEW_CHAT_MEMBER;
     }
+    if (is_array($message->new_chat_members) &&
+      (count($message->new_chat_members) > 0)
+    ) {
+      $message_type = $message_type | self::MT_NEW_CHAT_MEMBERS_MANY;
+    }
     if (is_object($message->left_chat_member)) {
       $message_type = $message_type | self::MT_LEFT_CHAT_MEMBER;
     }
@@ -1069,6 +1085,17 @@ class Bot
     }
 
     return $message_type;
+  }
+
+  /**
+   * Returns logger object.
+   *
+   * @return LoggerInterface
+   */
+  public function getLogger()
+  {
+    return $this->getContainer()
+      ->get('logger');
   }
 
   /**

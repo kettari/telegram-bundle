@@ -12,11 +12,13 @@ namespace Kaula\TelegramBundle\Telegram\Subscriber;
 use Kaula\TelegramBundle\Entity\Chat;
 use Kaula\TelegramBundle\Entity\ChatMember;
 use Kaula\TelegramBundle\Entity\User;
-use Kaula\TelegramBundle\Telegram\Event\AbstractMessageEvent;
 use Kaula\TelegramBundle\Telegram\Event\JoinChatMemberEvent;
+use Kaula\TelegramBundle\Telegram\Event\JoinChatMembersManyEvent;
 use Kaula\TelegramBundle\Telegram\Event\LeftChatMemberEvent;
 use Kaula\TelegramBundle\Telegram\Event\TextReceivedEvent;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+use unreal4u\TelegramAPI\Telegram\Types\Chat as TelegramChat;
+use unreal4u\TelegramAPI\Telegram\Types\User as TelegramUser;
 
 class ChatMemberSubscriber extends AbstractBotSubscriber implements EventSubscriberInterface
 {
@@ -42,9 +44,10 @@ class ChatMemberSubscriber extends AbstractBotSubscriber implements EventSubscri
   public static function getSubscribedEvents()
   {
     return [
-      JoinChatMemberEvent::NAME => ['onMemberJoined', -90000],
-      LeftChatMemberEvent::NAME => ['onMemberLeft', -90000],
-      TextReceivedEvent::NAME   => 'onMemberTexted',
+      //JoinChatMemberEvent::NAME => ['onMemberJoined', -90000],
+      JoinChatMembersManyEvent::NAME => ['onMembersManyJoined', -90000],
+      LeftChatMemberEvent::NAME      => ['onMemberLeft', -90000],
+      TextReceivedEvent::NAME        => 'onMemberTexted',
     ];
   }
 
@@ -53,10 +56,34 @@ class ChatMemberSubscriber extends AbstractBotSubscriber implements EventSubscri
    *
    * @param JoinChatMemberEvent $event
    */
-  public function onMemberJoined(JoinChatMemberEvent $event)
+  /*public function onMemberJoined(JoinChatMemberEvent $event)
   {
     $chat = $this->prepareChat($event);
     $this->processJoinedMember($event, $chat);
+
+    // Flush changes
+    $this->getDoctrine()
+      ->getManager()
+      ->flush();
+
+    // Tell the Bot this request is handled
+    $this->getBot()
+      ->setRequestHandled(true);
+  }*/
+
+  /**
+   * When somebody joined the chat, updates database.
+   *
+   * @param JoinChatMembersManyEvent $event
+   */
+  public function onMembersManyJoined(JoinChatMembersManyEvent $event)
+  {
+    $chat = $this->prepareChat($event->getMessage()->chat);
+    $users = $event->getMessage()->new_chat_members;
+    /** @var TelegramUser $joined_user */
+    foreach ($users as $joined_user) {
+      $this->processJoinedMember($joined_user, $chat);
+    }
 
     // Flush changes
     $this->getDoctrine()
@@ -71,14 +98,11 @@ class ChatMemberSubscriber extends AbstractBotSubscriber implements EventSubscri
   /**
    * Returns the Chat object.
    *
-   * @param AbstractMessageEvent $event
+   * @param \unreal4u\TelegramAPI\Telegram\Types\Chat $tc
    * @return \Kaula\TelegramBundle\Entity\Chat
    */
-  private function prepareChat(AbstractMessageEvent $event)
+  private function prepareChat(TelegramChat $tc)
   {
-    // Get telegram chat object
-    $tc = $event->getMessage()->chat;
-
     // Find chat object. If not found, create new
     $chat = $this->getDoctrine()
       ->getRepository('KaulaTelegramBundle:Chat')
@@ -101,27 +125,25 @@ class ChatMemberSubscriber extends AbstractBotSubscriber implements EventSubscri
   }
 
   /**
-   * @param AbstractMessageEvent $event
+   * @param \unreal4u\TelegramAPI\Telegram\Types\User $tu
    * @param Chat $chat
    */
   private function processJoinedMember(
-    AbstractMessageEvent $event,
+    TelegramUser $tu,
     Chat $chat
   ) {
-    // User joined the group
-    $tu = $event->getMessage()->new_chat_member;
     $em = $this->getDoctrine()
       ->getManager();
 
     // Find user object. If not found, create new
-    $user = $this->getDoctrine()
+    $user_entity = $this->getDoctrine()
       ->getRepository('KaulaTelegramBundle:User')
       ->findOneBy(['telegram_id' => $tu->id]);
-    if (!$user) {
-      $user = new User();
-      $em->persist($user);
+    if (!$user_entity) {
+      $user_entity = new User();
+      $em->persist($user_entity);
     }
-    $user->setTelegramId($tu->id)
+    $user_entity->setTelegramId($tu->id)
       ->setFirstName($tu->first_name)
       ->setLastName($tu->last_name)
       ->setUsername($tu->username);
@@ -134,7 +156,7 @@ class ChatMemberSubscriber extends AbstractBotSubscriber implements EventSubscri
       ->findOneBy(
         [
           'chat' => $chat,
-          'user' => $user,
+          'user' => $user_entity,
         ]
       );
     if (!$chat_member) {
@@ -142,10 +164,31 @@ class ChatMemberSubscriber extends AbstractBotSubscriber implements EventSubscri
       $em->persist($chat_member);
     }
     $chat_member->setChat($chat)
-      ->setUser($user)
+      ->setUser($user_entity)
       ->setJoinDate(new \DateTime('now', new \DateTimeZone('UTC')))
       ->setLeaveDate(null)
       ->setStatus('member');
+
+    // Log event
+    $external_name = trim($user_entity->getFirstName().' '.$user_entity->getLastName());
+    if (empty($external_name)) {
+      $external_name = '(no external name)';
+    }
+    $chat_name = trim($chat->getTitle());
+    if (empty($chat_name)) {
+      $chat_name = trim($chat->getFirstName().' '.$chat->getLastName());
+    }
+    $this->getBot()
+      ->getLogger()
+      ->info(
+        'User "{telegram_user_name}" ("{external_name}") joined the chat "{chat_name}" ({chat_id})',
+        [
+          'telegram_user_name' => trim($tu->first_name.' '.$tu->last_name),
+          'external_name'      => $external_name,
+          'chat_name'          => $chat_name,
+          'chat_id'            => $chat->getId(),
+        ]
+      );
   }
 
   /**
@@ -155,8 +198,8 @@ class ChatMemberSubscriber extends AbstractBotSubscriber implements EventSubscri
    */
   public function onMemberLeft(LeftChatMemberEvent $event)
   {
-    $chat = $this->prepareChat($event);
-    $this->processLeftMember($event, $chat);
+    $chat = $this->prepareChat($event->getMessage()->chat);
+    $this->processLeftMember($event->getMessage()->left_chat_member, $chat);
 
     // Flush changes
     $this->getDoctrine()
@@ -169,27 +212,25 @@ class ChatMemberSubscriber extends AbstractBotSubscriber implements EventSubscri
   }
 
   /**
-   * @param AbstractMessageEvent $event
+   * @param \unreal4u\TelegramAPI\Telegram\Types\User $tu
    * @param Chat $chat
    */
   private function processLeftMember(
-    AbstractMessageEvent $event,
+    TelegramUser $tu,
     Chat $chat
   ) {
-    // User left the group
-    $tu = $event->getMessage()->left_chat_member;
     $em = $this->getDoctrine()
       ->getManager();
 
     // Find user object. If not found, create new
-    $user = $this->getDoctrine()
+    $user_entity = $this->getDoctrine()
       ->getRepository('KaulaTelegramBundle:User')
       ->findOneBy(['telegram_id' => $tu->id]);
-    if (!$user) {
-      $user = new User();
-      $em->persist($user);
+    if (!$user_entity) {
+      $user_entity = new User();
+      $em->persist($user_entity);
     }
-    $user->setTelegramId($tu->id)
+    $user_entity->setTelegramId($tu->id)
       ->setFirstName($tu->first_name)
       ->setLastName($tu->last_name)
       ->setUsername($tu->username);
@@ -202,7 +243,7 @@ class ChatMemberSubscriber extends AbstractBotSubscriber implements EventSubscri
       ->findOneBy(
         [
           'chat' => $chat,
-          'user' => $user,
+          'user' => $user_entity,
         ]
       );
     if (!$chat_member) {
@@ -210,9 +251,30 @@ class ChatMemberSubscriber extends AbstractBotSubscriber implements EventSubscri
       $em->persist($chat_member);
     }
     $chat_member->setChat($chat)
-      ->setUser($user)
+      ->setUser($user_entity)
       ->setLeaveDate(new \DateTime('now', new \DateTimeZone('UTC')))
       ->setStatus('left');
+
+    // Log event
+    $external_name = trim($user_entity->getFirstName().' '.$user_entity->getLastName());
+    if (empty($external_name)) {
+      $external_name = '(no external name)';
+    }
+    $chat_name = trim($chat->getTitle());
+    if (empty($chat_name)) {
+      $chat_name = trim($chat->getFirstName().' '.$chat->getLastName());
+    }
+    $this->getBot()
+      ->getLogger()
+      ->info(
+        'User "{telegram_user_name}" ("{external_name}") left the chat "{chat_name}" ({chat_id})',
+        [
+          'telegram_user_name' => trim($tu->first_name.' '.$tu->last_name),
+          'external_name'      => $external_name,
+          'chat_name'          => $chat_name,
+          'chat_id'            => $chat->getId(),
+        ]
+      );
   }
 
   /**
@@ -222,8 +284,8 @@ class ChatMemberSubscriber extends AbstractBotSubscriber implements EventSubscri
    */
   public function onMemberTexted(TextReceivedEvent $event)
   {
-    $chat = $this->prepareChat($event);
-    $this->processTextedMember($event, $chat);
+    $chat = $this->prepareChat($event->getMessage()->chat);
+    $this->processTextedMember($event->getMessage()->from, $chat);
 
     // Flush changes
     $this->getDoctrine()
@@ -235,15 +297,13 @@ class ChatMemberSubscriber extends AbstractBotSubscriber implements EventSubscri
   }
 
   /**
-   * @param AbstractMessageEvent $event
+   * @param \unreal4u\TelegramAPI\Telegram\Types\User $tu
    * @param Chat $chat
    */
   private function processTextedMember(
-    AbstractMessageEvent $event,
+    TelegramUser $tu,
     Chat $chat
   ) {
-    // User left the group
-    $tu = $event->getMessage()->from;
     $em = $this->getDoctrine()
       ->getManager();
 

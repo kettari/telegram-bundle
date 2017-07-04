@@ -28,6 +28,7 @@
   * **telegram.command.executed** -- after the command is executed.
   * **telegram.chatmember.joined** -- new chat member in the group.
     * 0:ChatMemberSubscriber -- handles new chat member.
+  * **telegram.chatmembers.joined** -- one or more new chat members in the group.
   * **telegram.chatmember.left** -- chat member left the group.
     * 0:ChatMemberSubscriber -- handles left chat member.
   * **telegram.group.created** -- new group created.

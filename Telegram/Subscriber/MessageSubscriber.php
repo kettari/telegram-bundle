@@ -13,6 +13,7 @@ use Exception;
 use Kaula\TelegramBundle\Telegram\Bot;
 use Kaula\TelegramBundle\Telegram\Event\GroupCreatedEvent;
 use Kaula\TelegramBundle\Telegram\Event\JoinChatMemberEvent;
+use Kaula\TelegramBundle\Telegram\Event\JoinChatMembersManyEvent;
 use Kaula\TelegramBundle\Telegram\Event\LeftChatMemberEvent;
 use Kaula\TelegramBundle\Telegram\Event\MessageReceivedEvent;
 use Kaula\TelegramBundle\Telegram\Event\MigrateFromChatIdEvent;
@@ -72,7 +73,7 @@ class MessageSubscriber extends AbstractBotSubscriber implements EventSubscriber
       $message_type = $this->getBot()
         ->whatMessageType($event->getMessage());
       $l->info(
-        'Message type: "{type_title}"',
+        'Detected message type: "{type_title}"',
         [
           'type_title' => $this->getBot()
             ->getMessageTypeTitle($message_type),
@@ -114,6 +115,11 @@ class MessageSubscriber extends AbstractBotSubscriber implements EventSubscriber
     if ($message_type & Bot::MT_NEW_CHAT_MEMBER) {
       $join_member_event = new JoinChatMemberEvent($event->getUpdate());
       $dispatcher->dispatch(JoinChatMemberEvent::NAME, $join_member_event);
+    }
+    // Dispatch chat member joined event
+    if ($message_type & Bot::MT_NEW_CHAT_MEMBERS_MANY) {
+      $join_members_many_event = new JoinChatMembersManyEvent($event->getUpdate());
+      $dispatcher->dispatch(JoinChatMembersManyEvent::NAME, $join_members_many_event);
     }
     // Dispatch chat member left event
     if ($message_type & Bot::MT_LEFT_CHAT_MEMBER) {
