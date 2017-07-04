@@ -961,7 +961,7 @@ class Bot
     $send_message->reply_markup = $reply_markup;
 
     // Allow some debug info
-    $l->debug(
+    $l->info(
       'Bot is sending message',
       ['message' => print_r($send_message, true)]
     );

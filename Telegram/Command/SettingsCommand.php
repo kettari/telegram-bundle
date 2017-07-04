@@ -146,7 +146,7 @@ class SettingsCommand extends AbstractCommand
     // Load notifications
     /** @var \Kaula\TelegramBundle\Entity\Notification $notifications */
     $notifications = $d->getRepository('KaulaTelegramBundle:Notification')
-      ->findBy([], ['order' => 'ASC']);
+      ->findBy([], ['sort_order' => 'ASC']);
     // Check if user has required for each notification permission
     $inline_keyboard = new Markup();
     /** @var \Kaula\TelegramBundle\Entity\Notification $notification_item */

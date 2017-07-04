@@ -220,7 +220,7 @@ class RegisterCommand extends AbstractCommand
   private function getDefaultNotifications(Registry $d)
   {
     $notifications = $d->getRepository('KaulaTelegramBundle:Notification')
-      ->findBy(['default' => true]);
+      ->findBy(['user_default' => true]);
     if (0 == count($notifications)) {
       // No error, just no default notifications defined
       return [];

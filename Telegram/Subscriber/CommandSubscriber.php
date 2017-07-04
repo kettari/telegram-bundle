@@ -156,6 +156,10 @@ class CommandSubscriber extends AbstractBotSubscriber implements EventSubscriber
         $event->getMessage()->chat->id,
         'Извините, такой команды я не знаю.'
       );
+
+    // Set flag that request is handled
+    $this->getBot()
+      ->setRequestHandled(true);
   }
 
   /**
@@ -171,5 +175,9 @@ class CommandSubscriber extends AbstractBotSubscriber implements EventSubscriber
         $event->getMessage()->chat->id,
         'Извините, у вас недостаточно прав для доступа к этой команде.'
       );
+
+    // Set flag that request is handled
+    $this->getBot()
+      ->setRequestHandled(true);
   }
 }

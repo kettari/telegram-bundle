@@ -76,7 +76,7 @@ class PopulateSchemaCommand extends AbstractCommand
   /**
    * Populates roles.
    */
-  private function populateRoles()
+  protected function populateRoles()
   {
     // Check there are no rows in the role table
     if (!$this->isRolesEmpty()) {
@@ -137,7 +137,7 @@ class PopulateSchemaCommand extends AbstractCommand
   /**
    * Populates permissions.
    */
-  private function populatePermissions()
+  protected function populatePermissions()
   {
     // Check there are no rows in the permission table
     if (!$this->isPermissionsEmpty()) {
@@ -222,6 +222,8 @@ class PopulateSchemaCommand extends AbstractCommand
     $perm_self_update = new Permission();
     $perm_self_update->setName('receive notification self-update');
     $em->persist($perm_self_update);
+    // Assign 'self-update' permission to guest
+    $this->role_guest->addPermission($perm_self_update);
 
     // Flush changes
     $em->flush();
@@ -250,7 +252,7 @@ class PopulateSchemaCommand extends AbstractCommand
    * @param $command
    * @return array
    */
-  private function populateCommandPermissionsRequired($command)
+  protected function populateCommandPermissionsRequired($command)
   {
     /** @var \Doctrine\Bundle\DoctrineBundle\Registry $d */
     $d = $this->getContainer()
@@ -290,7 +292,7 @@ class PopulateSchemaCommand extends AbstractCommand
    * @param $command
    * @return array
    */
-  private function populateCommandNotificationPermissions($command)
+  protected function populateCommandNotificationPermissions($command)
   {
     /** @var \Doctrine\Bundle\DoctrineBundle\Registry $d */
     $d = $this->getContainer()
@@ -327,7 +329,7 @@ class PopulateSchemaCommand extends AbstractCommand
   /**
    * Populates well-known notifications.
    */
-  private function populateNotifications()
+  protected function populateNotifications()
   {
     // Check there are no rows in the notification table
     if (!$this->isNotificationsEmpty()) {
@@ -355,7 +357,7 @@ class PopulateSchemaCommand extends AbstractCommand
     $notif_self_update->setName('self-update')
       ->setSortOrder(99999)
       ->setTitle('Что нового в боте')
-      ->setGuestDefault(true)
+      ->setUserDefault(true)
       ->setPermission($perm_self_update);
     $em->persist($notif_self_update);
 
@@ -363,19 +365,19 @@ class PopulateSchemaCommand extends AbstractCommand
      * 'new-register'
      */
     if (is_null(
-      $perm_self_update = $d->getRepository('KaulaTelegramBundle:Permission')
+      $perm_new_register = $d->getRepository('KaulaTelegramBundle:Permission')
         ->findOneBy(['name' => 'receive notification new-register'])
     ))
     {
       throw new TelegramBundleException('Unable to get "receive notification new-register" permission');
     }
 
-    // Create notification 'self-update'
+    // Create notification 'new-register'
     $notif_new_register = new Notification();
     $notif_new_register->setName('new-register')
       ->setSortOrder(88888)
       ->setTitle('Новые регистрации')
-      ->setPermission($perm_self_update);
+      ->setPermission($perm_new_register);
     $em->persist($notif_new_register);
 
     // Flush changes
