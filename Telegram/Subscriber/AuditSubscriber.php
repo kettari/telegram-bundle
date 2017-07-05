@@ -164,29 +164,29 @@ class AuditSubscriber extends AbstractBotSubscriber implements EventSubscriberIn
       JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE
     );
     // Resolve chat and user objects
-    $chat = $this->resolveChat($event->getUpdate());
+    $chat_entity = $this->resolveChat($event->getUpdate());
     // Resolve user
-    $user = $this->getDoctrine()
+    $user_entity = $this->getDoctrine()
       ->getRepository('KaulaTelegramBundle:User')
       ->findOneBy(['telegram_id' => $event->getJoinedUser()->id]);
 
     // Format message parts
-    $user_name = trim($user->getFirstName().' '.$user->getLastName());
+    $user_name = trim($user_entity->getFirstName().' '.$user_entity->getLastName());
     $external_name = trim(
-      $user->getFirstName().' '.$user->getLastName()
+      $user_entity->getExternalFirstName().' '.$user_entity->getExternalLastName()
     );
     if (empty($external_name)) {
-      $external_name = '(no external name)';
+      $external_name = 'no external name';
     }
-    if (!is_null($chat)) {
-      $chat_name = trim($chat->getTitle());
+    if (!is_null($chat_entity)) {
+      $chat_name = trim($chat_entity->getTitle());
       if (empty($chat_name)) {
-        $chat_name = trim($chat->getFirstName().' '.$chat->getLastName());
+        $chat_name = trim($chat_entity->getFirstName().' '.$chat_entity->getLastName());
       }
-      $chat_id = $chat->getId();
+      $chat_id = $chat_entity->getId();
     } else {
       $chat_name = '(chat unknown)';
-      $chat_id = '(chat id unknown)';
+      $chat_id = 'chat id unknown';
     }
     $description = sprintf(
       'User "%s" ("%s") joined the chat "%s" (%s)',
@@ -197,7 +197,7 @@ class AuditSubscriber extends AbstractBotSubscriber implements EventSubscriberIn
     );
     // Add audit
     $this->getBot()
-      ->audit($type, $description, $chat, $user, $content);
+      ->audit($type, $description, $chat_entity, $user_entity, $content);
     // Write log
     $this->getBot()
       ->getLogger()
@@ -282,31 +282,31 @@ class AuditSubscriber extends AbstractBotSubscriber implements EventSubscriberIn
       JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE
     );
     // Resolve chat and user objects
-    $chat = $this->resolveChat($event->getUpdate());
+    $chat_entity = $this->resolveChat($event->getUpdate());
     // Resolve user
-    $user = $this->getDoctrine()
+    $user_entity = $this->getDoctrine()
       ->getRepository('KaulaTelegramBundle:User')
       ->findOneBy(
         ['telegram_id' => $event->getMessage()->left_chat_member->id]
       );
 
     // Format message parts
-    $user_name = trim($user->getFirstName().' '.$user->getLastName());
+    $user_name = trim($user_entity->getFirstName().' '.$user_entity->getLastName());
     $external_name = trim(
-      $user->getFirstName().' '.$user->getLastName()
+      $user_entity->getExternalFirstName().' '.$user_entity->getExternalLastName()
     );
     if (empty($external_name)) {
-      $external_name = '(no external name)';
+      $external_name = 'no external name';
     }
-    if (!is_null($chat)) {
-      $chat_name = trim($chat->getTitle());
+    if (!is_null($chat_entity)) {
+      $chat_name = trim($chat_entity->getTitle());
       if (empty($chat_name)) {
-        $chat_name = trim($chat->getFirstName().' '.$chat->getLastName());
+        $chat_name = trim($chat_entity->getFirstName().' '.$chat_entity->getLastName());
       }
-      $chat_id = $chat->getId();
+      $chat_id = $chat_entity->getId();
     } else {
       $chat_name = '(chat unknown)';
-      $chat_id = '(chat id unknown)';
+      $chat_id = 'chat id unknown';
     }
     $description = sprintf(
       'User "%s" ("%s") left the chat "%s" (%s)',
@@ -317,7 +317,7 @@ class AuditSubscriber extends AbstractBotSubscriber implements EventSubscriberIn
     );
     // Add audit
     $this->getBot()
-      ->audit($type, $description, $chat, $user, $content);
+      ->audit($type, $description, $chat_entity, $user_entity, $content);
     // Write log
     $this->getBot()
       ->getLogger()
@@ -327,7 +327,7 @@ class AuditSubscriber extends AbstractBotSubscriber implements EventSubscriberIn
           'telegram_user_name' => $user_name,
           'external_name'      => $external_name,
           'chat_name'          => $chat_name,
-          'chat_id'            => $chat->getId(),
+          'chat_id'            => $chat_entity->getId(),
         ]
       );
   }
@@ -411,26 +411,26 @@ class AuditSubscriber extends AbstractBotSubscriber implements EventSubscriberIn
         JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE
       );
       // Resolve chat and user objects
-      $chat = $this->resolveChat($event->getUpdate());
-      $user = $this->resolveUser($event->getUpdate());
+      $chat_entity = $this->resolveChat($event->getUpdate());
+      $user_entity = $this->resolveUser($event->getUpdate());
 
       // Format message parts
-      $user_name = trim($user->getFirstName().' '.$user->getLastName());
+      $user_name = trim($user_entity->getFirstName().' '.$user_entity->getLastName());
       $external_name = trim(
-        $user->getFirstName().' '.$user->getLastName()
+        $user_entity->getExternalFirstName().' '.$user_entity->getExternalLastName()
       );
       if (empty($external_name)) {
-        $external_name = '(no external name)';
+        $external_name = 'no external name';
       }
-      if (!is_null($chat)) {
-        $chat_name = trim($chat->getTitle());
+      if (!is_null($chat_entity)) {
+        $chat_name = trim($chat_entity->getTitle());
         if (empty($chat_name)) {
-          $chat_name = trim($chat->getFirstName().' '.$chat->getLastName());
+          $chat_name = trim($chat_entity->getFirstName().' '.$chat_entity->getLastName());
         }
-        $chat_id = $chat->getId();
+        $chat_id = $chat_entity->getId();
       } else {
         $chat_name = '(chat unknown)';
-        $chat_id = '(chat id unknown)';
+        $chat_id = 'chat id unknown';
       }
       $description = sprintf(
         '"%s" ("%s") → "%s" (%s): %s',
@@ -442,7 +442,7 @@ class AuditSubscriber extends AbstractBotSubscriber implements EventSubscriberIn
       );
       // Add audit
       $this->getBot()
-        ->audit($type, $description, $chat, $user, $content);
+        ->audit($type, $description, $chat_entity, $user_entity, $content);
     }
   }
 
