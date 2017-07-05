@@ -13,7 +13,8 @@ use Doctrine\Bundle\DoctrineBundle\Registry;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\ClientException;
 use GuzzleHttp\Exception\RequestException;
-use Kaula\TelegramBundle\Entity\Log;
+use Kaula\TelegramBundle\Entity\Audit;
+use Kaula\TelegramBundle\Entity\Chat;
 use Kaula\TelegramBundle\Entity\Queue;
 use Kaula\TelegramBundle\Entity\User;
 use Kaula\TelegramBundle\Exception\TelegramBundleException;
@@ -31,6 +32,7 @@ use Kaula\TelegramBundle\Telegram\Event\RequestThrottleEvent;
 use Kaula\TelegramBundle\Telegram\Event\TerminateEvent;
 use Kaula\TelegramBundle\Telegram\Event\UpdateIncomingEvent;
 use Kaula\TelegramBundle\Telegram\Event\UpdateReceivedEvent;
+use Kaula\TelegramBundle\Telegram\Subscriber\AuditSubscriber;
 use Kaula\TelegramBundle\Telegram\Subscriber\ChatMemberSubscriber;
 use Kaula\TelegramBundle\Telegram\Subscriber\CommandSubscriber;
 use Kaula\TelegramBundle\Telegram\Subscriber\CurrentUserSubscriber;
@@ -38,7 +40,6 @@ use Kaula\TelegramBundle\Telegram\Subscriber\FilterSubscriber;
 use Kaula\TelegramBundle\Telegram\Subscriber\GroupSubscriber;
 use Kaula\TelegramBundle\Telegram\Subscriber\HookerSubscriber;
 use Kaula\TelegramBundle\Telegram\Subscriber\IdentityWatchdogSubscriber;
-use Kaula\TelegramBundle\Telegram\Subscriber\LogSubscriber;
 use Kaula\TelegramBundle\Telegram\Subscriber\MessageSubscriber;
 use Kaula\TelegramBundle\Telegram\Subscriber\MigrationSubscriber;
 use Kaula\TelegramBundle\Telegram\Subscriber\TextSubscriber;
@@ -203,7 +204,7 @@ class Bot
 
     // telegram.update.received
     $this->getEventDispatcher()
-      ->addSubscriber(new LogSubscriber($this));
+      ->addSubscriber(new AuditSubscriber($this));
     $this->getEventDispatcher()
       ->addSubscriber(new CurrentUserSubscriber($this));
     $this->getEventDispatcher()
@@ -1099,77 +1100,33 @@ class Bot
   }
 
   /**
-   * Log transaction to the database.
+   * Audit transaction.
    *
-   * @param mixed $telegram_data
+   * @param string $type
+   * @param string $description
+   * @param Chat $chat
+   * @param User $user
+   * @param mixed $content
+   * @internal param mixed $telegram_data
    */
-  private function log($telegram_data)
-  {
-    $direction = 'undefined';
-    $type = null;
-    $chat_id = null;
-    $content = null;
-
-    // If $telegram_data instance of TelegramMethods, it is always outbound message
-    if ($telegram_data instanceof TelegramMethods) {
-      $direction = 'out';
-      $type = get_class($telegram_data);
-      $content = json_encode(
-        $telegram_data->export(),
-        JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE
-      );
-    }
-    // We can get Update only from Telegram, so it's always inbound
-    if ($telegram_data instanceof Update) {
-      $direction = 'in';
-      $type = $this->whatUpdateType($telegram_data);
-      $content = json_encode(
-        get_object_vars($telegram_data),
-        JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE
-      );
-    }
-
-    /**
-     * INBOUND
-     */
-    if ($telegram_data instanceof Update) {
-      if (!is_null($telegram_data->message)) {
-        $chat_id = $telegram_data->message->chat->id;
-      } elseif (!is_null($telegram_data->edited_message)) {
-        $chat_id = $telegram_data->edited_message->chat->id;
-      } elseif (!is_null($telegram_data->channel_post)) {
-        $chat_id = $telegram_data->channel_post->chat->id;
-      } elseif (!is_null($telegram_data->callback_query)) {
-        if (!is_null($telegram_data->callback_query->message)) {
-          $chat_id = $telegram_data->callback_query->message->chat->id;
-        }
-      }
-    }
-
-    /**
-     * OUTBOUND
-     **/
-    if ($telegram_data instanceof SendMessage) {
-      $chat_id = $telegram_data->chat_id;
-    }
-    if ($telegram_data instanceof SendChatAction) {
-      $chat_id = $telegram_data->chat_id;
-    }
-    if ($telegram_data instanceof EditMessageReplyMarkup) {
-      $chat_id = $telegram_data->chat_id;
-    }
-
-    $log = new Log();
-    $log->setCreated(new \DateTime('now', new \DateTimeZone('UTC')))
-      ->setDirection($direction)
-      ->setType($type)
-      ->setTelegramChatId($chat_id)
+  public function audit(
+    $type,
+    $description = null,
+    $chat = null,
+    $user = null,
+    $content = null
+  ) {
+    $audit = new Audit();
+    $audit->setType($type)
+      ->setDescription($description)
+      ->setChat($chat)
+      ->setUser($user)
       ->setContent($content);
 
     $em = $this->getContainer()
       ->get('doctrine')
       ->getManager();
-    $em->persist($log);
+    $em->persist($audit);
     $em->flush();
   }
 

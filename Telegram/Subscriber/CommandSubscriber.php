@@ -9,6 +9,7 @@
 namespace Kaula\TelegramBundle\Telegram\Subscriber;
 
 
+
 use Kaula\TelegramBundle\Telegram\Event\CommandExecutedEvent;
 use Kaula\TelegramBundle\Telegram\Event\CommandReceivedEvent;
 use Kaula\TelegramBundle\Telegram\Event\CommandUnauthorizedEvent;
@@ -119,7 +120,6 @@ class CommandSubscriber extends AbstractBotSubscriber implements EventSubscriber
     );
     $dispatcher->dispatch(CommandUnknownEvent::NAME, $command_unknown_event);
   }
-
 
   /**
    * Dispatches command is executed.

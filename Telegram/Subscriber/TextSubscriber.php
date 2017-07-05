@@ -39,7 +39,7 @@ class TextSubscriber extends AbstractBotSubscriber implements EventSubscriberInt
   public static function getSubscribedEvents()
   {
     return [
-      TextReceivedEvent::NAME => ['onTextReceived', 90000],
+      TextReceivedEvent::NAME => ['onTextReceived', 80000],
     ];
   }
 
@@ -62,8 +62,7 @@ class TextSubscriber extends AbstractBotSubscriber implements EventSubscriberInt
   {
     /** @var LoggerInterface $l */
     $l = $this->getBot()
-      ->getContainer()
-      ->get('logger');
+      ->getLogger();
 
     // Parse command "/start@BotName params"
     if (preg_match(
@@ -89,7 +88,7 @@ class TextSubscriber extends AbstractBotSubscriber implements EventSubscriberInt
         );
       }
     } else {
-      $l->debug('No commands detected within the update');
+      $l->info('No commands detected within the update');
     }
   }
 

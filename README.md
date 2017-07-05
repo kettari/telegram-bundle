@@ -5,7 +5,7 @@
   Event MUST return an Update object or throw an exception.
     * 0:FilterSubscriber -- scraps inbound data.
   * **telegram.update.received** -- when the Update object is ready.
-    * 90000:LogSubscriber -- writes incoming log.
+    * 90000:AuditSubscriber -- writes incoming log.
     * 80000:CurrentUserSubscriber -- finds current user using 
     UserHq class.
     * 70000:HookerSubscriber -- finds and executes hooks.
@@ -17,8 +17,8 @@
     * 0:MessageSubscriber -- if text is not empty, dispatch further events.
     * –90000:MessageSubscriber -- checks if request was handled. If not, sends to the user a message.
   * **telegram.text.received** -- when text is not empty within Message object.
-    * 90000:TextSubscriber -- checks for command and dispatches further events.
-     * 0:ChatMemberSubscriber -- updates ChatMember table.
+    * 90000:ChatMemberSubscriber -- updates ChatMember table.
+    * 80000:TextSubscriber -- checks for command and dispatches further events.
   * **telegram.command.received** -- when a command is detected in the text.
     * 0:CommandSubscriber -- CommandBus service which executes command.
   * **telegram.command.unknown** -- command is unknown for CommandBus.
@@ -39,7 +39,7 @@
     * 0:MigrationSubscriber -- handles group migration.
   * [TBD] **telegram.response** -- when the bot prepared a response to the Webhook and is ready to send it.
   * **telegram.request.sent** -- request to the Telegram API was sent.
-     * –90000:LogSubscriber -- writes outbound log.
+     * –90000:AuditSubscriber -- writes outbound log.
   * **telegram.request.blocked** -- when the bot is blocked by the user or kicked out of the group.
   * **telegram.request.throttled** -- flood control thrown an exception.
   * **telegram.request.exception** -- exception occurred while making request to the Telegram API.

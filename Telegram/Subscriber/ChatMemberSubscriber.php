@@ -44,10 +44,10 @@ class ChatMemberSubscriber extends AbstractBotSubscriber implements EventSubscri
   public static function getSubscribedEvents()
   {
     return [
-      //JoinChatMemberEvent::NAME => ['onMemberJoined', -90000],
-      JoinChatMembersManyEvent::NAME => ['onMembersManyJoined', -90000],
-      LeftChatMemberEvent::NAME      => ['onMemberLeft', -90000],
-      TextReceivedEvent::NAME        => 'onMemberTexted',
+      JoinChatMembersManyEvent::NAME => ['onMembersManyJoined', 90000],
+      JoinChatMemberEvent::NAME      => ['onMemberJoined', 90000],
+      LeftChatMemberEvent::NAME      => ['onMemberLeft', 90000],
+      TextReceivedEvent::NAME        => ['onMemberTexted', 90000],
     ];
   }
 
@@ -56,72 +56,15 @@ class ChatMemberSubscriber extends AbstractBotSubscriber implements EventSubscri
    *
    * @param JoinChatMemberEvent $event
    */
-  /*public function onMemberJoined(JoinChatMemberEvent $event)
+  public function onMemberJoined(JoinChatMemberEvent $event)
   {
-    $chat = $this->prepareChat($event);
-    $this->processJoinedMember($event, $chat);
+    $chat = $this->resolveChat($event->getUpdate());
+    $this->processJoinedMember($event->getJoinedUser(), $chat);
 
     // Flush changes
     $this->getDoctrine()
       ->getManager()
       ->flush();
-
-    // Tell the Bot this request is handled
-    $this->getBot()
-      ->setRequestHandled(true);
-  }*/
-
-  /**
-   * When somebody joined the chat, updates database.
-   *
-   * @param JoinChatMembersManyEvent $event
-   */
-  public function onMembersManyJoined(JoinChatMembersManyEvent $event)
-  {
-    $chat = $this->prepareChat($event->getMessage()->chat);
-    $users = $event->getMessage()->new_chat_members;
-    /** @var TelegramUser $joined_user */
-    foreach ($users as $joined_user) {
-      $this->processJoinedMember($joined_user, $chat);
-    }
-
-    // Flush changes
-    $this->getDoctrine()
-      ->getManager()
-      ->flush();
-
-    // Tell the Bot this request is handled
-    $this->getBot()
-      ->setRequestHandled(true);
-  }
-
-  /**
-   * Returns the Chat object.
-   *
-   * @param \unreal4u\TelegramAPI\Telegram\Types\Chat $tc
-   * @return \Kaula\TelegramBundle\Entity\Chat
-   */
-  private function prepareChat(TelegramChat $tc)
-  {
-    // Find chat object. If not found, create new
-    $chat = $this->getDoctrine()
-      ->getRepository('KaulaTelegramBundle:Chat')
-      ->findOneBy(['telegram_id' => $tc->id]);
-    if (!$chat) {
-      $chat = new Chat();
-      $this->getDoctrine()
-        ->getManager()
-        ->persist($chat);
-    }
-    $chat->setTelegramId($tc->id)
-      ->setType($tc->type)
-      ->setTitle($tc->title)
-      ->setUsername($tc->username)
-      ->setFirstName($tc->first_name)
-      ->setLastName($tc->last_name)
-      ->setAllMembersAreAdministrators($tc->all_members_are_administrators);
-
-    return $chat;
   }
 
   /**
@@ -168,27 +111,64 @@ class ChatMemberSubscriber extends AbstractBotSubscriber implements EventSubscri
       ->setJoinDate(new \DateTime('now', new \DateTimeZone('UTC')))
       ->setLeaveDate(null)
       ->setStatus('member');
+  }
 
-    // Log event
-    $external_name = trim($user_entity->getFirstName().' '.$user_entity->getLastName());
-    if (empty($external_name)) {
-      $external_name = '(no external name)';
+  /**
+   * When somebody joined the chat, updates database.
+   *
+   * @param JoinChatMembersManyEvent $event
+   */
+  public function onMembersManyJoined(JoinChatMembersManyEvent $event)
+  {
+    $dispatcher = $this->getBot()
+      ->getEventDispatcher();
+    $this->prepareChat($event->getMessage()->chat);
+    $users = $event->getMessage()->new_chat_members;
+
+    /** @var TelegramUser $joined_user */
+    foreach ($users as $joined_user) {
+      $joined_member_event = new JoinChatMemberEvent($event->getUpdate());
+      $joined_member_event->setJoinedUser($joined_user);
+      $dispatcher->dispatch(JoinChatMemberEvent::NAME, $joined_member_event);
     }
-    $chat_name = trim($chat->getTitle());
-    if (empty($chat_name)) {
-      $chat_name = trim($chat->getFirstName().' '.$chat->getLastName());
-    }
+
+    // Flush changes
+    $this->getDoctrine()
+      ->getManager()
+      ->flush();
+
+    // Tell the Bot this request is handled
     $this->getBot()
-      ->getLogger()
-      ->info(
-        'User "{telegram_user_name}" ("{external_name}") joined the chat "{chat_name}" ({chat_id})',
-        [
-          'telegram_user_name' => trim($tu->first_name.' '.$tu->last_name),
-          'external_name'      => $external_name,
-          'chat_name'          => $chat_name,
-          'chat_id'            => $chat->getId(),
-        ]
-      );
+      ->setRequestHandled(true);
+  }
+
+  /**
+   * Returns the Chat object.
+   *
+   * @param \unreal4u\TelegramAPI\Telegram\Types\Chat $tc
+   * @return \Kaula\TelegramBundle\Entity\Chat
+   */
+  private function prepareChat(TelegramChat $tc)
+  {
+    // Find chat object. If not found, create new
+    $chat = $this->getDoctrine()
+      ->getRepository('KaulaTelegramBundle:Chat')
+      ->findOneBy(['telegram_id' => $tc->id]);
+    if (!$chat) {
+      $chat = new Chat();
+      $this->getDoctrine()
+        ->getManager()
+        ->persist($chat);
+    }
+    $chat->setTelegramId($tc->id)
+      ->setType($tc->type)
+      ->setTitle($tc->title)
+      ->setUsername($tc->username)
+      ->setFirstName($tc->first_name)
+      ->setLastName($tc->last_name)
+      ->setAllMembersAreAdministrators($tc->all_members_are_administrators);
+
+    return $chat;
   }
 
   /**
@@ -254,27 +234,6 @@ class ChatMemberSubscriber extends AbstractBotSubscriber implements EventSubscri
       ->setUser($user_entity)
       ->setLeaveDate(new \DateTime('now', new \DateTimeZone('UTC')))
       ->setStatus('left');
-
-    // Log event
-    $external_name = trim($user_entity->getFirstName().' '.$user_entity->getLastName());
-    if (empty($external_name)) {
-      $external_name = '(no external name)';
-    }
-    $chat_name = trim($chat->getTitle());
-    if (empty($chat_name)) {
-      $chat_name = trim($chat->getFirstName().' '.$chat->getLastName());
-    }
-    $this->getBot()
-      ->getLogger()
-      ->info(
-        'User "{telegram_user_name}" ("{external_name}") left the chat "{chat_name}" ({chat_id})',
-        [
-          'telegram_user_name' => trim($tu->first_name.' '.$tu->last_name),
-          'external_name'      => $external_name,
-          'chat_name'          => $chat_name,
-          'chat_id'            => $chat->getId(),
-        ]
-      );
   }
 
   /**

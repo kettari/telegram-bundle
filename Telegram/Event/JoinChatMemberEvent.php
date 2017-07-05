@@ -17,6 +17,11 @@ class JoinChatMemberEvent extends AbstractMessageEvent
   const NAME = 'telegram.chatmember.joined';
 
   /**
+   * @var \unreal4u\TelegramAPI\Telegram\Types\User
+   */
+  private $joined_user;
+
+  /**
    * JoinChatMemberEvent constructor.
    *
    * @param Update $update
@@ -31,5 +36,21 @@ class JoinChatMemberEvent extends AbstractMessageEvent
 
     $this->setMessage($update->message)
       ->setUpdate($update);
+  }
+
+  /**
+   * @return \unreal4u\TelegramAPI\Telegram\Types\User
+   */
+  public function getJoinedUser()
+  {
+    return $this->joined_user;
+  }
+
+  /**
+   * @param \unreal4u\TelegramAPI\Telegram\Types\User $joined_user
+   */
+  public function setJoinedUser($joined_user)
+  {
+    $this->joined_user = $joined_user;
   }
 }
