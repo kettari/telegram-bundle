@@ -12,14 +12,14 @@ namespace Kaula\TelegramBundle\Telegram\Event;
 use RuntimeException;
 use unreal4u\TelegramAPI\Telegram\Types\Update;
 
-class JoinChatMemberEvent extends AbstractMessageEvent
+class LeftChatMemberBotEvent extends AbstractMessageEvent
 {
-  const NAME = 'telegram.chatmember.joined';
+  const NAME = 'telegram.chatmember.bot_left';
 
   /**
    * @var \unreal4u\TelegramAPI\Telegram\Types\User
    */
-  private $joined_user;
+  private $left_user;
 
   /**
    * @var \Kaula\TelegramBundle\Entity\Chat
@@ -27,32 +27,39 @@ class JoinChatMemberEvent extends AbstractMessageEvent
   private $chat_entity;
 
   /**
+   * @var \Kaula\TelegramBundle\Entity\User
+   */
+  private $user_entity;
+
+  /**
    * JoinChatMemberEvent constructor.
    *
    * @param Update $update
-   * @param \unreal4u\TelegramAPI\Telegram\Types\User $joined_user
-   * @param \Kaula\TelegramBundle\Entity\Chat $chat_entity
+   * @param \unreal4u\TelegramAPI\Telegram\Types\User $left_user
+   * @param \Kaula\TelegramBundle\Entity\Chat
+   * @param \Kaula\TelegramBundle\Entity\User
    */
-  public function __construct(Update $update, $joined_user, $chat_entity)
+  public function __construct(Update $update, $left_user, $chat_entity, $user_entity)
   {
     if (is_null($update->message)) {
       throw new RuntimeException(
-        'Message can\'t be null for the JoinChatMemberEvent.'
+        'Message can\'t be null for the LeftChatMemberBotEvent.'
       );
     }
 
     $this->setMessage($update->message)
       ->setUpdate($update);
-    $this->joined_user = $joined_user;
+    $this->left_user = $left_user;
     $this->chat_entity = $chat_entity;
+    $this->user_entity = $user_entity;
   }
 
   /**
    * @return \unreal4u\TelegramAPI\Telegram\Types\User
    */
-  public function getJoinedUser()
+  public function getLeftUser()
   {
-    return $this->joined_user;
+    return $this->left_user;
   }
 
   /**
@@ -62,4 +69,13 @@ class JoinChatMemberEvent extends AbstractMessageEvent
   {
     return $this->chat_entity;
   }
+
+  /**
+   * @return \Kaula\TelegramBundle\Entity\User
+   */
+  public function getUserEntity()
+  {
+    return $this->user_entity;
+  }
+
 }

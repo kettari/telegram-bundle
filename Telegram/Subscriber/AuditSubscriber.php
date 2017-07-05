@@ -10,7 +10,9 @@ namespace Kaula\TelegramBundle\Telegram\Subscriber;
 
 use Kaula\TelegramBundle\Telegram\Event\CommandExecutedEvent;
 use Kaula\TelegramBundle\Telegram\Event\CommandReceivedEvent;
+use Kaula\TelegramBundle\Telegram\Event\JoinChatMemberBotEvent;
 use Kaula\TelegramBundle\Telegram\Event\JoinChatMemberEvent;
+use Kaula\TelegramBundle\Telegram\Event\LeftChatMemberBotEvent;
 use Kaula\TelegramBundle\Telegram\Event\LeftChatMemberEvent;
 use Kaula\TelegramBundle\Telegram\Event\RequestBlockedEvent;
 use Kaula\TelegramBundle\Telegram\Event\RequestExceptionEvent;
@@ -44,14 +46,16 @@ class AuditSubscriber extends AbstractBotSubscriber implements EventSubscriberIn
   public static function getSubscribedEvents()
   {
     return [
-      UpdateReceivedEvent::NAME   => ['onUpdateReceived', 90000],
-      CommandExecutedEvent::NAME  => 'onCommandExecuted',
-      JoinChatMemberEvent::NAME   => 'onMemberJoined',
-      LeftChatMemberEvent::NAME   => 'onMemberLeft',
-      TextReceivedEvent::NAME     => 'onTextReceived',
-      RequestBlockedEvent::NAME   => 'onRequestBlocked',
-      RequestExceptionEvent::NAME => 'onRequestException',
-      RequestSentEvent::NAME      => ['onRequestSent', -90000],
+      UpdateReceivedEvent::NAME    => ['onUpdateReceived', 90000],
+      CommandExecutedEvent::NAME   => 'onCommandExecuted',
+      JoinChatMemberEvent::NAME    => 'onMemberJoined',
+      JoinChatMemberBotEvent::NAME => 'onBotJoined',
+      LeftChatMemberEvent::NAME    => 'onMemberLeft',
+      LeftChatMemberBotEvent::NAME => 'onBotLeft',
+      TextReceivedEvent::NAME      => 'onTextReceived',
+      RequestBlockedEvent::NAME    => 'onRequestBlocked',
+      RequestExceptionEvent::NAME  => 'onRequestException',
+      RequestSentEvent::NAME       => ['onRequestSent', -90000],
     ];
   }
 
@@ -116,7 +120,6 @@ class AuditSubscriber extends AbstractBotSubscriber implements EventSubscriberIn
   {
     // Audit
     $type = CommandReceivedEvent::NAME;
-    $description = sprintf('Executed command "%s"', $event->getCommand());
     $content = json_encode(
       get_object_vars($event->getUpdate()),
       JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE
@@ -124,6 +127,25 @@ class AuditSubscriber extends AbstractBotSubscriber implements EventSubscriberIn
     // Resolve chat and user objects
     $chat = $this->resolveChat($event->getUpdate());
     $user = $this->resolveUser($event->getUpdate());
+
+    if (!is_null($chat)) {
+      $chat_name = trim($chat->getTitle());
+      if (empty($chat_name)) {
+        $chat_name = trim($chat->getFirstName().' '.$chat->getLastName());
+      }
+      $chat_id = $chat->getId();
+    } else {
+      $chat_name = '(chat unknown)';
+      $chat_id = '(chat id unknown)';
+    }
+
+    $description = sprintf(
+      'Executed command "%s" → "%s" (%s)',
+      $event->getCommand(),
+      $chat_name,
+      $chat_id
+    );
+
     $this->getBot()
       ->audit($type, $description, $chat, $user, $content);
   }
@@ -181,6 +203,62 @@ class AuditSubscriber extends AbstractBotSubscriber implements EventSubscriberIn
       ->getLogger()
       ->info(
         'User "{telegram_user_name}" ("{external_name}") joined the chat "{chat_name}" ({chat_id})',
+        [
+          'telegram_user_name' => $user_name,
+          'external_name'      => $external_name,
+          'chat_name'          => $chat_name,
+          'chat_id'            => $chat_id,
+        ]
+      );
+  }
+
+  /**
+   * Writes audit log when current bot joined the group.
+   *
+   * @param \Kaula\TelegramBundle\Telegram\Event\JoinChatMemberBotEvent $event
+   */
+  public function onBotJoined(JoinChatMemberBotEvent $event)
+  {
+    // Audit
+    $type = JoinChatMemberBotEvent::NAME;
+    $content = json_encode(
+      get_object_vars($event->getUpdate()),
+      JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE
+    );
+    // Resolve chat and user objects
+    $chat_entity = $event->getChatEntity();
+    $user_entity = $event->getUserEntity();
+
+    // Format message parts
+    $user_name = $user_entity->getUsername();
+    $external_name = $user_entity->getFirstName();
+    if (!is_null($chat_entity)) {
+      $chat_name = trim($chat_entity->getTitle());
+      if (empty($chat_name)) {
+        $chat_name = trim(
+          $chat_entity->getFirstName().' '.$chat_entity->getLastName()
+        );
+      }
+      $chat_id = $chat_entity->getId();
+    } else {
+      $chat_name = '(chat unknown)';
+      $chat_id = '(chat id unknown)';
+    }
+    $description = sprintf(
+      'Bot "%s" ("%s") joined the chat "%s" (%s)',
+      $user_name,
+      $external_name,
+      $chat_name,
+      $chat_id
+    );
+    // Add audit
+    $this->getBot()
+      ->audit($type, $description, $chat_entity, $user_entity, $content);
+    // Write log
+    $this->getBot()
+      ->getLogger()
+      ->info(
+        'Bot "{telegram_user_name}" ("{external_name}") joined the chat "{chat_name}" ({chat_id})',
         [
           'telegram_user_name' => $user_name,
           'external_name'      => $external_name,
@@ -250,6 +328,62 @@ class AuditSubscriber extends AbstractBotSubscriber implements EventSubscriberIn
           'external_name'      => $external_name,
           'chat_name'          => $chat_name,
           'chat_id'            => $chat->getId(),
+        ]
+      );
+  }
+
+  /**
+   * Writes audit log when bot left the group.
+   *
+   * @param \Kaula\TelegramBundle\Telegram\Event\LeftChatMemberBotEvent $event
+   */
+  public function onBotLeft(LeftChatMemberBotEvent $event)
+  {
+    // Audit
+    $type = LeftChatMemberBotEvent::NAME;
+    $content = json_encode(
+      get_object_vars($event->getUpdate()),
+      JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE
+    );
+    // Resolve chat and user objects
+    $chat_entity = $event->getChatEntity();
+    $user_entity = $event->getUserEntity();
+
+    // Format message parts
+    $user_name = $user_entity->getUsername();
+    $external_name = $user_entity->getFirstName();
+    if (!is_null($chat_entity)) {
+      $chat_name = trim($chat_entity->getTitle());
+      if (empty($chat_name)) {
+        $chat_name = trim(
+          $chat_entity->getFirstName().' '.$chat_entity->getLastName()
+        );
+      }
+      $chat_id = $chat_entity->getId();
+    } else {
+      $chat_name = '(chat unknown)';
+      $chat_id = '(chat id unknown)';
+    }
+    $description = sprintf(
+      'Bot "%s" ("%s") left the chat "%s" (%s)',
+      $user_name,
+      $external_name,
+      $chat_name,
+      $chat_id
+    );
+    // Add audit
+    $this->getBot()
+      ->audit($type, $description, $chat_entity, $user_entity, $content);
+    // Write log
+    $this->getBot()
+      ->getLogger()
+      ->info(
+        'Bot "{telegram_user_name}" ("{external_name}") left the chat "{chat_name}" ({chat_id})',
+        [
+          'telegram_user_name' => $user_name,
+          'external_name'      => $external_name,
+          'chat_name'          => $chat_name,
+          'chat_id'            => $chat_entity->getId(),
         ]
       );
   }
