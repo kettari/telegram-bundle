@@ -187,10 +187,6 @@ class PopulateSchemaCommand extends AbstractCommand
     );
     $sysadmin_permissions = array_merge(
       $sysadmin_permissions,
-      $this->populateCommandPermissionsRequired(ListRolesCommand::class)
-    );
-    $sysadmin_permissions = array_merge(
-      $sysadmin_permissions,
       $this->populateCommandPermissionsRequired(UserManCommand::class)
     );
     // 'new-register' notification → to sysadmin
