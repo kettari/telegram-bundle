@@ -171,9 +171,12 @@ class AuditSubscriber extends AbstractBotSubscriber implements EventSubscriberIn
       ->findOneBy(['telegram_id' => $event->getJoinedUser()->id]);
 
     // Format message parts
-    $user_name = trim($user_entity->getFirstName().' '.$user_entity->getLastName());
+    $user_name = trim(
+      $user_entity->getFirstName().' '.$user_entity->getLastName()
+    );
     $external_name = trim(
-      $user_entity->getExternalFirstName().' '.$user_entity->getExternalLastName()
+      $user_entity->getExternalFirstName().' '.
+      $user_entity->getExternalLastName()
     );
     if (empty($external_name)) {
       $external_name = 'no external name';
@@ -181,7 +184,9 @@ class AuditSubscriber extends AbstractBotSubscriber implements EventSubscriberIn
     if (!is_null($chat_entity)) {
       $chat_name = trim($chat_entity->getTitle());
       if (empty($chat_name)) {
-        $chat_name = trim($chat_entity->getFirstName().' '.$chat_entity->getLastName());
+        $chat_name = trim(
+          $chat_entity->getFirstName().' '.$chat_entity->getLastName()
+        );
       }
       $chat_id = $chat_entity->getId();
     } else {
@@ -291,9 +296,12 @@ class AuditSubscriber extends AbstractBotSubscriber implements EventSubscriberIn
       );
 
     // Format message parts
-    $user_name = trim($user_entity->getFirstName().' '.$user_entity->getLastName());
+    $user_name = trim(
+      $user_entity->getFirstName().' '.$user_entity->getLastName()
+    );
     $external_name = trim(
-      $user_entity->getExternalFirstName().' '.$user_entity->getExternalLastName()
+      $user_entity->getExternalFirstName().' '.
+      $user_entity->getExternalLastName()
     );
     if (empty($external_name)) {
       $external_name = 'no external name';
@@ -301,7 +309,9 @@ class AuditSubscriber extends AbstractBotSubscriber implements EventSubscriberIn
     if (!is_null($chat_entity)) {
       $chat_name = trim($chat_entity->getTitle());
       if (empty($chat_name)) {
-        $chat_name = trim($chat_entity->getFirstName().' '.$chat_entity->getLastName());
+        $chat_name = trim(
+          $chat_entity->getFirstName().' '.$chat_entity->getLastName()
+        );
       }
       $chat_id = $chat_entity->getId();
     } else {
@@ -415,9 +425,12 @@ class AuditSubscriber extends AbstractBotSubscriber implements EventSubscriberIn
       $user_entity = $this->resolveUser($event->getUpdate());
 
       // Format message parts
-      $user_name = trim($user_entity->getFirstName().' '.$user_entity->getLastName());
+      $user_name = trim(
+        $user_entity->getFirstName().' '.$user_entity->getLastName()
+      );
       $external_name = trim(
-        $user_entity->getExternalFirstName().' '.$user_entity->getExternalLastName()
+        $user_entity->getExternalFirstName().' '.
+        $user_entity->getExternalLastName()
       );
       if (empty($external_name)) {
         $external_name = 'no external name';
@@ -425,7 +438,9 @@ class AuditSubscriber extends AbstractBotSubscriber implements EventSubscriberIn
       if (!is_null($chat_entity)) {
         $chat_name = trim($chat_entity->getTitle());
         if (empty($chat_name)) {
-          $chat_name = trim($chat_entity->getFirstName().' '.$chat_entity->getLastName());
+          $chat_name = trim(
+            $chat_entity->getFirstName().' '.$chat_entity->getLastName()
+          );
         }
         $chat_id = $chat_entity->getId();
       } else {
@@ -491,7 +506,6 @@ class AuditSubscriber extends AbstractBotSubscriber implements EventSubscriberIn
   {
     // Audit
     $type = RequestExceptionEvent::NAME;
-
     $description = sprintf(
       'Request exception "%s" with status code %d',
       $event->getResponse()
@@ -499,9 +513,12 @@ class AuditSubscriber extends AbstractBotSubscriber implements EventSubscriberIn
       $event->getResponse()
         ->getStatusCode()
     );
+    $content = $event->getMethod()
+      ->export();
+
     // Add audit
     $this->getBot()
-      ->audit($type, $description);
+      ->audit($type, $description, null, null, print_r($content, true));
   }
 
 }

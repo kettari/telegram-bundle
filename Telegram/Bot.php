@@ -578,7 +578,7 @@ class Bot
   }
 
   /**
-   * @param mixed $method
+   * @param TelegramMethods $method
    * @param RequestException $exception
    */
   private function dispatchMethodException($method, RequestException $exception)

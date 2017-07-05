@@ -12,7 +12,7 @@ namespace Kaula\TelegramBundle\Telegram\Event;
 abstract class AbstractMethodEvent extends AbstractTelegramEvent
 {
   /**
-   * @var mixed
+   * @var \unreal4u\TelegramAPI\Abstracts\TelegramMethods
    */
   private $method;
 
@@ -34,7 +34,7 @@ abstract class AbstractMethodEvent extends AbstractTelegramEvent
   }
 
   /**
-   * @return mixed
+   * @return \unreal4u\TelegramAPI\Abstracts\TelegramMethods
    */
   public function getMethod()
   {
