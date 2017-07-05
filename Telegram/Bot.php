@@ -852,7 +852,7 @@ class Bot
   }
 
   /**
-   * Send part of queued messages.
+   * Sends part of queued messages.
    *
    * @param int $bump_size Count of items to send in this bump operation
    */
