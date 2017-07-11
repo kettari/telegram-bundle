@@ -39,6 +39,7 @@
   * `telegram.command.unauthorized` -- user has insufficient permissions.
     * 0:CommandSubscriber -- tells the user he or she is not authorized to execute the command.
   * `telegram.command.executed` -- after the command is executed.
+  * `telegram.user.registered` -- when /register command executed and user finished registration.
   * `telegram.chatmember.joined` -- new chat member in the group.
     * 0:ChatMemberSubscriber -- handles new chat member.
   * `telegram.chatmembers.joined` -- one or more new chat members in the group.

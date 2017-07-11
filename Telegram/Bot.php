@@ -43,6 +43,7 @@ use Kaula\TelegramBundle\Telegram\Subscriber\IdentityWatchdogSubscriber;
 use Kaula\TelegramBundle\Telegram\Subscriber\MessageSubscriber;
 use Kaula\TelegramBundle\Telegram\Subscriber\MigrationSubscriber;
 use Kaula\TelegramBundle\Telegram\Subscriber\TextSubscriber;
+use Kaula\TelegramBundle\Telegram\Subscriber\UserRegistrationSubscriber;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -235,6 +236,10 @@ class Bot
     // telegram.chat.*
     $this->getEventDispatcher()
       ->addSubscriber(new MigrationSubscriber($this));
+
+    // User registered, command /register
+    $this->getEventDispatcher()
+      ->addSubscriber(new UserRegistrationSubscriber($this));
 
     return $this;
   }

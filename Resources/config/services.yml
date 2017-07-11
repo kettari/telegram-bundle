@@ -9,6 +9,8 @@ services:
 
     telegram_bot:
         alias: kaula_telegram.bot
+        arguments: ['@service_container']
 
     command_bus:
         alias: kaula_telegram.bus
+        arguments: ['@kaula_telegram.bot']

@@ -12,24 +12,24 @@ namespace Kaula\TelegramBundle\Telegram\Command;
 use Doctrine\Bundle\DoctrineBundle\Registry;
 use Kaula\TelegramBundle\Entity\Role;
 use Kaula\TelegramBundle\Entity\User;
+use Kaula\TelegramBundle\Telegram\Event\UserRegisteredEvent;
 use unreal4u\TelegramAPI\Telegram\Types\Contact;
 use unreal4u\TelegramAPI\Telegram\Types\KeyboardButton;
 use unreal4u\TelegramAPI\Telegram\Types\ReplyKeyboardMarkup;
 use unreal4u\TelegramAPI\Telegram\Types\ReplyKeyboardRemove;
+use unreal4u\TelegramAPI\Telegram\Types\Update;
 
 class RegisterCommand extends AbstractCommand
 {
+
+  const BTN_PHONE = 'Сообщить номер телефона';
+  const BTN_CANCEL = 'Отмена';
+  const NOTIFICATION_NEW_REGISTER = 'new-register';
 
   static public $name = 'register';
   static public $description = 'Зарегистрироваться у бота';
   static public $required_permissions = ['execute command register'];
   static public $declared_notifications = [self::NOTIFICATION_NEW_REGISTER];
-
-  const BTN_PHONE = 'Сообщить номер телефона';
-  const BTN_CANCEL = 'Отмена';
-
-  const NOTIFICATION_NEW_REGISTER = 'new-register';
-  const NEW_REGISTER_EMOJI = "\xF0\x9F\x98\x8C";
 
   /**
    * Executes command.
@@ -39,7 +39,8 @@ class RegisterCommand extends AbstractCommand
     if ('private' == $this->getUpdate()->message->chat->type) {
       $this->replyWithMessage(
         'Чтобы зарегистрироваться, мне нужно узнать ваш телефон.'.PHP_EOL.
-        PHP_EOL.'Пришлите мне его, нажав кнопку «Сообщить номер телефона» и подтвердите своё согласие.',
+        PHP_EOL.
+        'Пришлите мне его, нажав кнопку «Сообщить номер телефона» и подтвердите своё согласие.',
         self::PARSE_MODE_PLAIN,
         $this->getReplyKeyboardMarkup()
       );
@@ -145,46 +146,33 @@ class RegisterCommand extends AbstractCommand
     }
 
     // Find user object. If not found, create new
-    $user = $d->getRepository('KaulaTelegramBundle:User')
+    $user_entity = $d->getRepository('KaulaTelegramBundle:User')
       ->findOneBy(['telegram_id' => $tu->id]);
-    if (!$user) {
-      $user = new User();
-      $user->setTelegramId($tu->id)
+    if (!$user_entity) {
+      $user_entity = new User();
+      $user_entity->setTelegramId($tu->id)
         ->setFirstName($tu->first_name)
         ->setLastName($tu->last_name)
         ->setUsername($tu->username);
     }
     // Update information
     $phone = $this->sanitizePhone($contact->phone_number);
-    $user->setPhone($phone);
+    $user_entity->setPhone($phone);
     /** @var Role $single_role */
     foreach ($roles as $single_role) {
-      $user->addRole($single_role);
+      $user_entity->addRole($single_role);
     }
 
     // Load default notifications and assign them to the user
     $default_notifications = $this->getDefaultNotifications($d);
-    $this->assignDefaultNotifications($d, $user, $default_notifications);
+    $this->assignDefaultNotifications($d, $user_entity, $default_notifications);
 
     // Commit changes
-    $em->persist($user);
+    $em->persist($user_entity);
     $em->flush();
 
-    // Push info about new registration
-    $this->getBus()
-      ->getBot()
-      ->pushNotification(
-        self::NOTIFICATION_NEW_REGISTER,
-        sprintf(
-          '%s Новая регистрация: %s (#%s)',
-          self::NEW_REGISTER_EMOJI,
-          trim($user->getLastName().' '.$user->getFirstName()),
-          $user->getTelegramId()
-        )
-      );
-    $this->getBus()
-      ->getBot()
-      ->bumpQueue();
+    // Dispatch new registration event
+    $this->dispatchNewRegistration($this->getUpdate(), $user_entity);
 
     return true;
   }
@@ -254,6 +242,27 @@ class RegisterCommand extends AbstractCommand
         }
       }
     }
+  }
+
+  /**
+   * Dispatches command is unknown.
+   *
+   * @param Update $update
+   * @param \Kaula\TelegramBundle\Entity\User $user_entity
+   */
+  private function dispatchNewRegistration(
+    Update $update,
+    User $user_entity
+  ) {
+    $dispatcher = $this->getBus()
+      ->getBot()
+      ->getEventDispatcher();
+
+    // Dispatch new registration event
+    $user_registered_event = new UserRegisteredEvent(
+      $update, $user_entity
+    );
+    $dispatcher->dispatch(UserRegisteredEvent::NAME, $user_registered_event);
   }
 
 }
