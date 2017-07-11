@@ -487,7 +487,9 @@ class UserManCommand extends AbstractCommand
     $this->replyWithMessage('Роль добавлена.');
     $this->replyWithMessage(
       $this->getUserInformation($user_to_manipulate),
-      self::PARSE_MODE_HTML
+      self::PARSE_MODE_HTML,
+      self::PARSE_MODE_PLAIN,
+      new ReplyKeyboardRemove()
     );
   }
 
@@ -560,7 +562,8 @@ class UserManCommand extends AbstractCommand
     $this->replyWithMessage('Роль убрана.');
     $this->replyWithMessage(
       $this->getUserInformation($user_to_manipulate),
-      self::PARSE_MODE_HTML
+      self::PARSE_MODE_HTML,
+      new ReplyKeyboardRemove()
     );
   }
 

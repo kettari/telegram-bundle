@@ -15,6 +15,7 @@ use Kaula\TelegramBundle\Telegram\Event\CommandReceivedEvent;
 use Kaula\TelegramBundle\Telegram\Event\CommandUnauthorizedEvent;
 use Kaula\TelegramBundle\Telegram\Event\CommandUnknownEvent;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+use unreal4u\TelegramAPI\Telegram\Types\ReplyKeyboardRemove;
 use unreal4u\TelegramAPI\Telegram\Types\Update;
 
 class CommandSubscriber extends AbstractBotSubscriber implements EventSubscriberInterface
@@ -154,7 +155,9 @@ class CommandSubscriber extends AbstractBotSubscriber implements EventSubscriber
     $this->getBot()
       ->sendMessage(
         $event->getMessage()->chat->id,
-        'Извините, такой команды я не знаю.'
+        'Извините, такой команды я не знаю.',
+        '',
+        new ReplyKeyboardRemove()
       );
 
     // Set flag that request is handled
