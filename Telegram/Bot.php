@@ -592,14 +592,20 @@ class Bot
       ->get('logger');
     $dispatcher = $this->getEventDispatcher();
 
+    $exception_message = $exception->getResponse()
+      ->getBody()
+      ->getContents();
     $l->error(
       'Request exception: {code} {message}',
-      ['code' => $exception->getCode(), 'message' => $exception->getMessage()]
+      [
+        'code'    => $exception->getCode(),
+        'message' => $exception_message,
+      ]
     );
 
     // Dispatch event when bot is blocked
     $exception_event = new RequestExceptionEvent(
-      $method, $exception->getResponse()
+      $method, $exception->getResponse(), $exception_message
     );
     $dispatcher->dispatch(RequestExceptionEvent::NAME, $exception_event);
   }

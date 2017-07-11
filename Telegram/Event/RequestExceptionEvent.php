@@ -12,4 +12,31 @@ namespace Kaula\TelegramBundle\Telegram\Event;
 class RequestExceptionEvent extends AbstractMethodExceptionEvent
 {
   const NAME = 'telegram.request.exception';
+
+  /**
+   * @var string
+   */
+  private $exception_message;
+
+  /**
+   * RequestSentEvent constructor.
+   *
+   * @param mixed $method
+   * @param mixed $response
+   * @param string $exception_message
+   */
+  public function __construct($method, $response, $exception_message)
+  {
+    parent::__construct($method, $response);
+    $this->exception_message = $exception_message;
+  }
+
+  /**
+   * @return string
+   */
+  public function getExceptionMessage(): string
+  {
+    return $this->exception_message;
+  }
+
 }

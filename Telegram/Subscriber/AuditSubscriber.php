@@ -11,7 +11,6 @@ namespace Kaula\TelegramBundle\Telegram\Subscriber;
 use Kaula\TelegramBundle\Entity\Chat;
 use Kaula\TelegramBundle\Entity\User;
 use Kaula\TelegramBundle\Telegram\Event\CommandExecutedEvent;
-
 use Kaula\TelegramBundle\Telegram\Event\JoinChatMemberBotEvent;
 use Kaula\TelegramBundle\Telegram\Event\JoinChatMemberEvent;
 use Kaula\TelegramBundle\Telegram\Event\LeftChatMemberBotEvent;
@@ -531,8 +530,6 @@ class AuditSubscriber extends AbstractBotSubscriber implements EventSubscriberIn
       $event->getResponse()
         ->getStatusCode()
     );
-    $content = $event->getMethod()
-      ->export();
 
     // Write the audit log
     $this->getBot()
@@ -541,7 +538,7 @@ class AuditSubscriber extends AbstractBotSubscriber implements EventSubscriberIn
         $description,
         null,
         null,
-        print_r($content, true)
+        $event->getExceptionMessage()
       );
   }
 
