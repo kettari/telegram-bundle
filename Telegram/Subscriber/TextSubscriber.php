@@ -50,13 +50,23 @@ class TextSubscriber extends AbstractBotSubscriber implements EventSubscriberInt
    */
   public function onTextReceived(TextReceivedEvent $event)
   {
-    $this->parseCommand($event);
+    if (!$this->parseCommand($event)) {
+
+      // Check type of the chat and mark request handled for group chats:
+      // otherwise the bot will answer "Don't understand you" to all messages
+      if ("private" != $event->getMessage()->chat->type) {
+        $this->getBot()
+          ->setRequestHandled(true);
+      }
+
+    }
   }
 
   /**
    * Executes event.
    *
    * @param TextReceivedEvent $event
+   * @return bool
    */
   private function parseCommand(TextReceivedEvent $event)
   {
@@ -86,10 +96,15 @@ class TextSubscriber extends AbstractBotSubscriber implements EventSubscriberInt
           $command_name,
           $parameter
         );
+
+        return true;
       }
-    } else {
-      $l->info('No commands detected within the update');
     }
+
+    // Add some logging
+    $l->info('No commands detected within the update');
+
+    return false;
   }
 
   /**
