@@ -179,6 +179,10 @@ class SettingsCommand extends AbstractCommand
   public function handleSettingsNotificationOption()
   {
     $cq = $this->getUpdate()->callback_query;
+    if (is_null($cq) && !is_null($this->getUpdate()->message)) {
+      $this->replyWithMessage('Команда отменена.');
+      return;
+    }
     if (is_null($cq) || is_null($cq->message)) {
       return;
     }
