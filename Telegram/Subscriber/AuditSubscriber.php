@@ -11,7 +11,7 @@ namespace Kaula\TelegramBundle\Telegram\Subscriber;
 use Kaula\TelegramBundle\Entity\Chat;
 use Kaula\TelegramBundle\Entity\User;
 use Kaula\TelegramBundle\Telegram\Event\CommandExecutedEvent;
-use Kaula\TelegramBundle\Telegram\Event\CommandReceivedEvent;
+
 use Kaula\TelegramBundle\Telegram\Event\JoinChatMemberBotEvent;
 use Kaula\TelegramBundle\Telegram\Event\JoinChatMemberEvent;
 use Kaula\TelegramBundle\Telegram\Event\LeftChatMemberBotEvent;

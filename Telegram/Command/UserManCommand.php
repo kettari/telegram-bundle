@@ -78,8 +78,12 @@ class UserManCommand extends AbstractCommand
     if (empty($name)) {
       return;
     }
-    if (strlen($name) < 3) {
-      $this->replyWithMessage('Запрос должен содержать минимум 3 символа.');
+    if (mb_strlen($name) < 3) {
+      $this->replyWithMessage(
+        'Запрос должен содержать минимум 3 символа.',
+        self::PARSE_MODE_PLAIN,
+        new ReplyKeyboardRemove()
+      );
 
       return;
     }
@@ -88,7 +92,7 @@ class UserManCommand extends AbstractCommand
     if (self::BTN_CANCEL == $name) {
       $this->replyWithMessage(
         'Команда отменена.',
-        null,
+        self::PARSE_MODE_PLAIN,
         new ReplyKeyboardRemove()
       );
 
@@ -106,7 +110,7 @@ class UserManCommand extends AbstractCommand
     if (0 == count($users)) {
       $this->replyWithMessage(
         'Не нашёл ни одного пользователя, удовлетворяющего этим критериями.',
-        null,
+        self::PARSE_MODE_PLAIN,
         new ReplyKeyboardRemove()
       );
 
@@ -117,7 +121,7 @@ class UserManCommand extends AbstractCommand
           'Нашёл нескольких пользователей (%d, если быть точным), удовлетворяющих этим критериями. Пожалуйста, уточните запрос так, чтобы был найден только один.',
           count($users)
         ),
-        null,
+        self::PARSE_MODE_PLAIN,
         new ReplyKeyboardRemove()
       );
 
