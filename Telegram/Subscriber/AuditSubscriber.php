@@ -311,7 +311,7 @@ class AuditSubscriber extends AbstractBotSubscriber implements EventSubscriberIn
 
     // Format human-readable description
     $description = sprintf(
-      'Bot "%s" ("%s") joined the chat "%s" (%s)',
+      'Bot "%s" ("%s") joined the chat "%s"',
       $user_name,
       $external_name,
       $this->formatChatTitle($chat_entity)
