@@ -37,7 +37,7 @@ class GroupSubscriber extends AbstractBotSubscriber implements EventSubscriberIn
    */
   public static function getSubscribedEvents()
   {
-    return [GroupCreatedEvent::NAME => 'onGroupCreated'];
+    return [GroupCreatedEvent::NAME => ['onGroupCreated', 90000]];
   }
 
   /**
