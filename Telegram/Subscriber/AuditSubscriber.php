@@ -190,7 +190,7 @@ class AuditSubscriber extends AbstractBotSubscriber implements EventSubscriberIn
 
     // Write the audit log
     $this->writeAudit(
-      CommandReceivedEvent::NAME,
+      CommandExecutedEvent::NAME,
       $event->getUpdate(),
       $description,
       $chat_entity,
@@ -345,7 +345,6 @@ class AuditSubscriber extends AbstractBotSubscriber implements EventSubscriberIn
    */
   public function onMemberLeft(LeftChatMemberEvent $event)
   {
-    $type = LeftChatMemberEvent::NAME;
     // Resolve chat and user objects
     $chat_entity = $this->resolveChat($event->getUpdate());
     $user_entity = $this->getDoctrine()
@@ -363,8 +362,8 @@ class AuditSubscriber extends AbstractBotSubscriber implements EventSubscriberIn
 
     // Write the audit log
     $this->writeAudit(
+      LeftChatMemberEvent::NAME,
       $event->getUpdate(),
-      $type,
       $description,
       $chat_entity,
       $user_entity
