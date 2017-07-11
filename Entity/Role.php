@@ -44,13 +44,13 @@ class Role {
    * @ORM\Column(type="boolean")
    *
    */
-  private $anonymous;
+  private $anonymous = false;
 
   /**
    * @ORM\Column(type="boolean")
    *
    */
-  private $administrator;
+  private $administrator = false;
 
   /**
    * Many Roles have Many Users.

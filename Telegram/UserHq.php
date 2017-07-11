@@ -9,60 +9,89 @@
 namespace Kaula\TelegramBundle\Telegram;
 
 
-use Doctrine\Common\Collections\ArrayCollection;
 
-use Symfony\Component\DependencyInjection\ContainerInterface;
+use Doctrine\Common\Collections\ArrayCollection;
+use Kaula\TelegramBundle\Entity\User;
 use unreal4u\TelegramAPI\Telegram\Types\Update;
 
 class UserHq
 {
   /**
-   * @var ContainerInterface
+   * @var Bot
    */
-  private $container;
+  private $bot;
 
   /**
-   * @var \Kaula\TelegramBundle\Entity\User
+   * @var User
    */
   private $current_user;
 
-  public function __construct(ContainerInterface $container)
+  /**
+   * UserHq constructor.
+   *
+   * @param Bot $bot
+   */
+  public function __construct(Bot $bot)
   {
-    $this->container = $container;
+    $this->bot = $bot;
   }
 
   /**
    * Finds current telegram user in the database and stores the object for
    * later use.
    *
-   * @param string $update_type
-   * @param \unreal4u\TelegramAPI\Telegram\Types\Update $update
-   * @return null|\Kaula\TelegramBundle\Entity\User
+   * @param Update $update
+   * @return null|User
    */
-  public function stashUser($update_type, Update $update)
+  public function resolveCurrentUser(Update $update)
   {
+    $update_type = $this->getBot()
+      ->whatUpdateType($update);
+
+    // Assign telegram user object depending on update type
+    $telegram_user = null;
     if (Bot::UT_MESSAGE == $update_type) {
       if (!is_null($update->message)) {
         $telegram_user = $update->message->from;
-      } else {
-        return null;
       }
     } elseif (Bot::UT_CALLBACK_QUERY == $update_type) {
-      $telegram_user = $update->callback_query->from;
-    } else {
+      if (!is_null($update->callback_query)) {
+        $telegram_user = $update->callback_query->from;
+      }
+    }
+    // Well?..
+    if (is_null($telegram_user)) {
       return null;
     }
 
-    /** @var \Kaula\TelegramBundle\Entity\User $user */
+    /** @var User $user */
     if (is_null(
-      $this->current_user = $this->getContainer()
-        ->get('doctrine')
+      $this->current_user = $this->getBot()
+        ->getDoctrine()
         ->getRepository('KaulaTelegramBundle:User')
         ->findOneBy(['telegram_id' => $telegram_user->id])
     )) {
       return null;
     }
 
+    return $this->getCurrentUser();
+  }
+
+  /**
+   * @return Bot
+   */
+  public function getBot(): Bot
+  {
+    return $this->bot;
+  }
+
+  /**
+   * Get database entity for current database user.
+   *
+   * @return User
+   */
+  public function getCurrentUser()
+  {
     return $this->current_user;
   }
 
@@ -124,20 +153,19 @@ class UserHq
   }
 
   /**
-   * @return ContainerInterface
+   * Returns database User entity by telegram User object.
+   *
+   * @param \unreal4u\TelegramAPI\Telegram\Types\User $telegram_user
+   * @return \Kaula\TelegramBundle\Entity\User|null
    */
-  public function getContainer()
+  public function getEntityByTelegram($telegram_user)
   {
-    return $this->container;
+    /** @var User $user */
+    return $this->getBot()
+        ->getDoctrine()
+        ->getRepository('KaulaTelegramBundle:User')
+        ->findOneBy(['telegram_id' => $telegram_user->id]);
   }
 
-  /**
-   * Get database entity for current database user.
-   *
-   * @return \Kaula\TelegramBundle\Entity\User
-   */
-  public function getCurrentUser()
-  {
-    return $this->current_user;
-  }
+
 }

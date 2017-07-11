@@ -59,7 +59,7 @@ class Queue
   private $parse_mode;
 
   /**
-   * @ORM\Column(type="string",nullable=true)
+   * @ORM\Column(type="text",nullable=true)
    */
   private $reply_markup;
 

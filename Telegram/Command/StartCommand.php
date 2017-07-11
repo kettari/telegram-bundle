@@ -9,24 +9,25 @@
 namespace Kaula\TelegramBundle\Telegram\Command;
 
 
-class StartCommand extends AbstractCommand {
+class StartCommand extends AbstractCommand
+{
 
   static public $name = 'start';
   static public $description = 'Начать разговор с ботом';
-  static public $visible = FALSE;
+  static public $visible = false;
   static public $required_permissions = ['execute command start'];
 
   /**
    * Executes command.
    */
-  public function execute() {
+  public function execute()
+  {
     $this->replyWithMessage('Привет! Список команд доступен по команде /help');
 
     // Execute /help
-    $this->getBus()->executeCommand('help', $this->getUpdate());
+    $this->getBus()
+      ->executeCommand('help', null, $this->getUpdate());
   }
-
-
 
 
 }

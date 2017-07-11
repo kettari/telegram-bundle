@@ -9,7 +9,7 @@
 namespace Kaula\TelegramBundle\Exception;
 
 
-class ThrottleControlException extends KaulaTelegramBundleException
+class ThrottleControlException extends TelegramBundleException
 {
 
 }

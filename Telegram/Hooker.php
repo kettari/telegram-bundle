@@ -103,7 +103,7 @@ class Hooker
   }
 
   /**
-   * Try to return correct Message object.
+   * Tries to return correct Message object.
    *
    * @param \unreal4u\TelegramAPI\Telegram\Types\Update $update
    * @return \unreal4u\TelegramAPI\Telegram\Types\Message
@@ -122,7 +122,7 @@ class Hooker
   }
 
   /**
-   * Try to return correct User object.
+   * Tries to return correct User object.
    *
    * @param \unreal4u\TelegramAPI\Telegram\Types\Update $update
    * @return \unreal4u\TelegramAPI\Telegram\Types\User

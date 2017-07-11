@@ -19,63 +19,47 @@ use unreal4u\TelegramAPI\Telegram\Types\ReplyKeyboardRemove;
 class UserManCommand extends AbstractCommand
 {
 
-  static public $name = 'userman';
-  static public $description = 'Управление ролями пользователей';
-  static public $required_permissions = ['execute command userman'];
-
   const LIST_MARK = "\xF0\x9F\x94\xB9";
-
   const BTN_ROLES_ADD = 'Добавить роли';
   const BTN_ROLES_REMOVE = 'Убрать роли';
   const BTN_BLOCK = 'Изменить блокировку';
   const BTN_CANCEL = 'Отмена';
+  static public $name = 'userman';
+  static public $description = 'Управление ролями пользователей';
+  static public $required_permissions = ['execute command userman'];
 
   /**
    * Executes command.
    */
   public function execute()
   {
-    $parameter = $this->getParameter();
-    if (!empty($parameter)) {
-      $this->showUserManMenu($parameter);
+    if ('private' == $this->getUpdate()->message->chat->type) {
+      $parameter = $this->getParameter();
+      if (!empty($parameter)) {
+        $this->showUserManMenu($parameter);
 
-      return;
-    }
+        return;
+      }
 
-    $this->replyWithMessage(
-      'Укажите часть ФИО, никнейма либо номер телефона:',
-      null,
-      $this->getReplyKeyboardMarkup_Cancel()
-    );
-
-    // Create the hook to handle user's reply
-    $this->getBus()
-      ->getHooker()
-      ->createHook(
-        $this->getUpdate(),
-        get_class($this),
-        'showUserManMenu'
+      $this->replyWithMessage(
+        'Укажите часть ФИО, никнейма либо номер телефона:',
+        null,
+        $this->getReplyKeyboardMarkup_Cancel()
       );
-  }
 
-  /**
-   * Returns reply markup object.
-   *
-   * @return ReplyKeyboardMarkup
-   */
-  private function getReplyKeyboardMarkup_Cancel()
-  {
-    // Cancel button
-    $cancel_btn = new KeyboardButton();
-    $cancel_btn->text = self::BTN_CANCEL;
-
-    // Keyboard
-    $reply_markup = new ReplyKeyboardMarkup();
-    $reply_markup->one_time_keyboard = true;
-    $reply_markup->resize_keyboard = true;
-    $reply_markup->keyboard[][] = $cancel_btn;
-
-    return $reply_markup;
+      // Create the hook to handle user's reply
+      $this->getBus()
+        ->getHooker()
+        ->createHook(
+          $this->getUpdate(),
+          get_class($this),
+          'showUserManMenu'
+        );
+    } else {
+      $this->replyWithMessage(
+        'Эта команда работает только в личной переписке с ботом. В общем канале управление пользователями невозможно.'
+      );
+    }
   }
 
   /**
@@ -94,8 +78,12 @@ class UserManCommand extends AbstractCommand
     if (empty($name)) {
       return;
     }
-    if (strlen($name) < 3) {
-      $this->replyWithMessage('Запрос должен содержать минимум 3 символа.');
+    if (mb_strlen($name) < 3) {
+      $this->replyWithMessage(
+        'Запрос должен содержать минимум 3 символа.',
+        self::PARSE_MODE_PLAIN,
+        new ReplyKeyboardRemove()
+      );
 
       return;
     }
@@ -104,7 +92,7 @@ class UserManCommand extends AbstractCommand
     if (self::BTN_CANCEL == $name) {
       $this->replyWithMessage(
         'Команда отменена.',
-        null,
+        self::PARSE_MODE_PLAIN,
         new ReplyKeyboardRemove()
       );
 
@@ -122,7 +110,7 @@ class UserManCommand extends AbstractCommand
     if (0 == count($users)) {
       $this->replyWithMessage(
         'Не нашёл ни одного пользователя, удовлетворяющего этим критериями.',
-        null,
+        self::PARSE_MODE_PLAIN,
         new ReplyKeyboardRemove()
       );
 
@@ -133,7 +121,7 @@ class UserManCommand extends AbstractCommand
           'Нашёл нескольких пользователей (%d, если быть точным), удовлетворяющих этим критериями. Пожалуйста, уточните запрос так, чтобы был найден только один.',
           count($users)
         ),
-        null,
+        self::PARSE_MODE_PLAIN,
         new ReplyKeyboardRemove()
       );
 
@@ -164,14 +152,14 @@ class UserManCommand extends AbstractCommand
    * @param User $user
    * @return string
    */
-  private function getUserInformation($user) {
+  private function getUserInformation($user)
+  {
     $text = sprintf(
         '<b>%s</b>',
         trim($user->getFirstName().' '.$user->getLastName())
       ).PHP_EOL;
     $text .= 'В Талланто: '.trim(
-        $user->getExternalFirstName().' '.
-        $user->getExternalLastName()
+        $user->getExternalFirstName().' '.$user->getExternalLastName()
       ).PHP_EOL;
     $text .= 'Телефон: '.$user->getPhone().PHP_EOL;
     $text .= 'Telegram ID: '.$user->getTelegramId().PHP_EOL;
@@ -212,6 +200,26 @@ class UserManCommand extends AbstractCommand
     // Cancel button
     $cancel_btn = new KeyboardButton();
     $cancel_btn->text = self::BTN_CANCEL;
+    $reply_markup->keyboard[][] = $cancel_btn;
+
+    return $reply_markup;
+  }
+
+  /**
+   * Returns reply markup object.
+   *
+   * @return ReplyKeyboardMarkup
+   */
+  private function getReplyKeyboardMarkup_Cancel()
+  {
+    // Cancel button
+    $cancel_btn = new KeyboardButton();
+    $cancel_btn->text = self::BTN_CANCEL;
+
+    // Keyboard
+    $reply_markup = new ReplyKeyboardMarkup();
+    $reply_markup->one_time_keyboard = true;
+    $reply_markup->resize_keyboard = true;
     $reply_markup->keyboard[][] = $cancel_btn;
 
     return $reply_markup;
@@ -385,6 +393,46 @@ class UserManCommand extends AbstractCommand
   }
 
   /**
+   * Change state of the user.
+   *
+   * @param User $found_user
+   */
+  public function changeBlockState($found_user)
+  {
+    $d = $this->getBus()
+      ->getBot()
+      ->getContainer()
+      ->get('doctrine');
+
+    /** @var User $user_to_manipulate */
+    if (is_null(
+      $user_to_manipulate = $d->getRepository('KaulaTelegramBundle:User')
+        ->find($found_user->getId())
+    )) {
+      $this->replyWithMessage(
+        'Пользователь не найден :(',
+        null,
+        new ReplyKeyboardRemove()
+      );
+
+      return;
+    }
+
+    // Change state of block
+    //$state = ;
+    $user_to_manipulate->setBlocked(!$user_to_manipulate->isBlocked());
+    $d->getManager()
+      ->flush();
+
+    $this->replyWithMessage('Статус блокровки изменён.');
+    $this->replyWithMessage(
+      $this->getUserInformation($user_to_manipulate),
+      self::PARSE_MODE_HTML,
+      new ReplyKeyboardRemove()
+    );
+  }
+
+  /**
    * Handles /userman add role to the user.
    *
    * @param mixed $serialized_found_user
@@ -441,7 +489,12 @@ class UserManCommand extends AbstractCommand
       ->flush();
 
     $this->replyWithMessage('Роль добавлена.');
-    $this->replyWithMessage($this->getUserInformation($user_to_manipulate), self::PARSE_MODE_HTML);
+    $this->replyWithMessage(
+      $this->getUserInformation($user_to_manipulate),
+      self::PARSE_MODE_HTML,
+      self::PARSE_MODE_PLAIN,
+      new ReplyKeyboardRemove()
+    );
   }
 
   /**
@@ -511,41 +564,11 @@ class UserManCommand extends AbstractCommand
       ->flush();
 
     $this->replyWithMessage('Роль убрана.');
-    $this->replyWithMessage($this->getUserInformation($user_to_manipulate), self::PARSE_MODE_HTML);
-  }
-
-  /**
-   * Change state of the user.
-   *
-   * @param User $found_user
-   */
-  public function changeBlockState($found_user)
-  {
-    $d = $this->getBus()
-      ->getBot()
-      ->getContainer()
-      ->get('doctrine');
-
-    /** @var User $user_to_manipulate */
-    if (is_null(
-      $user_to_manipulate = $d->getRepository('KaulaTelegramBundle:User')
-        ->find($found_user->getId())
-    )) {
-      $this->replyWithMessage(
-        'Пользователь не найден :('
-      );
-
-      return;
-    }
-
-    // Change state of block
-    //$state = ;
-    $user_to_manipulate->setBlocked(!$user_to_manipulate->isBlocked());
-    $d->getManager()
-      ->flush();
-
-    $this->replyWithMessage('Статус блокровки изменён.');
-    $this->replyWithMessage($this->getUserInformation($user_to_manipulate), self::PARSE_MODE_HTML);
+    $this->replyWithMessage(
+      $this->getUserInformation($user_to_manipulate),
+      self::PARSE_MODE_HTML,
+      new ReplyKeyboardRemove()
+    );
   }
 
 }
