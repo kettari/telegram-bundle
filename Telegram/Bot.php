@@ -1109,23 +1109,23 @@ class Bot
    *
    * @param string $type
    * @param string $description
-   * @param Chat $chat
-   * @param User $user
+   * @param Chat $chat_entity
+   * @param User $user_entity
    * @param mixed $content
    * @internal param mixed $telegram_data
    */
   public function audit(
     $type,
     $description = null,
-    $chat = null,
-    $user = null,
+    $chat_entity = null,
+    $user_entity = null,
     $content = null
   ) {
     $audit = new Audit();
     $audit->setType($type)
       ->setDescription($description)
-      ->setChat($chat)
-      ->setUser($user)
+      ->setChat($chat_entity)
+      ->setUser($user_entity)
       ->setContent($content);
 
     $em = $this->getContainer()

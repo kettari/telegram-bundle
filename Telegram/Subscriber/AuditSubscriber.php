@@ -23,6 +23,7 @@ use Kaula\TelegramBundle\Telegram\Event\TextReceivedEvent;
 use Kaula\TelegramBundle\Telegram\Event\UpdateReceivedEvent;
 use Kaula\TelegramBundle\Telegram\Event\UserRegisteredEvent;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+use unreal4u\TelegramAPI\Telegram\Methods\SendMessage;
 use unreal4u\TelegramAPI\Telegram\Types\Update;
 
 class AuditSubscriber extends AbstractBotSubscriber implements EventSubscriberInterface
@@ -70,28 +71,18 @@ class AuditSubscriber extends AbstractBotSubscriber implements EventSubscriberIn
    */
   public function onUpdateReceived(UpdateReceivedEvent $event)
   {
-    $this->logInput($event->getUpdate());
-  }
-
-  /**
-   * Logs input message to the database.
-   *
-   * @param \unreal4u\TelegramAPI\Telegram\Types\Update $update
-   */
-  private function logInput(Update $update)
-  {
     // Resolve chat and user objects
-    $chat_entity = $this->resolveChat($update);
-    $user_entity = $this->resolveUser($update);
+    $chat_entity = $this->resolveChat($event->getUpdate());
+    $user_entity = $this->resolveUser($event->getUpdate());
 
     // Format human-readable description
     $update_type = $this->getBot()
-      ->whatUpdateType($update);
+      ->whatUpdateType($event->getUpdate());
     $description = sprintf('Received update type "%s"', $update_type);
     // Try to make description more informative
-    if (!is_null($update->message)) {
+    if (!is_null($event->getUpdate()->message)) {
       $message_type = $this->getBot()
-        ->whatMessageType($update->message);
+        ->whatMessageType($event->getUpdate()->message);
       $message_type_title = $this->getBot()
         ->getMessageTypeTitle($message_type);
       $description .= sprintf(', message type "%s"', $message_type_title);
@@ -100,7 +91,7 @@ class AuditSubscriber extends AbstractBotSubscriber implements EventSubscriberIn
     // Write the audit log
     $this->writeAudit(
       UpdateReceivedEvent::NAME,
-      $update,
+      $event->getUpdate(),
       $description,
       $chat_entity,
       $user_entity
@@ -142,8 +133,41 @@ class AuditSubscriber extends AbstractBotSubscriber implements EventSubscriberIn
    */
   public function onRequestSent(RequestSentEvent $event)
   {
-    // TODO Audit output (sent) messages
-    //$this->logOutput($event);
+    $chat_entity = null;
+    $method = $event->getMethod();
+
+    // Format human-readable description
+    $description = sprintf(
+      'Sent request of type "%s"',
+      (new \ReflectionClass($method))->getShortName()
+    );
+    // Try to make description more informative
+    if ($method instanceof SendMessage) {
+      $chat_entity = $this->getDoctrine()
+        ->getRepository('KaulaTelegramBundle:Chat')
+        ->findOneBy(['telegram_id' => $method->chat_id]);
+    }
+    /*if (!is_null($event->getUpdate()->message)) {
+      $message_type = $this->getBot()
+        ->whatMessageType($event->getUpdate()->message);
+      $message_type_title = $this->getBot()
+        ->getMessageTypeTitle($message_type);
+      $description .= sprintf(', message type "%s"', $message_type_title);
+    }*/
+
+    // Write the audit log
+    $this->getBot()
+      ->audit(
+        RequestSentEvent::NAME,
+        $description,
+        $chat_entity,
+        null,
+        print_r(
+          $event->getMethod()
+            ->export(),
+          true
+        )
+      );
   }
 
   /**
