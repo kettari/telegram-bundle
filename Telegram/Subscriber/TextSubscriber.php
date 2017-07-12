@@ -51,14 +51,7 @@ class TextSubscriber extends AbstractBotSubscriber implements EventSubscriberInt
   public function onTextReceived(TextReceivedEvent $event)
   {
     if (!$this->parseCommand($event)) {
-
-      // Check type of the chat and mark request handled for group chats:
-      // otherwise the bot will answer "Don't understand you" to all messages
-      if ("private" != $event->getMessage()->chat->type) {
-        $this->getBot()
-          ->setRequestHandled(true);
-      }
-
+      // Not a command. Well, do nothing
     }
   }
 

@@ -99,7 +99,8 @@ class Bot
   const MT_PINNED_MESSAGE = 2097152;
   const MT_NEW_CHAT_MEMBERS_MANY = 4194304;
   const MT_SUCCESSFUL_PAYMENT = 8388608;
-  const MT_ANY = 16777215;
+  const MT_INVOICE = 16777216;
+  const MT_ANY = 33554431;
 
   // Captions of the event types
   /**
@@ -144,6 +145,7 @@ class Bot
     self::MT_PINNED_MESSAGE          => 'MT_PINNED_MESSAGE',
     self::MT_NEW_CHAT_MEMBERS_MANY   => 'MT_NEW_CHAT_MEMBERS_MANY',
     self::MT_SUCCESSFUL_PAYMENT      => 'MT_SUCCESSFUL_PAYMENT',
+    self::MT_INVOICE                 => 'MT_INVOICE',
   ];
 
   /**
@@ -1027,37 +1029,37 @@ class Bot
     if (!empty($message->text)) {
       $message_type = $message_type | self::MT_TEXT;
     }
-    if (is_object($message->audio)) {
+    if (!empty($message->audio)) {
       $message_type = $message_type | self::MT_AUDIO;
     }
-    if (is_object($message->document)) {
+    if (!empty($message->document)) {
       $message_type = $message_type | self::MT_DOCUMENT;
     }
-    if (is_object($message->game)) {
+    if (!empty($message->game)) {
       $message_type = $message_type | self::MT_GAME;
     }
-    if (is_object($message->photo)) {
+    if (!empty($message->photo)) {
       $message_type = $message_type | self::MT_PHOTO;
     }
-    if (is_object($message->sticker)) {
+    if (!empty($message->sticker)) {
       $message_type = $message_type | self::MT_STICKER;
     }
-    if (is_object($message->video)) {
+    if (!empty($message->video)) {
       $message_type = $message_type | self::MT_VIDEO;
     }
-    if (is_object($message->voice)) {
+    if (!empty($message->voice)) {
       $message_type = $message_type | self::MT_VOICE;
     }
-    if (is_object($message->contact)) {
+    if (!empty($message->contact)) {
       $message_type = $message_type | self::MT_CONTACT;
     }
-    if (is_object($message->location)) {
+    if (!empty($message->location)) {
       $message_type = $message_type | self::MT_LOCATION;
     }
-    if (is_object($message->venue)) {
+    if (!empty($message->venue)) {
       $message_type = $message_type | self::MT_VENUE;
     }
-    if (is_object($message->new_chat_member)) {
+    if (!empty($message->new_chat_member)) {
       $message_type = $message_type | self::MT_NEW_CHAT_MEMBER;
     }
     if (is_array($message->new_chat_members) &&
@@ -1065,13 +1067,13 @@ class Bot
     ) {
       $message_type = $message_type | self::MT_NEW_CHAT_MEMBERS_MANY;
     }
-    if (is_object($message->left_chat_member)) {
+    if (!empty($message->left_chat_member)) {
       $message_type = $message_type | self::MT_LEFT_CHAT_MEMBER;
     }
     if (!empty($message->new_chat_title)) {
       $message_type = $message_type | self::MT_NEW_CHAT_TITLE;
     }
-    if (is_object($message->new_chat_photo)) {
+    if (!empty($message->new_chat_photo)) {
       $message_type = $message_type | self::MT_NEW_CHAT_PHOTO;
     }
     if ($message->delete_chat_photo) {
@@ -1086,14 +1088,20 @@ class Bot
     if ($message->channel_chat_created) {
       $message_type = $message_type | self::MT_CHANNEL_CHAT_CREATED;
     }
-    if ($message->migrate_to_chat_id != 0) {
+    if (0 != $message->migrate_to_chat_id) {
       $message_type = $message_type | self::MT_MIGRATE_TO_CHAT_ID;
     }
-    if ($message->migrate_from_chat_id != 0) {
+    if (0 != $message->migrate_from_chat_id) {
       $message_type = $message_type | self::MT_MIGRATE_FROM_CHAT_ID;
     }
-    if (!is_null($message->pinned_message)) {
+    if (!empty($message->pinned_message)) {
       $message_type = $message_type | self::MT_PINNED_MESSAGE;
+    }
+    if (!empty($message->successful_payment)) {
+      $message_type = $message_type | self::MT_SUCCESSFUL_PAYMENT;
+    }
+    if (!empty($message->invoice)) {
+      $message_type = $message_type | self::MT_INVOICE;
     }
 
     return $message_type;
