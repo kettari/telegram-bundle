@@ -1,4 +1,7 @@
 # Telegram Bundle
+
+## Known issues
+  * Command `/chakreshvara` doesn't understand chakra names with emoji.
 ## Configuration
   * `telegram.secret` -- arbitrary key that is not known to the public. This key is used in the
   `telegram.url` parameter when setting webhook. The idea is the resulting URL is known only to you and
