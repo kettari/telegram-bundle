@@ -8,6 +8,7 @@
 
 namespace Kaula\TelegramBundle\Entity;
 
+use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\Mapping as ORM;
 
 
@@ -16,7 +17,8 @@ use Doctrine\ORM\Mapping as ORM;
  * @ORM\Table(name="chat",
  *   options={"collate":"utf8mb4_general_ci", "charset":"utf8mb4"})
  */
-class Chat {
+class Chat
+{
 
   /**
    * @ORM\Column(type="integer")
@@ -67,12 +69,30 @@ class Chat {
   private $all_members_are_administrators;
 
   /**
+   * Inverse side
+   *
+   * @ORM\OneToMany(targetEntity="Kaula\TelegramBundle\Entity\ChatMember",mappedBy="chat")
+   */
+  private $chat_members;
+
+  /**
    * Get id
    *
    * @return integer
    */
-  public function getId() {
+  public function getId()
+  {
     return $this->id;
+  }
+
+  /**
+   * Get chatType
+   *
+   * @return string
+   */
+  public function getType()
+  {
+    return $this->type;
   }
 
   /**
@@ -82,30 +102,9 @@ class Chat {
    *
    * @return Chat
    */
-  public function setType($chatType) {
+  public function setType($chatType)
+  {
     $this->type = $chatType;
-
-    return $this;
-  }
-
-  /**
-   * Get chatType
-   *
-   * @return string
-   */
-  public function getType() {
-    return $this->type;
-  }
-
-  /**
-   * Set title
-   *
-   * @param string $title
-   *
-   * @return Chat
-   */
-  public function setTitle($title) {
-    $this->title = $title;
 
     return $this;
   }
@@ -115,19 +114,21 @@ class Chat {
    *
    * @return string
    */
-  public function getTitle() {
+  public function getTitle()
+  {
     return $this->title;
   }
 
   /**
-   * Set username
+   * Set title
    *
-   * @param string $username
+   * @param string $title
    *
    * @return Chat
    */
-  public function setUsername($username) {
-    $this->username = $username;
+  public function setTitle($title)
+  {
+    $this->title = $title;
 
     return $this;
   }
@@ -137,19 +138,21 @@ class Chat {
    *
    * @return string
    */
-  public function getUsername() {
+  public function getUsername()
+  {
     return $this->username;
   }
 
   /**
-   * Set firstName
+   * Set username
    *
-   * @param string $firstName
+   * @param string $username
    *
    * @return Chat
    */
-  public function setFirstName($firstName) {
-    $this->first_name = $firstName;
+  public function setUsername($username)
+  {
+    $this->username = $username;
 
     return $this;
   }
@@ -159,19 +162,21 @@ class Chat {
    *
    * @return string
    */
-  public function getFirstName() {
+  public function getFirstName()
+  {
     return $this->first_name;
   }
 
   /**
-   * Set lastName
+   * Set firstName
    *
-   * @param string $lastName
+   * @param string $firstName
    *
    * @return Chat
    */
-  public function setLastName($lastName) {
-    $this->last_name = $lastName;
+  public function setFirstName($firstName)
+  {
+    $this->first_name = $firstName;
 
     return $this;
   }
@@ -181,19 +186,21 @@ class Chat {
    *
    * @return string
    */
-  public function getLastName() {
+  public function getLastName()
+  {
     return $this->last_name;
   }
 
   /**
-   * Set allMembersAreAdministrators
+   * Set lastName
    *
-   * @param boolean $allMembersAreAdministrators
+   * @param string $lastName
    *
    * @return Chat
    */
-  public function setAllMembersAreAdministrators($allMembersAreAdministrators) {
-    $this->all_members_are_administrators = $allMembersAreAdministrators;
+  public function setLastName($lastName)
+  {
+    $this->last_name = $lastName;
 
     return $this;
   }
@@ -203,31 +210,87 @@ class Chat {
    *
    * @return boolean
    */
-  public function getAllMembersAreAdministrators() {
+  public function getAllMembersAreAdministrators()
+  {
     return $this->all_members_are_administrators;
   }
 
-    /**
-     * Set telegramId
-     *
-     * @param integer $telegramId
-     *
-     * @return Chat
-     */
-    public function setTelegramId($telegramId)
-    {
-        $this->telegram_id = $telegramId;
+  /**
+   * Set allMembersAreAdministrators
+   *
+   * @param boolean $allMembersAreAdministrators
+   *
+   * @return Chat
+   */
+  public function setAllMembersAreAdministrators($allMembersAreAdministrators)
+  {
+    $this->all_members_are_administrators = $allMembersAreAdministrators;
 
-        return $this;
-    }
+    return $this;
+  }
 
-    /**
-     * Get telegramId
-     *
-     * @return integer
-     */
-    public function getTelegramId()
-    {
-        return $this->telegram_id;
-    }
+  /**
+   * Get telegramId
+   *
+   * @return integer
+   */
+  public function getTelegramId()
+  {
+    return $this->telegram_id;
+  }
+
+  /**
+   * Set telegramId
+   *
+   * @param integer $telegramId
+   *
+   * @return Chat
+   */
+  public function setTelegramId($telegramId)
+  {
+    $this->telegram_id = $telegramId;
+
+    return $this;
+  }
+  /**
+   * Constructor
+   */
+  public function __construct()
+  {
+    $this->chat_members = new ArrayCollection();
+  }
+
+  /**
+   * Add chatMember
+   *
+   * @param ChatMember $chatMember
+   *
+   * @return Chat
+   */
+  public function addChatMember(ChatMember $chatMember)
+  {
+    $this->chat_members[] = $chatMember;
+
+    return $this;
+  }
+
+  /**
+   * Remove chatMember
+   *
+   * @param ChatMember $chatMember
+   */
+  public function removeChatMember(ChatMember $chatMember)
+  {
+    $this->chat_members->removeElement($chatMember);
+  }
+
+  /**
+   * Get chatMembers
+   *
+   * @return \Doctrine\Common\Collections\Collection
+   */
+  public function getChatMembers()
+  {
+    return $this->chat_members;
+  }
 }

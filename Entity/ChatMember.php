@@ -32,7 +32,9 @@ class ChatMember {
   private $user;
 
   /**
-   * @ORM\ManyToOne(targetEntity="Kaula\TelegramBundle\Entity\Chat")
+   * Owning side
+   *
+   * @ORM\ManyToOne(targetEntity="Kaula\TelegramBundle\Entity\Chat",inversedBy="chat_members")
    *
    */
   private $chat;
