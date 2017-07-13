@@ -13,7 +13,8 @@ use Doctrine\ORM\Mapping as ORM;
 
 /**
  * @ORM\Entity
- * @ORM\Table(name="chat")
+ * @ORM\Table(name="chat",
+ *   options={"collate":"utf8mb4_general_ci", "charset":"utf8mb4"})
  */
 class Chat {
 

@@ -12,7 +12,8 @@ use Doctrine\ORM\Mapping as ORM;
 
 /**
  * @ORM\Entity
- * @ORM\Table(name="audit")
+ * @ORM\Table(name="audit",
+ *   options={"collate":"utf8mb4_general_ci", "charset":"utf8mb4"})
  */
 class Audit
 {

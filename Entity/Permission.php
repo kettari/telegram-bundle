@@ -14,7 +14,8 @@ use Doctrine\ORM\Mapping\Index;
 
 /**
  * @ORM\Entity
- * @ORM\Table(name="permission",indexes={@Index(name="permission_name_idx",columns={"name"})})
+ * @ORM\Table(name="permission",indexes={@Index(name="permission_name_idx",columns={"name"})},
+ *   options={"collate":"utf8mb4_general_ci", "charset":"utf8mb4"})
  */
 class Permission {
 

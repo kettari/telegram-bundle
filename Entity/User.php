@@ -15,7 +15,8 @@ use Doctrine\ORM\Mapping\Index;
 
 /**
  * @ORM\Entity(repositoryClass="Kaula\TelegramBundle\Repository\UserRepository")
- * @ORM\Table(name="user",indexes={@Index(name="tallanto_user_idx",columns={"tallanto_user_id","blocked"})})
+ * @ORM\Table(name="user",indexes={@Index(name="tallanto_user_idx",columns={"tallanto_user_id","blocked"})},
+ *   options={"collate":"utf8mb4_general_ci", "charset":"utf8mb4"})
  */
 class User
 {

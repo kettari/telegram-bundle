@@ -17,7 +17,8 @@ use Doctrine\ORM\Mapping\Index;
 /**
  * @ORM\Entity
  * @ORM\Table(name="notification",indexes={@Index(name="order_idx",columns={"sort_order"}),
- *   @Index(name="default_idx",columns={"user_default"})})
+ *   @Index(name="default_idx",columns={"user_default"})},
+ *   options={"collate":"utf8mb4_general_ci", "charset":"utf8mb4"})
  */
 class Notification
 {
