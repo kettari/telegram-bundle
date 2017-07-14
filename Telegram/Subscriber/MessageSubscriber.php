@@ -11,13 +11,29 @@ namespace Kaula\TelegramBundle\Telegram\Subscriber;
 
 use Exception;
 use Kaula\TelegramBundle\Telegram\Bot;
+use Kaula\TelegramBundle\Telegram\Event\AudioReceivedEvent;
+use Kaula\TelegramBundle\Telegram\Event\ChatDeletePhotoEvent;
+use Kaula\TelegramBundle\Telegram\Event\ChatNewPhotoEvent;
+use Kaula\TelegramBundle\Telegram\Event\ChatNewTitleEvent;
+use Kaula\TelegramBundle\Telegram\Event\ContactReceivedEvent;
+use Kaula\TelegramBundle\Telegram\Event\DocumentReceivedEvent;
+use Kaula\TelegramBundle\Telegram\Event\GameReceivedEvent;
 use Kaula\TelegramBundle\Telegram\Event\GroupCreatedEvent;
 use Kaula\TelegramBundle\Telegram\Event\JoinChatMembersManyEvent;
 use Kaula\TelegramBundle\Telegram\Event\LeftChatMemberEvent;
+use Kaula\TelegramBundle\Telegram\Event\LocationReceivedEvent;
+use Kaula\TelegramBundle\Telegram\Event\MessagePinnedEvent;
 use Kaula\TelegramBundle\Telegram\Event\MessageReceivedEvent;
 use Kaula\TelegramBundle\Telegram\Event\MigrateFromChatIdEvent;
 use Kaula\TelegramBundle\Telegram\Event\MigrateToChatIdEvent;
+use Kaula\TelegramBundle\Telegram\Event\PaymentInvoiceEvent;
+use Kaula\TelegramBundle\Telegram\Event\PaymentSuccessfulEvent;
+use Kaula\TelegramBundle\Telegram\Event\PhotoReceivedEvent;
+use Kaula\TelegramBundle\Telegram\Event\StickerReceivedEvent;
 use Kaula\TelegramBundle\Telegram\Event\TextReceivedEvent;
+use Kaula\TelegramBundle\Telegram\Event\VenueReceivedEvent;
+use Kaula\TelegramBundle\Telegram\Event\VideoReceivedEvent;
+use Kaula\TelegramBundle\Telegram\Event\VoiceReceivedEvent;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use unreal4u\TelegramAPI\Telegram\Types\ReplyKeyboardRemove;
@@ -110,12 +126,77 @@ class MessageSubscriber extends AbstractBotSubscriber implements EventSubscriber
       $text_received_event = new TextReceivedEvent($event->getUpdate());
       $dispatcher->dispatch(TextReceivedEvent::NAME, $text_received_event);
     }
+    // Dispatch audio event
+    if ($message_type & Bot::MT_AUDIO) {
+      $audio_received_event = new AudioReceivedEvent($event->getUpdate());
+      $dispatcher->dispatch(AudioReceivedEvent::NAME, $audio_received_event);
+    }
+    // Dispatch document event
+    if ($message_type & Bot::MT_DOCUMENT) {
+      $document_received_event = new DocumentReceivedEvent($event->getUpdate());
+      $dispatcher->dispatch(
+        DocumentReceivedEvent::NAME,
+        $document_received_event
+      );
+    }
+    // Dispatch game event
+    if ($message_type & Bot::MT_GAME) {
+      $game_received_event = new GameReceivedEvent($event->getUpdate());
+      $dispatcher->dispatch(GameReceivedEvent::NAME, $game_received_event);
+    }
+    // Dispatch photo event
+    if ($message_type & Bot::MT_PHOTO) {
+      $photo_received_event = new PhotoReceivedEvent($event->getUpdate());
+      $dispatcher->dispatch(PhotoReceivedEvent::NAME, $photo_received_event);
+    }
+    // Dispatch sticker event
+    if ($message_type & Bot::MT_STICKER) {
+      $sticker_received_event = new StickerReceivedEvent($event->getUpdate());
+      $dispatcher->dispatch(
+        StickerReceivedEvent::NAME,
+        $sticker_received_event
+      );
+    }
+    // Dispatch video event
+    if ($message_type & Bot::MT_VIDEO) {
+      $video_received_event = new VideoReceivedEvent($event->getUpdate());
+      $dispatcher->dispatch(VideoReceivedEvent::NAME, $video_received_event);
+    }
+    // Dispatch voice event
+    if ($message_type & Bot::MT_VOICE) {
+      $voice_received_event = new VoiceReceivedEvent($event->getUpdate());
+      $dispatcher->dispatch(VoiceReceivedEvent::NAME, $voice_received_event);
+    }
+    // Dispatch contact event
+    if ($message_type & Bot::MT_CONTACT) {
+      $contact_received_event = new ContactReceivedEvent($event->getUpdate());
+      $dispatcher->dispatch(
+        ContactReceivedEvent::NAME,
+        $contact_received_event
+      );
+    }
+    // Dispatch location event
+    if ($message_type & Bot::MT_LOCATION) {
+      $location_received_event = new LocationReceivedEvent($event->getUpdate());
+      $dispatcher->dispatch(
+        LocationReceivedEvent::NAME,
+        $location_received_event
+      );
+    }
+    // Dispatch venue event
+    if ($message_type & Bot::MT_VENUE) {
+      $venue_received_event = new VenueReceivedEvent($event->getUpdate());
+      $dispatcher->dispatch(VenueReceivedEvent::NAME, $venue_received_event);
+    }
+
     // Dispatch chat member joined event
-    // NB: 'new_chat_member' property of telegram User object deprecated and should not be used
+    // NB: 'new_chat_member' property of the Message object deprecated since May 18, 2017
+    // and should not be used (see https://core.telegram.org/bots/api#may-18-2017)
     /*if ($message_type & Bot::MT_NEW_CHAT_MEMBER) {
       $join_member_event = new JoinChatMemberEvent($event->getUpdate());
       $dispatcher->dispatch(JoinChatMemberEvent::NAME, $join_member_event);
     }*/
+
     // Dispatch chat member joined event
     if ($message_type & Bot::MT_NEW_CHAT_MEMBERS_MANY) {
       $join_members_many_event = new JoinChatMembersManyEvent(
@@ -130,6 +211,24 @@ class MessageSubscriber extends AbstractBotSubscriber implements EventSubscriber
     if ($message_type & Bot::MT_LEFT_CHAT_MEMBER) {
       $left_member_event = new LeftChatMemberEvent($event->getUpdate());
       $dispatcher->dispatch(LeftChatMemberEvent::NAME, $left_member_event);
+    }
+    // Dispatch new chat title event
+    if ($message_type & Bot::MT_NEW_CHAT_TITLE) {
+      $new_chat_title_event = new ChatNewTitleEvent($event->getUpdate());
+      $dispatcher->dispatch(ChatNewTitleEvent::NAME, $new_chat_title_event);
+    }
+    // Dispatch new chat photo event
+    if ($message_type & Bot::MT_NEW_CHAT_PHOTO) {
+      $new_chat_photo_event = new ChatNewPhotoEvent($event->getUpdate());
+      $dispatcher->dispatch(ChatNewPhotoEvent::NAME, $new_chat_photo_event);
+    }
+    // Dispatch chat photo deleted event
+    if ($message_type & Bot::MT_DELETE_CHAT_PHOTO) {
+      $delete_chat_photo_event = new ChatDeletePhotoEvent($event->getUpdate());
+      $dispatcher->dispatch(
+        ChatDeletePhotoEvent::NAME,
+        $delete_chat_photo_event
+      );
     }
     // Dispatch group created event
     if ($message_type & Bot::MT_GROUP_CHAT_CREATED) {
@@ -151,6 +250,27 @@ class MessageSubscriber extends AbstractBotSubscriber implements EventSubscriber
         $migrate_from_chat_event
       );
     }
+    // Dispatch message pinned event
+    if ($message_type & Bot::MT_PINNED_MESSAGE) {
+      $message_pinned_event = new MessagePinnedEvent($event->getUpdate());
+      $dispatcher->dispatch(MessagePinnedEvent::NAME, $message_pinned_event);
+    }
+    // Dispatch successful payment event
+    if ($message_type & Bot::MT_SUCCESSFUL_PAYMENT) {
+      $successful_payment_event = new PaymentSuccessfulEvent(
+        $event->getUpdate()
+      );
+      $dispatcher->dispatch(
+        PaymentSuccessfulEvent::NAME,
+        $successful_payment_event
+      );
+    }
+    // Dispatch invoice event
+    if ($message_type & Bot::MT_INVOICE) {
+      $invoice_event = new PaymentInvoiceEvent($event->getUpdate());
+      $dispatcher->dispatch(PaymentInvoiceEvent::NAME, $invoice_event);
+    }
+
   }
 
   /**

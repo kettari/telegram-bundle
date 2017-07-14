@@ -13,7 +13,8 @@ use Doctrine\ORM\Mapping\Index;
 
 /**
  * @ORM\Entity
- * @ORM\Table(name="chat_member",indexes={@Index(name="chat_user_idx", columns={"chat_id","user_id"})},)
+ * @ORM\Table(name="chat_member",indexes={@Index(name="chat_user_idx", columns={"chat_id","user_id"})},
+ *   options={"collate":"utf8mb4_general_ci", "charset":"utf8mb4"})
  */
 class ChatMember {
 
@@ -31,7 +32,9 @@ class ChatMember {
   private $user;
 
   /**
-   * @ORM\ManyToOne(targetEntity="Kaula\TelegramBundle\Entity\Chat")
+   * Owning side
+   *
+   * @ORM\ManyToOne(targetEntity="Kaula\TelegramBundle\Entity\Chat",inversedBy="chat_members")
    *
    */
   private $chat;
