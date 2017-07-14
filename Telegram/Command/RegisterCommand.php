@@ -93,7 +93,7 @@ class RegisterCommand extends AbstractCommand
       if ($message->contact->user_id != $message->from->id) {
         $this->replyWithMessage(
           'Вы прислали не свой номер телефона! Попробуйте ещё раз /register',
-          '',
+          self::PARSE_MODE_PLAIN,
           new ReplyKeyboardRemove()
         );
 
@@ -111,15 +111,34 @@ class RegisterCommand extends AbstractCommand
     } elseif (self::BTN_CANCEL == $message->text) {
       $this->replyWithMessage(
         'Регистрация отменена.',
-        '',
+        self::PARSE_MODE_PLAIN,
         new ReplyKeyboardRemove()
       );
     } else {
-      $this->replyWithMessage(
-        'Вы прислали не телефон, а что-то, мне непонятное. Попробуйте ещё раз команду /register',
-        '',
-        new ReplyKeyboardRemove()
-      );
+
+      // If user sent us numbers, help him to understand he should send a contact,
+      // not type characters.
+      $sanitized_text = $this->sanitizePhone($message->text);
+      if (mb_strlen($sanitized_text) > 7) {
+        $this->replyWithMessage(
+          'Вы прислали мне номер телефона, набранный на клавиатуре. Мне надо, чтобы вы нажали <b>специальную кнопку «Сообщить номер телефона»</b>.'.
+          PHP_EOL.PHP_EOL.'Пожалуйста, попробуйте ещё раз?',
+          self::PARSE_MODE_HTML,
+          $this->getReplyKeyboardMarkup()
+        );
+
+        // Register the hook so when user will send information, we will be notified.
+        $this->getBus()
+          ->getHooker()
+          ->createHook($this->getUpdate(), get_class($this), 'handleContact');
+
+      } else {
+        $this->replyWithMessage(
+          'Вы прислали не телефон, а что-то, мне непонятное. Попробуйте ещё раз команду /register',
+          self::PARSE_MODE_PLAIN,
+          new ReplyKeyboardRemove()
+        );
+      }
     }
   }
 
