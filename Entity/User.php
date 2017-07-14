@@ -256,6 +256,24 @@ class User
   }
 
   /**
+   * Check if user has specified role.
+   *
+   * @param \Kaula\TelegramBundle\Entity\Role $roleToCheck
+   * @return bool
+   */
+  public function hasRole(Role $roleToCheck)
+  {
+    /** @var \Kaula\TelegramBundle\Entity\Role $role */
+    foreach ($this->getRoles() as $role) {
+      if ($role->getId() == $roleToCheck->getId()) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  /**
    * Set tallantoContactId
    *
    * @param string $tallantoContactId
