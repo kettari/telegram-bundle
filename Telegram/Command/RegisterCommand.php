@@ -267,11 +267,11 @@ class RegisterCommand extends AbstractCommand
    * Dispatches command is unknown.
    *
    * @param Update $update
-   * @param \Kaula\TelegramBundle\Entity\User $user_entity
+   * @param \Kaula\TelegramBundle\Entity\User $userEntity
    */
   private function dispatchNewRegistration(
     Update $update,
-    User $user_entity
+    User $userEntity
   ) {
     $dispatcher = $this->getBus()
       ->getBot()
@@ -279,7 +279,7 @@ class RegisterCommand extends AbstractCommand
 
     // Dispatch new registration event
     $user_registered_event = new UserRegisteredEvent(
-      $update, $user_entity
+      $update, $userEntity
     );
     $dispatcher->dispatch(UserRegisteredEvent::NAME, $user_registered_event);
   }

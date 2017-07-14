@@ -10,6 +10,7 @@ namespace Kaula\TelegramBundle\Telegram\Subscriber;
 
 
 use Kaula\TelegramBundle\Telegram\Event\UserRegisteredEvent;
+use Kaula\TelegramBundle\Telegram\UserHq;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
 class UserRegistrationSubscriber extends AbstractBotSubscriber implements EventSubscriberInterface
@@ -53,15 +54,14 @@ class UserRegistrationSubscriber extends AbstractBotSubscriber implements EventS
       ->pushNotification(
         self::NOTIFICATION_NEW_REGISTER,
         sprintf(
-          '%s Новая регистрация: %s (#%s)',
+          '%s Новая регистрация: %s → %s',
           self::NEW_REGISTER_EMOJI,
           trim(
             $e->getRegisteredUser()
               ->getLastName().' '.$e->getRegisteredUser()
               ->getFirstName()
           ),
-          $e->getRegisteredUser()
-            ->getTelegramId()
+          UserHq::formatUserName($e->getRegisteredUser())
         )
       );
     $this->getBot()

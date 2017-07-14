@@ -21,6 +21,7 @@ use Kaula\TelegramBundle\Telegram\Event\RequestSentEvent;
 use Kaula\TelegramBundle\Telegram\Event\TextReceivedEvent;
 use Kaula\TelegramBundle\Telegram\Event\UpdateReceivedEvent;
 use Kaula\TelegramBundle\Telegram\Event\UserRegisteredEvent;
+use Kaula\TelegramBundle\Telegram\UserHq;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use unreal4u\TelegramAPI\Telegram\Methods\SendMessage;
 use unreal4u\TelegramAPI\Telegram\Types\Update;
@@ -236,7 +237,7 @@ class AuditSubscriber extends AbstractBotSubscriber implements EventSubscriberIn
     // Format human-readable description
     $description = sprintf(
       'User "%s" joined the chat "%s"',
-      $this->formatUserName($user_entity),
+      UserHq::formatUserName($user_entity, true),
       $this->formatChatTitle($chat_entity)
     );
 
@@ -254,43 +255,10 @@ class AuditSubscriber extends AbstractBotSubscriber implements EventSubscriberIn
       ->info(
         'User "{user_name}" joined the chat "{chat_name}"',
         [
-          'user_name' => $this->formatUserName($user_entity),
+          'user_name' => UserHq::formatUserName($user_entity, true),
           'chat_name' => $this->formatChatTitle($chat_entity),
         ]
       );
-  }
-
-  /**
-   * Formats user name.
-   *
-   * @param User $user_entity
-   * @return string
-   */
-  private function formatUserName($user_entity)
-  {
-    if (!is_null($user_entity)) {
-      // User set
-      $user_name = trim(
-        $user_entity->getFirstName().' '.$user_entity->getLastName()
-      );
-      $external_name = trim(
-        $user_entity->getExternalFirstName().' '.
-        $user_entity->getExternalLastName()
-      );
-    } else {
-      // User not set
-      $user_name = 'не указан';
-      $external_name = '';
-    }
-    if (!empty($external_name)) {
-      $user_name = sprintf(
-        '%s (%s)',
-        $user_name,
-        $external_name
-      );
-    }
-
-    return $user_name;
   }
 
   /**
@@ -355,7 +323,7 @@ class AuditSubscriber extends AbstractBotSubscriber implements EventSubscriberIn
     // Format human-readable description
     $description = sprintf(
       'User "%s" left the chat "%s"',
-      $this->formatUserName($user_entity),
+      UserHq::formatUserName($user_entity, true),
       $this->formatChatTitle($chat_entity)
     );
 
@@ -373,7 +341,7 @@ class AuditSubscriber extends AbstractBotSubscriber implements EventSubscriberIn
       ->info(
         'User "{user_name}" left the chat "{chat_name}"',
         [
-          'user_name' => $this->formatUserName($user_entity),
+          'user_name' => UserHq::formatUserName($user_entity, true),
           'chat_name' => $this->formatChatTitle($chat_entity),
         ]
       );
@@ -443,7 +411,7 @@ class AuditSubscriber extends AbstractBotSubscriber implements EventSubscriberIn
       // Format human-readable description
       $description = sprintf(
         '"%s" → "%s": %s',
-        $this->formatUserName($user_entity),
+        UserHq::formatUserName($user_entity, true),
         $this->formatChatTitle($chat_entity),
         $event->getText()
       );
@@ -502,7 +470,7 @@ class AuditSubscriber extends AbstractBotSubscriber implements EventSubscriberIn
     // Format human-readable description
     $description = sprintf(
       'User "%s" registered',
-      $this->formatUserName($user_entity)
+      UserHq::formatUserName($user_entity, true)
     );
 
     // Write the audit log
