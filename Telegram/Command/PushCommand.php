@@ -16,25 +16,30 @@ use unreal4u\TelegramAPI\Telegram\Types\ReplyKeyboardRemove;
 class PushCommand extends AbstractCommand
 {
 
+  const BTN_CANCEL = 'Отмена рассылки';
   static public $name = 'push';
   static public $description = 'Отправить широковещательное уведомление';
   static public $required_permissions = ['execute command push'];
-
-  const BTN_CANCEL = 'Отмена рассылки';
 
   /**
    * Executes command.
    */
   public function execute()
   {
-    $this->replyWithMessage('Отправьте мне текст для рассылки, пожалуйста.');
-    $this->getBus()
-      ->getHooker()
-      ->createHook(
-        $this->getUpdate(),
-        get_class($this),
-        'handlePushText'
+    if ('private' == $this->getUpdate()->message->chat->type) {
+      $this->replyWithMessage('Отправьте мне текст для рассылки, пожалуйста.');
+      $this->getBus()
+        ->getHooker()
+        ->createHook(
+          $this->getUpdate(),
+          get_class($this),
+          'handlePushText'
+        );
+    } else {
+      $this->replyWithMessage(
+        'Эта команда работает только в личной переписке с ботом. В общем канале создание рассылки невозможно.'
       );
+    }
   }
 
   /**

@@ -9,7 +9,7 @@
 namespace Kaula\TelegramBundle\Exception;
 
 
-class CurrentUserNotDefinedException extends KaulaTelegramBundleException
+class CurrentUserNotDefinedException extends TelegramBundleException
 {
 
 }

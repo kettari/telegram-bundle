@@ -10,12 +10,11 @@ namespace Kaula\TelegramBundle\Telegram\Command;
 
 
 use Kaula\TelegramBundle\Entity\User;
-
+use RuntimeException;
 use Tallanto\Api\Aggregator\UserAggregator;
-
 use Tallanto\Api\Provider\Http\Request;
 use Tallanto\Api\Provider\Http\ServiceProvider;
-use unreal4u\TelegramAPI\Telegram\Types\Contact AS TelegramContact;
+use unreal4u\TelegramAPI\Telegram\Types\Contact as TelegramContact;
 
 
 class UserRegisterCommand extends RegisterCommand
@@ -109,7 +108,7 @@ class UserRegisterCommand extends RegisterCommand
     if (($tallanto_user->getPhoneMobile() != $phone) &&
       ($tallanto_user->getPhoneWork() != $phone)
     ) {
-      throw new \RuntimeException(
+      throw new RuntimeException(
         'Mobile and Work phones from Tallanto do not match Telegram contact phone '.
         $phone
       );
@@ -126,7 +125,7 @@ class UserRegisterCommand extends RegisterCommand
       return false;
     }
 
-    // Update user with Tallanto ID
+    // Update User object
     $this->updateTallantoUserInformation($tallanto_user);
 
     return true;

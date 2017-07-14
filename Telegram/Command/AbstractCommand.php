@@ -57,6 +57,13 @@ abstract class AbstractCommand
   static public $required_permissions = [];
 
   /**
+   * Notifications declared in this command.
+   *
+   * @var array
+   */
+  static public $declared_notifications = [];
+
+  /**
    * @var CommandBus
    */
   private $bus;
@@ -122,6 +129,16 @@ abstract class AbstractCommand
   }
 
   /**
+   * Returns notifications declared in the command.
+   *
+   * @return array
+   */
+  static public function getDeclaredNotifications(): array
+  {
+    return static::$declared_notifications;
+  }
+
+  /**
    * AbstractCommand constructor.
    *
    * @param \Kaula\TelegramBundle\Telegram\CommandBus $bus
@@ -136,20 +153,12 @@ abstract class AbstractCommand
   /**
    * Initialize command.
    *
-   * @return AbstractCommand
+   * @param string $parameter
+   * @return \Kaula\TelegramBundle\Telegram\Command\AbstractCommand
    */
-  public function initialize()
+  public function initialize($parameter = null)
   {
-    // Parse command "/start@BotName params"
-    if (preg_match(
-      '/^\/[a-z_]+@?[a-z_]*\s*(.*)$/i',
-      $this->getUpdate()->message->text,
-      $matches
-    )) {
-      if (isset($matches[1])) {
-        $this->parameter = $matches[1];
-      }
-    }
+    $this->parameter = $parameter;
 
     return $this;
   }

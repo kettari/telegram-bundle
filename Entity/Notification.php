@@ -16,8 +16,9 @@ use Doctrine\ORM\Mapping\Index;
 
 /**
  * @ORM\Entity
- * @ORM\Table(name="notification",indexes={@Index(name="order_idx",columns={"order"}),
- *   @Index(name="default_idx",columns={"default"})})
+ * @ORM\Table(name="notification",indexes={@Index(name="order_idx",columns={"sort_order"}),
+ *   @Index(name="default_idx",columns={"user_default"})},
+ *   options={"collate":"utf8mb4_general_ci", "charset":"utf8mb4"})
  */
 class Notification
 {
@@ -32,7 +33,7 @@ class Notification
   /**
    * @ORM\Column(type="integer",nullable=true)
    */
-  private $order;
+  private $sort_order;
 
   /**
    * @ORM\Column(type="string",length=50,unique=true)
@@ -49,7 +50,7 @@ class Notification
   /**
    * @ORM\Column(type="boolean")
    */
-  private $default = false;
+  private $user_default = false;
 
   /**
    * @ORM\ManyToOne(targetEntity="Kaula\TelegramBundle\Entity\Permission")
@@ -85,13 +86,13 @@ class Notification
   /**
    * Set order
    *
-   * @param integer $order
+   * @param integer $sort_order
    *
    * @return Notification
    */
-  public function setOrder($order)
+  public function setSortOrder($sort_order)
   {
-    $this->order = $order;
+    $this->sort_order = $sort_order;
 
     return $this;
   }
@@ -101,9 +102,9 @@ class Notification
    *
    * @return integer
    */
-  public function getOrder()
+  public function getSortOrder()
   {
-    return $this->order;
+    return $this->sort_order;
   }
 
   /**
@@ -157,13 +158,13 @@ class Notification
   /**
    * Set default
    *
-   * @param boolean $default
+   * @param boolean $user_default
    *
    * @return Notification
    */
-  public function setDefault($default)
+  public function setUserDefault($user_default)
   {
-    $this->default = $default;
+    $this->user_default = $user_default;
 
     return $this;
   }
@@ -173,9 +174,9 @@ class Notification
    *
    * @return boolean
    */
-  public function getDefault()
+  public function getUserDefault()
   {
-    return $this->default;
+    return $this->user_default;
   }
 
   /**

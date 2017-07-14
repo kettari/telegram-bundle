@@ -33,19 +33,25 @@ class SettingsCommand extends AbstractCommand
    */
   public function execute()
   {
-    $this->replyWithMessage(
-      'Какие настройки бота вы хотите изменить?',
-      '',
-      $this->getReplyKeyboardMarkup_MainMenu()
-    );
-
-    $this->getBus()
-      ->getHooker()
-      ->createHook(
-        $this->getUpdate(),
-        get_class($this),
-        'handleSettingsMainMenu'
+    if ('private' == $this->getUpdate()->message->chat->type) {
+      $this->replyWithMessage(
+        'Какие настройки бота вы хотите изменить?',
+        '',
+        $this->getReplyKeyboardMarkup_MainMenu()
       );
+
+      $this->getBus()
+        ->getHooker()
+        ->createHook(
+          $this->getUpdate(),
+          get_class($this),
+          'handleSettingsMainMenu'
+        );
+    } else {
+      $this->replyWithMessage(
+        'Эта команда работает только в личной переписке с ботом. В общем канале управление настройками невозможно.'
+      );
+    }
   }
 
   /**
@@ -140,7 +146,7 @@ class SettingsCommand extends AbstractCommand
     // Load notifications
     /** @var \Kaula\TelegramBundle\Entity\Notification $notifications */
     $notifications = $d->getRepository('KaulaTelegramBundle:Notification')
-      ->findBy([], ['order' => 'ASC']);
+      ->findBy([], ['sort_order' => 'ASC']);
     // Check if user has required for each notification permission
     $inline_keyboard = new Markup();
     /** @var \Kaula\TelegramBundle\Entity\Notification $notification_item */
@@ -173,6 +179,10 @@ class SettingsCommand extends AbstractCommand
   public function handleSettingsNotificationOption()
   {
     $cq = $this->getUpdate()->callback_query;
+    if (is_null($cq) && !is_null($this->getUpdate()->message)) {
+      $this->replyWithMessage('Команда отменена.');
+      return;
+    }
     if (is_null($cq) || is_null($cq->message)) {
       return;
     }

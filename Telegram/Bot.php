@@ -9,31 +9,46 @@
 namespace Kaula\TelegramBundle\Telegram;
 
 
+use Doctrine\Bundle\DoctrineBundle\Registry;
+use GuzzleHttp\Client;
 use GuzzleHttp\Exception\ClientException;
-use InvalidArgumentException;
-use Kaula\TelegramBundle\Entity\Log;
+use GuzzleHttp\Exception\RequestException;
+use Kaula\TelegramBundle\Entity\Audit;
+use Kaula\TelegramBundle\Entity\Chat;
 use Kaula\TelegramBundle\Entity\Queue;
-
 use Kaula\TelegramBundle\Entity\User;
-use Kaula\TelegramBundle\Exception\KaulaTelegramBundleException;
-use Kaula\TelegramBundle\Exception\ThrottleControlException;
+use Kaula\TelegramBundle\Exception\TelegramBundleException;
 use Kaula\TelegramBundle\Telegram\Command\HelpCommand;
 use Kaula\TelegramBundle\Telegram\Command\ListRolesCommand;
 use Kaula\TelegramBundle\Telegram\Command\PushCommand;
 use Kaula\TelegramBundle\Telegram\Command\SettingsCommand;
 use Kaula\TelegramBundle\Telegram\Command\StartCommand;
 use Kaula\TelegramBundle\Telegram\Command\UserManCommand;
-use Kaula\TelegramBundle\Telegram\Listener\GroupCreatedEvent;
-use Kaula\TelegramBundle\Telegram\Listener\IdentityWatchdogEvent;
-use Kaula\TelegramBundle\Telegram\Listener\LeftChatMemberEvent;
-use Kaula\TelegramBundle\Telegram\Listener\JoinChatMemberEvent;
-use Kaula\TelegramBundle\Telegram\Listener\EventListenerInterface;
-use Kaula\TelegramBundle\Telegram\Listener\ExecuteCommandsEvent;
-use Kaula\TelegramBundle\Telegram\Listener\MigrateFromChatIdEvent;
-use Kaula\TelegramBundle\Telegram\Listener\MigrateToChatIdEvent;
+use Kaula\TelegramBundle\Telegram\Event\MessageReceivedEvent;
+use Kaula\TelegramBundle\Telegram\Event\RequestBlockedEvent;
+use Kaula\TelegramBundle\Telegram\Event\RequestExceptionEvent;
+use Kaula\TelegramBundle\Telegram\Event\RequestSentEvent;
+use Kaula\TelegramBundle\Telegram\Event\RequestThrottleEvent;
+use Kaula\TelegramBundle\Telegram\Event\TerminateEvent;
+use Kaula\TelegramBundle\Telegram\Event\UpdateIncomingEvent;
+use Kaula\TelegramBundle\Telegram\Event\UpdateReceivedEvent;
+use Kaula\TelegramBundle\Telegram\Subscriber\AuditSubscriber;
+use Kaula\TelegramBundle\Telegram\Subscriber\ChatMemberSubscriber;
+use Kaula\TelegramBundle\Telegram\Subscriber\CommandSubscriber;
+use Kaula\TelegramBundle\Telegram\Subscriber\CurrentUserSubscriber;
+use Kaula\TelegramBundle\Telegram\Subscriber\FilterSubscriber;
+use Kaula\TelegramBundle\Telegram\Subscriber\GroupSubscriber;
+use Kaula\TelegramBundle\Telegram\Subscriber\HookerSubscriber;
+use Kaula\TelegramBundle\Telegram\Subscriber\IdentityWatchdogSubscriber;
+use Kaula\TelegramBundle\Telegram\Subscriber\MessageSubscriber;
+use Kaula\TelegramBundle\Telegram\Subscriber\MigrationSubscriber;
+use Kaula\TelegramBundle\Telegram\Subscriber\TextSubscriber;
+use Kaula\TelegramBundle\Telegram\Subscriber\UserRegistrationSubscriber;
 use Psr\Log\LoggerInterface;
-
+use RuntimeException;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
+use Symfony\Component\HttpFoundation\Response as HttpResponse;
 use Symfony\Component\Stopwatch\Stopwatch;
 use unreal4u\TelegramAPI\Abstracts\KeyboardMethods;
 use unreal4u\TelegramAPI\Abstracts\TelegramMethods;
@@ -59,40 +74,35 @@ class Bot
   const UT_CALLBACK_QUERY = 'callback_query';
 
   // Event types
+  const MT_NOTHING = 0;
+  const MT_TEXT = 1;
+  const MT_AUDIO = 2;
+  const MT_DOCUMENT = 4;
+  const MT_GAME = 8;
+  const MT_PHOTO = 16;
+  const MT_STICKER = 32;
+  const MT_VIDEO = 64;
+  const MT_VOICE = 128;
+  const MT_CONTACT = 256;
+  const MT_LOCATION = 512;
+  const MT_VENUE = 1024;
+  const MT_NEW_CHAT_MEMBER = 2048;
+  const MT_LEFT_CHAT_MEMBER = 4096;
+  const MT_NEW_CHAT_TITLE = 8192;
+  const MT_NEW_CHAT_PHOTO = 16384;
+  const MT_DELETE_CHAT_PHOTO = 32768;
+  const MT_GROUP_CHAT_CREATED = 65536;
+  const MT_SUPERGROUP_CHAT_CREATED = 131072;
+  const MT_CHANNEL_CHAT_CREATED = 262144;
+  const MT_MIGRATE_TO_CHAT_ID = 524288;
+  const MT_MIGRATE_FROM_CHAT_ID = 1048576;
+  const MT_PINNED_MESSAGE = 2097152;
+  const MT_NEW_CHAT_MEMBERS_MANY = 4194304;
+  const MT_SUCCESSFUL_PAYMENT = 8388608;
+  const MT_INVOICE = 16777216;
+  const MT_ANY = 33554431;
 
-  const ET_NOTHING = 0;
-  const ET_TEXT = 1;
-  const ET_AUDIO = 2;
-  const ET_DOCUMENT = 4;
-  const ET_GAME = 8;
-  const ET_PHOTO = 16;
-  const ET_STICKER = 32;
-  const ET_VIDEO = 64;
-  const ET_VOICE = 128;
-  const ET_CONTACT = 256;
-  const ET_LOCATION = 512;
-  const ET_VENUE = 1024;
-  const ET_NEW_CHAT_MEMBER = 2048;
-  const ET_LEFT_CHAT_MEMBER = 4096;
-  const ET_NEW_CHAT_TITLE = 8192;
-  const ET_NEW_CHAT_PHOTO = 16384;
-  const ET_DELETE_CHAT_PHOTO = 32768;
-  const ET_GROUP_CHAT_CREATED = 65536;
-  const ET_SUPERGROUP_CHAT_CREATED = 131072;
-  const ET_CHANNEL_CHAT_CREATED = 262144;
-  const ET_MIGRATE_TO_CHAT_ID = 524288;
-  const ET_MIGRATE_FROM_CHAT_ID = 1048576;
-  const ET_PINNED_MESSAGE = 1048576;
-  const ET_ANY = 2097151;
-
-  // Special notification type to send private push
-  const NOTIFICATION_PRIVATE = 'notification-private';
-
-  /**
-   * @var CommandBus
-   */
-  protected $bus;
-
+  // Captions of the event types
   /**
    * @var ThrottleSingleton
    */
@@ -106,6 +116,39 @@ class Bot
   protected $container;
 
   /**
+   * Message type titles.
+   *
+   * @var array
+   */
+  private $mt_captions = [
+    self::MT_TEXT                    => 'MT_TEXT',
+    self::MT_AUDIO                   => 'MT_AUDIO',
+    self::MT_DOCUMENT                => 'MT_DOCUMENT',
+    self::MT_GAME                    => 'MT_GAME',
+    self::MT_PHOTO                   => 'MT_PHOTO',
+    self::MT_STICKER                 => 'MT_STICKER',
+    self::MT_VIDEO                   => 'MT_VIDEO',
+    self::MT_VOICE                   => 'MT_VOICE',
+    self::MT_CONTACT                 => 'MT_CONTACT',
+    self::MT_LOCATION                => 'MT_LOCATION',
+    self::MT_VENUE                   => 'MT_VENUE',
+    self::MT_NEW_CHAT_MEMBER         => 'MT_NEW_CHAT_MEMBER',
+    self::MT_LEFT_CHAT_MEMBER        => 'MT_LEFT_CHAT_MEMBER',
+    self::MT_NEW_CHAT_TITLE          => 'MT_NEW_CHAT_TITLE',
+    self::MT_NEW_CHAT_PHOTO          => 'MT_NEW_CHAT_PHOTO',
+    self::MT_DELETE_CHAT_PHOTO       => 'MT_DELETE_CHAT_PHOTO',
+    self::MT_GROUP_CHAT_CREATED      => 'MT_GROUP_CHAT_CREATED',
+    self::MT_SUPERGROUP_CHAT_CREATED => 'MT_SUPERGROUP_CHAT_CREATED',
+    self::MT_CHANNEL_CHAT_CREATED    => 'MT_CHANNEL_CHAT_CREATED',
+    self::MT_MIGRATE_TO_CHAT_ID      => 'MT_MIGRATE_TO_CHAT_ID',
+    self::MT_MIGRATE_FROM_CHAT_ID    => 'MT_MIGRATE_FROM_CHAT_ID',
+    self::MT_PINNED_MESSAGE          => 'MT_PINNED_MESSAGE',
+    self::MT_NEW_CHAT_MEMBERS_MANY   => 'MT_NEW_CHAT_MEMBERS_MANY',
+    self::MT_SUCCESSFUL_PAYMENT      => 'MT_SUCCESSFUL_PAYMENT',
+    self::MT_INVOICE                 => 'MT_INVOICE',
+  ];
+
+  /**
    * User manager.
    *
    * @var UserHq
@@ -113,11 +156,11 @@ class Bot
   private $user_hq;
 
   /**
-   * Array of listeners for events (EventListenerInterface)
-   *
-   * @var array
+   * @var EventDispatcherInterface
    */
-  protected $listeners = [];
+  private $event_dispatcher;
+
+  private $request_handled = false;
 
   /**
    * Bot constructor.
@@ -129,96 +172,206 @@ class Bot
   {
     $this->container = $container;
     $this->bus = new CommandBus($this);
-    $this->bus->registerCommand(StartCommand::class)
+    $this->user_hq = new UserHq($this);
+
+    // Assign event dispatcher here. We may override this by setting different
+    // dispatcher with setEventDispatcher()
+    $this->event_dispatcher = $this->getContainer()
+      ->get('event_dispatcher');
+
+    // Throttle control
+    $this->throttle_singleton = ThrottleSingleton::getInstance();
+
+  }
+
+  /**
+   * Returns container.
+   *
+   * @return \Symfony\Component\DependencyInjection\ContainerInterface
+   */
+  public function getContainer(): ContainerInterface
+  {
+    return $this->container;
+  }
+
+  /**
+   * Adds default subscribers to the dispatcher.
+   *
+   * @return Bot
+   */
+  public function addDefaultSubscribers()
+  {
+    // telegram.update.incoming
+    $this->getEventDispatcher()
+      ->addSubscriber(new FilterSubscriber());
+
+    // telegram.update.received
+    $this->getEventDispatcher()
+      ->addSubscriber(new AuditSubscriber($this));
+    $this->getEventDispatcher()
+      ->addSubscriber(new CurrentUserSubscriber($this));
+    $this->getEventDispatcher()
+      ->addSubscriber(new HookerSubscriber($this));
+
+    // telegram.message.received
+    $this->getEventDispatcher()
+      ->addSubscriber(new IdentityWatchdogSubscriber($this));
+    $this->getEventDispatcher()
+      ->addSubscriber(new MessageSubscriber($this));
+
+    // telegram.text.received
+    $this->getEventDispatcher()
+      ->addSubscriber(new TextSubscriber($this));
+
+    // telegram.command.received
+    $this->getEventDispatcher()
+      ->addSubscriber(new CommandSubscriber($this));
+
+    // telegram.chatmember.*
+    $this->getEventDispatcher()
+      ->addSubscriber(new ChatMemberSubscriber($this));
+
+    // telegram.group.created
+    $this->getEventDispatcher()
+      ->addSubscriber(new GroupSubscriber($this));
+
+    // telegram.chat.*
+    $this->getEventDispatcher()
+      ->addSubscriber(new MigrationSubscriber($this));
+
+    // User registered, command /register
+    $this->getEventDispatcher()
+      ->addSubscriber(new UserRegistrationSubscriber($this));
+
+    return $this;
+  }
+
+  /**
+   * @return EventDispatcherInterface
+   */
+  public function getEventDispatcher(): EventDispatcherInterface
+  {
+    return $this->event_dispatcher;
+  }
+
+  /**
+   * @param EventDispatcherInterface $event_dispatcher
+   * @return Bot
+   */
+  public function setEventDispatcher(EventDispatcherInterface $event_dispatcher
+  ): Bot {
+    $this->event_dispatcher = $event_dispatcher;
+
+    return $this;
+  }
+
+  /**
+   * Adds default commands to the CommandBus.
+   *
+   * @return Bot
+   */
+  public function addDefaultCommands()
+  {
+    $this->getBus()
+      ->registerCommand(StartCommand::class)
       ->registerCommand(SettingsCommand::class)
       ->registerCommand(HelpCommand::class)
       ->registerCommand(ListRolesCommand::class)
       ->registerCommand(PushCommand::class)
       ->registerCommand(UserManCommand::class);
 
-    // Instantiate user headquarters
-    $this->user_hq = new UserHq($container);
-
-    // Throttle control
-    $this->throttle_singleton = ThrottleSingleton::getInstance();
-
-    // Add default listeners
-    $this->addDefaultListeners();
+    return $this;
   }
 
   /**
-   * Adds default listeners.
+   * @return \Kaula\TelegramBundle\Telegram\CommandBus
    */
-  protected function addDefaultListeners()
+  public function getBus(): CommandBus
   {
-    $this->addEventListener(self::ET_ANY, IdentityWatchdogEvent::class)
-      ->addEventListener(self::ET_TEXT, ExecuteCommandsEvent::class)
-      ->addEventListener(self::ET_NEW_CHAT_MEMBER, JoinChatMemberEvent::class)
-      ->addEventListener(self::ET_LEFT_CHAT_MEMBER, LeftChatMemberEvent::class)
-      ->addEventListener(
-        self::ET_MIGRATE_TO_CHAT_ID,
-        MigrateToChatIdEvent::class
-      )
-      ->addEventListener(
-        self::ET_MIGRATE_FROM_CHAT_ID,
-        MigrateFromChatIdEvent::class
-      )
-      ->addEventListener(self::ET_GROUP_CHAT_CREATED, GroupCreatedEvent::class);
+    return $this->getContainer()
+      ->get('kaula_telegram.bus');
+  }
+
+  /**
+   * @return Registry
+   */
+  public function getDoctrine(): Registry
+  {
+    return $this->getContainer()
+      ->get('doctrine');
+  }
+
+  /**
+   * Returns title of the message type.
+   *
+   * @param int $message_type
+   * @return string
+   */
+  public function getMessageTypeTitle($message_type)
+  {
+    $types = [];
+    foreach ($this->mt_captions as $key => $caption) {
+      if ($key & $message_type) {
+        $types[] = $caption;
+      }
+    }
+
+    return (count($types) > 0) ? implode(', ', $types) : 'MT_UNKNOWN';
   }
 
   /**
    * Handles update.
    *
-   * @param \unreal4u\TelegramAPI\Telegram\Types\Update $update
    * @return void
-   * @throws \InvalidArgumentException
+   * @throws RuntimeException
    */
-  public function handleUpdate(Update $update = null)
+  public function handleUpdate()
   {
     /** @var LoggerInterface $l */
     $l = $this->container->get('logger');
+    $dispatcher = $this->getEventDispatcher();
 
-    // Scrap incoming data
-    if (is_null($update)) {
-      $update = $this->scrapIncomingData();
+    // Dispatch event when we need to filter incoming data
+    $update_incoming_event = new UpdateIncomingEvent();
+    $dispatcher->dispatch(UpdateIncomingEvent::NAME, $update_incoming_event);
+    if (is_null($update = $update_incoming_event->getUpdate())) {
+      throw new RuntimeException(
+        'Update object is null after "telegram.update.incoming" event'
+      );
     }
-    // Log incoming message
-    $this->log($update);
-    // Process it
-    $update_type = $this->whatUpdateType($update);
-    $this->getUserHq()
-      ->stashUser($update_type, $update);
 
-    // Allow some debug info
+    // Get update type
+    $update_type = $this->whatUpdateType($update);
     $l->info(
-      'Handling telegram update of type "{type}"',
-      ['type' => $update_type, 'update' => print_r($update, true)]
+      'Handling update of type "{type}"',
+      ['type' => $update_type, 'update' => $update]
     );
 
-    // Try to execute hook
-    $this->executeHook($update);
+    // Dispatch event when we got the Update object
+    $update_received_event = new UpdateReceivedEvent($update);
+    $dispatcher->dispatch(UpdateReceivedEvent::NAME, $update_received_event);
 
-    // Check type of the update and possibly process it
+    // Check if current user is blocked and abort execution if true
+    if ($this->getUserHq()
+      ->isUserBlocked()
+    ) {
+      return;
+    }
+
+    // Check type of the update and dispatch more specific events
     switch ($update_type) {
       case self::UT_MESSAGE:
-        $this->handleUpdateWithMessage($update);
+        $message_received_event = new MessageReceivedEvent($update);
+        $dispatcher->dispatch(
+          MessageReceivedEvent::NAME,
+          $message_received_event
+        );
         break;
     }
-  }
 
-  /**
-   * Scrap incoming data into Update object.
-   *
-   * @return \unreal4u\TelegramAPI\Telegram\Types\Update
-   */
-  protected function scrapIncomingData()
-  {
-    $update_data = json_decode(file_get_contents('php://input'), true);
-    if (JSON_ERROR_NONE != json_last_error()) {
-      throw new InvalidArgumentException('JSON error: '.json_last_error_msg());
-    }
-
-    return new Update($update_data);
+    // Dispatch termination
+    $terminate_event = new TerminateEvent($update);
+    $dispatcher->dispatch(TerminateEvent::NAME, $terminate_event);
   }
 
   /**
@@ -226,9 +379,9 @@ class Bot
    *
    * @param \unreal4u\TelegramAPI\Telegram\Types\Update $update
    * @return string
-   * @throws KaulaTelegramBundleException
+   * @throws TelegramBundleException
    */
-  protected function whatUpdateType(Update $update)
+  public function whatUpdateType(Update $update)
   {
     if (!is_null($update->message)) {
       return self::UT_MESSAGE;
@@ -252,251 +405,7 @@ class Bot
       return self::UT_CALLBACK_QUERY;
     }
 
-    throw new KaulaTelegramBundleException('Unknown update type.');
-  }
-
-  /**
-   * Returns type of the event.
-   *
-   * @param \unreal4u\TelegramAPI\Telegram\Types\Update $update
-   * @return string
-   */
-  protected function whatEventType(Update $update)
-  {
-    if (is_null($update->message)) {
-      throw new KaulaTelegramBundleException(
-        'Unable to tell event type: message object for this update is null.'
-      );
-    }
-
-    $event_type = self::ET_NOTHING;
-    if (!empty($update->message->text)) {
-      $event_type = $event_type | self::ET_TEXT;
-    }
-    if (is_object($update->message->audio)) {
-      $event_type = $event_type | self::ET_AUDIO;
-    }
-    if (is_object($update->message->document)) {
-      $event_type = $event_type | self::ET_DOCUMENT;
-    }
-    if (is_object($update->message->game)) {
-      $event_type = $event_type | self::ET_GAME;
-    }
-    if (is_object($update->message->photo)) {
-      $event_type = $event_type | self::ET_PHOTO;
-    }
-    if (is_object($update->message->sticker)) {
-      $event_type = $event_type | self::ET_STICKER;
-    }
-    if (is_object($update->message->video)) {
-      $event_type = $event_type | self::ET_VIDEO;
-    }
-    if (is_object($update->message->voice)) {
-      $event_type = $event_type | self::ET_VOICE;
-    }
-    if (is_object($update->message->contact)) {
-      $event_type = $event_type | self::ET_CONTACT;
-    }
-    if (is_object($update->message->location)) {
-      $event_type = $event_type | self::ET_LOCATION;
-    }
-    if (is_object($update->message->venue)) {
-      $event_type = $event_type | self::ET_VENUE;
-    }
-    if (is_object($update->message->new_chat_member)) {
-      $event_type = $event_type | self::ET_NEW_CHAT_MEMBER;
-    }
-    if (is_object($update->message->left_chat_member)) {
-      $event_type = $event_type | self::ET_LEFT_CHAT_MEMBER;
-    }
-    if (!empty($update->message->new_chat_title)) {
-      $event_type = $event_type | self::ET_NEW_CHAT_TITLE;
-    }
-    if (is_object($update->message->new_chat_photo)) {
-      $event_type = $event_type | self::ET_NEW_CHAT_PHOTO;
-    }
-    if ($update->message->delete_chat_photo) {
-      $event_type = $event_type | self::ET_DELETE_CHAT_PHOTO;
-    }
-    if ($update->message->group_chat_created) {
-      $event_type = $event_type | self::ET_GROUP_CHAT_CREATED;
-    }
-    if ($update->message->supergroup_chat_created) {
-      $event_type = $event_type | self::ET_SUPERGROUP_CHAT_CREATED;
-    }
-    if ($update->message->channel_chat_created) {
-      $event_type = $event_type | self::ET_CHANNEL_CHAT_CREATED;
-    }
-    if ($update->message->migrate_to_chat_id != 0) {
-      $event_type = $event_type | self::ET_MIGRATE_TO_CHAT_ID;
-    }
-    if ($update->message->migrate_from_chat_id != 0) {
-      $event_type = $event_type | self::ET_MIGRATE_FROM_CHAT_ID;
-    }
-    if (!is_null($update->message->pinned_message)) {
-      $event_type = $event_type | self::ET_PINNED_MESSAGE;
-    }
-
-    return $event_type;
-  }
-
-  /**
-   * Handles update with Message in it.
-   *
-   * @param \unreal4u\TelegramAPI\Telegram\Types\Update $update
-   * @throws \Exception
-   */
-  protected function handleUpdateWithMessage(Update $update)
-  {
-    try {
-      /** @var LoggerInterface $l */
-      $l = $this->container->get('logger');
-
-      // Find event type
-      $event_type = $this->whatEventType($update);
-      $l->debug('Event type: "{type}"', ['type' => $event_type]);
-
-      if (!$this->getUserHq()
-        ->isUserBlocked()
-      ) {
-        // Execute registered event listeners
-        $this->executeListeners($event_type, $update);
-      } else {
-        $this->sendMessage(
-          $update->message->chat->id,
-          'Извините, ваш аккаунт заблокирован.'
-        );
-      }
-
-    } catch (\Exception $e) {
-      $l->critical(
-        'Exception while handling update with message: {error_message}',
-        ['error_message' => $e->getMessage(), 'error_object' => $e]
-      );
-      try {
-        $this->sendMessage(
-          $update->message->chat->id,
-          'На сервере произошла ошибка, пожалуйста, сообщите системному администратору.'
-        );
-
-        if ('dev' == $this->getContainer()
-            ->getParameter("kernel.environment")
-        ) {
-          $this->sendMessage(
-            $update->message->chat->id,
-            $e->getMessage()
-          );
-        }
-      } catch (\Exception $passthrough) {
-        // Do nothing
-      }
-    }
-  }
-
-
-  /**
-   * Executes event listeners.
-   *
-   * @param $event_type
-   * @param \unreal4u\TelegramAPI\Telegram\Types\Update $update
-   */
-  protected function executeListeners($event_type, Update $update)
-  {
-    $l = $this->container->get('logger');
-
-    // Array of listeners that will be executed
-    $to_be_executed = [];
-    foreach ($this->listeners as $item) {
-      if ($item['event_type'] & $event_type) {
-        $to_be_executed[$item['event_listener']] = true;
-      }
-    }
-
-    // To execute every listener only once
-    /** @var EventListenerInterface $listener */
-    foreach ($to_be_executed as $listener_class => $item) {
-      $listener = new $listener_class();
-
-      // Allow some debug info
-      $l->debug(
-        'Executing listener "{listener_class}"',
-        ['listener_class' => $listener_class]
-      );
-
-      // Execute listener object
-      $listener->execute($this, $update);
-    }
-  }
-
-  /**
-   * Executes hook if found.
-   *
-   * @param \unreal4u\TelegramAPI\Telegram\Types\Update $update
-   */
-  public function executeHook(Update $update)
-  {
-    // Check for hooks and execute if any found
-    $hooker = $this->getBus()
-      ->getHooker();
-    /** @var \Kaula\TelegramBundle\Entity\Hook $hook */
-    if ($hook = $hooker->findHook($update)) {
-
-      if (!$this->getUserHq()
-        ->isUserBlocked()
-      ) {
-        // User is active - execute & delete the hook
-        $hooker->executeHook($hook, $update)
-          ->deleteHook($hook);
-      } else {
-        // User is blocked - just delete the hook
-        $hooker->deleteHook($hook);
-      }
-
-    }
-  }
-
-  /**
-   * Deletes hook if found.
-   *
-   * @param \unreal4u\TelegramAPI\Telegram\Types\Update $update
-   */
-  public function deleteHook(Update $update)
-  {
-    // Find and delete the hook
-    if ($hook = $this->getBus()
-      ->getHooker()
-      ->findHook($update)
-    ) {
-      $this->getBus()
-        ->getHooker()
-        ->deleteHook($hook);
-    }
-  }
-
-  /**
-   * @return \Kaula\TelegramBundle\Telegram\CommandBus
-   */
-  public function getBus(): CommandBus
-  {
-    return $this->bus;
-  }
-
-  /**
-   * @return ThrottleSingleton
-   */
-  public function getThrottleSingleton(): ThrottleSingleton
-  {
-    return $this->throttle_singleton;
-  }
-
-  /**
-   * Returns container.
-   *
-   * @return \Symfony\Component\DependencyInjection\ContainerInterface
-   */
-  public function getContainer(): ContainerInterface
-  {
-    return $this->container;
+    throw new TelegramBundleException('Unknown update type.');
   }
 
   /**
@@ -505,145 +414,6 @@ class Bot
   public function getUserHq(): UserHq
   {
     return $this->user_hq;
-  }
-
-  /**
-   * Adds event listener class to listeners collection.
-   *
-   * @param string $event_type
-   * @param string $listener
-   * @return Bot
-   */
-  public function addEventListener($event_type, $listener)
-  {
-    $implements = class_implements($listener);
-    if (!isset($implements['Kaula\TelegramBundle\Telegram\Listener\EventListenerInterface'])) {
-      throw new KaulaTelegramBundleException(
-        'Listener object should implement EventListenerInterface.'
-      );
-    }
-
-    $this->listeners[] = [
-      'event_type'     => $event_type,
-      'event_listener' => $listener,
-    ];
-
-    return $this;
-  }
-
-  /**
-   * Performs actual API request.
-   *
-   * @param \unreal4u\TelegramAPI\Abstracts\TelegramMethods $method
-   * @return \unreal4u\TelegramAPI\Abstracts\TelegramTypes
-   */
-  private function performRequest(TelegramMethods $method)
-  {
-    /** @var LoggerInterface $l */
-    $l = $this->getContainer()
-      ->get('logger');
-
-    try {
-      // Get configuration
-      $config = $this->getContainer()
-        ->getParameter('kaula_telegram');
-
-      // Throttle control to avoid flood
-      if ($this->getThrottleSingleton()
-        ->wait()
-      ) {
-        $tgLog = new TgLog($config['api_token'], $l);
-        $this->getThrottleSingleton()
-          ->requestSent();
-
-        // Log transaction
-        $this->log($method);
-
-        return $tgLog->performApiRequest($method);
-      } else {
-        throw new ThrottleControlException(
-          'Throttle control exception: was unable to wait()'
-        );
-      }
-    } catch (ClientException $e) {
-
-      // User blocked the bot
-      if (403 == $e->getCode()) {
-
-        if (method_exists($method, 'chat_id')) {
-          /** @noinspection PhpUndefinedFieldInspection */
-          $chat_id = $method->chat_id;
-        } else {
-          $chat_id = '(undefined)';
-        }
-
-        $l->notice(
-          'Bot is blocked in the chat {chat_id}',
-          ['chat_id' => $chat_id]
-        );
-      } else {
-        // Other errors
-        throw $e;
-      }
-    }
-
-    return null;
-  }
-
-  /**
-   * Use this method to send text messages. On success, the sent Message is
-   * returned.
-   *
-   * @param string $chat_id Unique identifier for the target chat or username
-   *   of the target channel (in the format @channelusername)
-   * @param string $text Text of the message to be sent
-   * @param string $parse_mode Send Markdown or HTML, if you want Telegram apps
-   *   to show bold, italic, fixed-width text or inline URLs in your bot's
-   *   message.
-   * @param KeyboardMethods $reply_markup Additional interface options. A
-   *   JSON-serialized object for an inline keyboard, custom reply keyboard,
-   *   instructions to remove reply keyboard or to force a reply from the user.
-   * @param bool $disable_web_page_preview Disables link previews for links in
-   *   this message
-   * @param bool $disable_notification Sends the message silently. iOS users
-   *   will not receive a notification, Android users will receive a
-   *   notification with no sound.
-   * @param string $reply_to_message_id If the message is a reply, ID of the
-   *   original message
-   *
-   * @return Message
-   */
-  public function sendMessage(
-    $chat_id,
-    $text,
-    $parse_mode = null,
-    $reply_markup = null,
-    $disable_web_page_preview = false,
-    $disable_notification = false,
-    $reply_to_message_id = null
-  ) {
-    /** @var LoggerInterface $l */
-    $l = $this->container->get('logger');
-
-    $send_message = new SendMessage();
-    $send_message->chat_id = $chat_id;
-    $send_message->text = $text;
-    $send_message->parse_mode = $parse_mode ?? '';
-    $send_message->disable_web_page_preview = $disable_web_page_preview;
-    $send_message->disable_notification = $disable_notification;
-    $send_message->reply_to_message_id = $reply_to_message_id;
-    $send_message->reply_markup = $reply_markup;
-
-    // Allow some debug info
-    $l->debug(
-      'Bot is sending message',
-      ['message' => print_r($send_message, true)]
-    );
-
-    /** @var Message $message */
-    $message = $this->performRequest($send_message);
-
-    return $message;
   }
 
   /**
@@ -667,7 +437,7 @@ class Bot
    *   instructions to remove reply keyboard or to force a reply from the user.
    * @param bool $disable_web_page_preview Disables link previews for links in
    *   this message
-   * @return \unreal4u\TelegramAPI\Telegram\Types\Message
+   * @return Message
    */
   public function editMessageText(
     $chat_id = null,
@@ -703,6 +473,146 @@ class Bot
   }
 
   /**
+   * Performs actual API request.
+   *
+   * @param \unreal4u\TelegramAPI\Abstracts\TelegramMethods $method
+   * @return \unreal4u\TelegramAPI\Abstracts\TelegramTypes
+   */
+  private function performRequest(TelegramMethods $method)
+  {
+    /** @var LoggerInterface $l */
+    $l = $this->getContainer()
+      ->get('logger');
+    // Get configuration
+    $config = $this->getContainer()
+      ->getParameter('kaula_telegram');
+    $dispatcher = $this->getEventDispatcher();
+    $client = new Client();
+
+    try {
+      // Throttle control to avoid flood
+      if ($this->getThrottleSingleton()
+        ->wait()
+      ) {
+        $tg_log = new TgLog($config['api_token'], $l, $client);
+        $this->getThrottleSingleton()
+          ->requestSent();
+
+        // Perform request to the Telegram API
+        $response = $tg_log->performApiRequest($method);
+
+        // Dispatch event when method is sent
+        $request_sent_event = new RequestSentEvent($method, $response);
+        $dispatcher->dispatch(RequestSentEvent::NAME, $request_sent_event);
+
+        return $response;
+      } else {
+        $this->dispatchThrottleException($method);
+      }
+    } catch (ClientException $e) {
+      switch ($e->getCode()) {
+        case HttpResponse::HTTP_FORBIDDEN:
+          // User blocked the bot or bot is kicked out of the group
+          $this->dispatchBlockedException($method, $e);
+          break;
+        case HttpResponse::HTTP_TOO_MANY_REQUESTS:
+          // Flooded the server with requests :(
+          $this->dispatchThrottleException($method);
+          break;
+        default:
+          // Other 4xx HTTP code
+          $this->dispatchMethodException($method, $e);
+          break;
+      }
+    } catch (RequestException $e) {
+      $this->dispatchMethodException($method, $e);
+    }
+
+    return null;
+  }
+
+  /**
+   * @return ThrottleSingleton
+   */
+  public function getThrottleSingleton(): ThrottleSingleton
+  {
+    return $this->throttle_singleton;
+  }
+
+  /**
+   * @param mixed $method
+   */
+  private function dispatchThrottleException($method)
+  {
+    $l = $this->getContainer()
+      ->get('logger');
+    $dispatcher = $this->getEventDispatcher();
+
+    $l->error('Throttle exception');
+
+    // Dispatch event when bot is blocked
+    $throttle_event = new RequestThrottleEvent($method, null);
+    $dispatcher->dispatch(RequestThrottleEvent::NAME, $throttle_event);
+  }
+
+  /**
+   * @param mixed $method
+   * @param ClientException $exception
+   */
+  private function dispatchBlockedException($method, ClientException $exception)
+  {
+    $l = $this->getContainer()
+      ->get('logger');
+    $dispatcher = $this->getEventDispatcher();
+
+    if (method_exists($method, 'chat_id')) {
+      /** @noinspection PhpUndefinedFieldInspection */
+      $chat_id = $method->chat_id;
+    } else {
+      $chat_id = null;
+    }
+
+    $l->notice(
+      'Bot is blocked or kicked out of the chat "{chat_id}"',
+      ['chat_id' => $chat_id ?? '(undefined)']
+    );
+
+    // Dispatch event when bot is blocked
+    $blocked_event = new RequestBlockedEvent(
+      $chat_id, $method, $exception->getResponse()
+    );
+    $dispatcher->dispatch(RequestBlockedEvent::NAME, $blocked_event);
+  }
+
+  /**
+   * @param TelegramMethods $method
+   * @param RequestException $exception
+   */
+  private function dispatchMethodException($method, RequestException $exception)
+  {
+    $l = $this->getContainer()
+      ->get('logger');
+    $dispatcher = $this->getEventDispatcher();
+
+    $exception_message = $exception->getResponse()
+      ->getBody()
+      ->getContents();
+    $l->error(
+      'Request exception: {code} {message}',
+      [
+        'code'    => $exception->getCode(),
+        'message' => $exception_message,
+      ]
+    );
+
+    // Dispatch event when bot is blocked
+    $exception_event = new RequestExceptionEvent(
+      $method, $exception->getResponse(), $exception_message
+    );
+    $dispatcher->dispatch(RequestExceptionEvent::NAME, $exception_event);
+  }
+
+  /**
    * Use this method to edit only the reply markup of messages sent by the bot
    * or via the bot (for inline bots). On success, if edited message is sent by
    * the bot, the edited Message is returned, otherwise True is returned.
@@ -716,7 +626,7 @@ class Bot
    *   not specified. Identifier of the inline message
    * @param \unreal4u\TelegramAPI\Telegram\Types\Inline\Keyboard\Markup $reply_markup A
    *   JSON-serialized object for an inline keyboard.
-   * @return \unreal4u\TelegramAPI\Telegram\Types\Message
+   * @return Message
    */
   public function editMessageReplyMarkup(
     $chat_id = null,
@@ -869,7 +779,7 @@ class Bot
     $l = $this->getContainer()
       ->get('logger');
 
-    $l->debug(
+    $l->info(
       'Pushing notification "{notification}"',
       [
         'notification'     => $notification,
@@ -880,7 +790,7 @@ class Bot
     );
 
     $subscribers = $this->getEligibleSubscribers($notification, $recipient);
-    $l->debug(
+    $l->info(
       'Subscribers to receive notification: {subscribers_count}',
       ['subscribers_count' => count($subscribers)]
     );
@@ -900,7 +810,7 @@ class Bot
             ]
           )
       )) {
-        throw new KaulaTelegramBundleException(
+        throw new TelegramBundleException(
           sprintf(
             'Queue for push failed: unable to find chat for given user (telegram_user_id=%s)',
             $user_item->getTelegramId()
@@ -955,7 +865,7 @@ class Bot
   }
 
   /**
-   * Send part of queued messages.
+   * Sends part of queued messages.
    *
    * @param int $bump_size Count of items to send in this bump operation
    */
@@ -1032,77 +942,210 @@ class Bot
   }
 
   /**
-   * Log transaction to the database.
+   * Use this method to send text messages. On success, the sent Message is
+   * returned.
    *
-   * @param mixed $telegram_data
+   * @param string $chat_id Unique identifier for the target chat or username
+   *   of the target channel (in the format @channelusername)
+   * @param string $text Text of the message to be sent
+   * @param string $parse_mode Send Markdown or HTML, if you want Telegram apps
+   *   to show bold, italic, fixed-width text or inline URLs in your bot's
+   *   message.
+   * @param KeyboardMethods $reply_markup Additional interface options. A
+   *   JSON-serialized object for an inline keyboard, custom reply keyboard,
+   *   instructions to remove reply keyboard or to force a reply from the user.
+   * @param bool $disable_web_page_preview Disables link previews for links in
+   *   this message
+   * @param bool $disable_notification Sends the message silently. iOS users
+   *   will not receive a notification, Android users will receive a
+   *   notification with no sound.
+   * @param string $reply_to_message_id If the message is a reply, ID of the
+   *   original message
+   *
+   * @return Message
    */
-  private function log($telegram_data)
+  public function sendMessage(
+    $chat_id,
+    $text,
+    $parse_mode = null,
+    $reply_markup = null,
+    $disable_web_page_preview = false,
+    $disable_notification = false,
+    $reply_to_message_id = null
+  ) {
+    /** @var LoggerInterface $l */
+    $l = $this->container->get('logger');
+
+    $send_message = new SendMessage();
+    $send_message->chat_id = $chat_id;
+    $send_message->text = $text;
+    $send_message->parse_mode = $parse_mode ?? '';
+    $send_message->disable_web_page_preview = $disable_web_page_preview;
+    $send_message->disable_notification = $disable_notification;
+    $send_message->reply_to_message_id = $reply_to_message_id;
+    $send_message->reply_markup = $reply_markup;
+
+    // Allow some debug info
+    $l->info(
+      'Bot is sending message',
+      ['message' => print_r($send_message, true)]
+    );
+
+    /** @var Message $message */
+    $message = $this->performRequest($send_message);
+
+    return $message;
+  }
+
+  /**
+   * @return bool
+   */
+  public function isRequestHandled(): bool
   {
-    $direction = 'undefined';
-    $type = null;
-    $chat_id = null;
-    $content = null;
+    return $this->request_handled;
+  }
 
-    // If $telegram_data instance of TelegramMethods, it is always outbound message
-    if ($telegram_data instanceof TelegramMethods) {
-      $direction = 'out';
-      $type = get_class($telegram_data);
-      $content = json_encode(
-        $telegram_data->export(),
-        JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE
-      );
+  /**
+   * @param bool $request_handled
+   *
+   * @return Bot
+   */
+  public function setRequestHandled(bool $request_handled)
+  {
+    $this->request_handled = $request_handled;
+
+    return $this;
+  }
+
+  /**
+   * Returns type of the message.
+   *
+   * @param Message $message
+   * @return integer
+   */
+  public function whatMessageType(Message $message)
+  {
+    $message_type = self::MT_NOTHING;
+    if (!empty($message->text)) {
+      $message_type = $message_type | self::MT_TEXT;
     }
-    // We can get Update only from Telegram, so it's always inbound
-    if ($telegram_data instanceof Update) {
-      $direction = 'in';
-      $type = $this->whatUpdateType($telegram_data);
-      $content = json_encode(
-        get_object_vars($telegram_data),
-        JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE
-      );
+    if (!empty($message->audio)) {
+      $message_type = $message_type | self::MT_AUDIO;
+    }
+    if (!empty($message->document)) {
+      $message_type = $message_type | self::MT_DOCUMENT;
+    }
+    if (!empty($message->game)) {
+      $message_type = $message_type | self::MT_GAME;
+    }
+    if (!empty($message->photo)) {
+      $message_type = $message_type | self::MT_PHOTO;
+    }
+    if (!empty($message->sticker)) {
+      $message_type = $message_type | self::MT_STICKER;
+    }
+    if (!empty($message->video)) {
+      $message_type = $message_type | self::MT_VIDEO;
+    }
+    if (!empty($message->voice)) {
+      $message_type = $message_type | self::MT_VOICE;
+    }
+    if (!empty($message->contact)) {
+      $message_type = $message_type | self::MT_CONTACT;
+    }
+    if (!empty($message->location)) {
+      $message_type = $message_type | self::MT_LOCATION;
+    }
+    if (!empty($message->venue)) {
+      $message_type = $message_type | self::MT_VENUE;
+    }
+    if (!empty($message->new_chat_member)) {
+      $message_type = $message_type | self::MT_NEW_CHAT_MEMBER;
+    }
+    if (is_array($message->new_chat_members) &&
+      (count($message->new_chat_members) > 0)
+    ) {
+      $message_type = $message_type | self::MT_NEW_CHAT_MEMBERS_MANY;
+    }
+    if (!empty($message->left_chat_member)) {
+      $message_type = $message_type | self::MT_LEFT_CHAT_MEMBER;
+    }
+    if (!empty($message->new_chat_title)) {
+      $message_type = $message_type | self::MT_NEW_CHAT_TITLE;
+    }
+    if (!empty($message->new_chat_photo)) {
+      $message_type = $message_type | self::MT_NEW_CHAT_PHOTO;
+    }
+    if ($message->delete_chat_photo) {
+      $message_type = $message_type | self::MT_DELETE_CHAT_PHOTO;
+    }
+    if ($message->group_chat_created) {
+      $message_type = $message_type | self::MT_GROUP_CHAT_CREATED;
+    }
+    if ($message->supergroup_chat_created) {
+      $message_type = $message_type | self::MT_SUPERGROUP_CHAT_CREATED;
+    }
+    if ($message->channel_chat_created) {
+      $message_type = $message_type | self::MT_CHANNEL_CHAT_CREATED;
+    }
+    if (0 != $message->migrate_to_chat_id) {
+      $message_type = $message_type | self::MT_MIGRATE_TO_CHAT_ID;
+    }
+    if (0 != $message->migrate_from_chat_id) {
+      $message_type = $message_type | self::MT_MIGRATE_FROM_CHAT_ID;
+    }
+    if (!empty($message->pinned_message)) {
+      $message_type = $message_type | self::MT_PINNED_MESSAGE;
+    }
+    if (!empty($message->successful_payment)) {
+      $message_type = $message_type | self::MT_SUCCESSFUL_PAYMENT;
+    }
+    if (!empty($message->invoice)) {
+      $message_type = $message_type | self::MT_INVOICE;
     }
 
-    /**
-     * INBOUND
-     */
-    if ($telegram_data instanceof Update) {
-      if (!is_null($telegram_data->message)) {
-        $chat_id = $telegram_data->message->chat->id;
-      } elseif (!is_null($telegram_data->edited_message)) {
-        $chat_id = $telegram_data->edited_message->chat->id;
-      } elseif (!is_null($telegram_data->channel_post)) {
-        $chat_id = $telegram_data->channel_post->chat->id;
-      } elseif (!is_null($telegram_data->callback_query)) {
-        if (!is_null($telegram_data->callback_query->message)) {
-          $chat_id = $telegram_data->callback_query->message->chat->id;
-        }
-      }
-    }
+    return $message_type;
+  }
 
-    /**
-     * OUTBOUND
-     **/
-    if ($telegram_data instanceof SendMessage) {
-      $chat_id = $telegram_data->chat_id;
-    }
-    if ($telegram_data instanceof SendChatAction) {
-      $chat_id = $telegram_data->chat_id;
-    }
-    if ($telegram_data instanceof EditMessageReplyMarkup) {
-      $chat_id = $telegram_data->chat_id;
-    }
+  /**
+   * Returns logger object.
+   *
+   * @return LoggerInterface
+   */
+  public function getLogger()
+  {
+    return $this->getContainer()
+      ->get('logger');
+  }
 
-    $log = new Log();
-    $log->setCreated(new \DateTime('now', new \DateTimeZone('UTC')))
-      ->setDirection($direction)
-      ->setType($type)
-      ->setTelegramChatId($chat_id)
+  /**
+   * Audit transaction.
+   *
+   * @param string $type
+   * @param string $description
+   * @param Chat $chat_entity
+   * @param User $user_entity
+   * @param mixed $content
+   * @internal param mixed $telegram_data
+   */
+  public function audit(
+    $type,
+    $description = null,
+    $chat_entity = null,
+    $user_entity = null,
+    $content = null
+  ) {
+    $audit = new Audit();
+    $audit->setType($type)
+      ->setDescription($description)
+      ->setChat($chat_entity)
+      ->setUser($user_entity)
       ->setContent($content);
 
     $em = $this->getContainer()
       ->get('doctrine')
       ->getManager();
-    $em->persist($log);
+    $em->persist($audit);
     $em->flush();
   }
 

@@ -17,7 +17,8 @@ use Doctrine\ORM\Mapping\Index;
  * @ORM\Entity
  * @ORM\Table(name="role",indexes={@Index(name="role_name_idx",columns={"name"}),
  *   @Index(name="permissions_anonymous_idx",columns={"anonymous"}),
- *   @Index(name="permissions_administrator_idx",columns={"administrator"})})
+ *   @Index(name="permissions_administrator_idx",columns={"administrator"})},
+ *   options={"collate":"utf8mb4_general_ci", "charset":"utf8mb4"})
  */
 class Role {
 
@@ -44,13 +45,13 @@ class Role {
    * @ORM\Column(type="boolean")
    *
    */
-  private $anonymous;
+  private $anonymous = false;
 
   /**
    * @ORM\Column(type="boolean")
    *
    */
-  private $administrator;
+  private $administrator = false;
 
   /**
    * Many Roles have Many Users.

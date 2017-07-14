@@ -9,6 +9,6 @@
 namespace Kaula\TelegramBundle\Exception;
 
 
-class InvalidCommand extends KaulaTelegramBundleException {
+class InvalidCommand extends TelegramBundleException {
 
 }
