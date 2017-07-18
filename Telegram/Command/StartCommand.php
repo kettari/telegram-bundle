@@ -22,6 +22,22 @@ class StartCommand extends AbstractCommand
    */
   public function execute()
   {
+    /*if (!empty($this->getParameter())) {
+      $this->replyWithMessage('Параметр: '.$this->getParameter());
+    }*/
+
+    switch ($this->getParameter()) {
+      case 'register':
+        // Execute /register
+        $this->getBus()
+          ->executeCommand('register', null, $this->getUpdate());
+
+        return;
+      default:
+        break;
+    }
+
+    // Standard welcome message
     $this->replyWithMessage('Привет! Список команд доступен по команде /help');
 
     // Execute /help

@@ -167,5 +167,46 @@ class UserHq
         ->findOneBy(['telegram_id' => $telegram_user->id]);
   }
 
+  /**
+   * Formats user name.
+   *
+   * @param User $userEntity
+   * @param bool $redundantFormat Return both native and external names
+   * @return string
+   */
+  public static function formatUserName($userEntity, $redundantFormat = false)
+  {
+    if (!is_null($userEntity)) {
+      // User set
+      $user_name = trim(
+        $userEntity->getFirstName().' '.$userEntity->getLastName()
+      );
+      $external_name = trim(
+        $userEntity->getExternalFirstName().' '.
+        $userEntity->getExternalLastName()
+      );
+    } else {
+      // User not set
+      $user_name = 'не указан';
+      $external_name = '';
+    }
+
+    if (!empty($external_name)) {
+
+      // Return both native and external names
+      if ($redundantFormat) {
+        $user_name = sprintf(
+          '%s (%s)',
+          $user_name,
+          $external_name
+        );
+      } else {
+        $user_name = $external_name;
+      }
+
+    }
+
+    return $user_name;
+  }
 
 }

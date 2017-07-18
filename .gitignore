@@ -1,2 +1,7 @@
 # Created by .ignore support plugin (hsz.mobi)
+
+# PhpStorm project files
 .idea
+
+# Backup entities generated with doctrine:generate:entities command
+**/Entity/*~
