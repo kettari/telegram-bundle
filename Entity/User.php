@@ -258,14 +258,20 @@ class User
   /**
    * Check if user has specified role.
    *
-   * @param \Kaula\TelegramBundle\Entity\Role $roleToCheck
+   * @param \Kaula\TelegramBundle\Entity\Role|string $roleToCheck
    * @return bool
    */
-  public function hasRole(Role $roleToCheck)
+  public function hasRole($roleToCheck)
   {
+    if ($roleToCheck instanceof Role) {
+      $checkName = $roleToCheck->getName();
+    } else {
+      $checkName = $roleToCheck;
+    }
+
     /** @var \Kaula\TelegramBundle\Entity\Role $role */
     foreach ($this->getRoles() as $role) {
-      if ($role->getId() == $roleToCheck->getId()) {
+      if ($role->getName() == $checkName) {
         return true;
       }
     }
