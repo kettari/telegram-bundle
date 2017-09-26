@@ -116,6 +116,11 @@ class Bot
   protected $container;
 
   /**
+   * @var \Kaula\TelegramBundle\Telegram\CommandBus
+   */
+  protected $bus;
+
+  /**
    * Message type titles.
    *
    * @var array
@@ -160,6 +165,9 @@ class Bot
    */
   private $event_dispatcher;
 
+  /**
+   * @var bool
+   */
   private $request_handled = false;
 
   /**

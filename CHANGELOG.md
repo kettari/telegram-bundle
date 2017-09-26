@@ -19,7 +19,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   - [telegram-bundle-57](https://github.com/kettari/telegram-bundle/issues/57) Add hasRole() method to User entity.
 ### Changed
   - [telegram-bundle-49](https://github.com/kettari/telegram-bundle/issues/49) Add external user name formatting for /register command.
-  - [telegram-bundle-53](https://github.com/kettari/telegram-bundle/issues/53) When user /register check if he sent not-a-contact but numbers and tell right tip (more firendly).
+  - [telegram-bundle-53](https://github.com/kettari/telegram-bundle/issues/53) When user /register check if he sent not-a-contact but numbers and tell right tip (more friendly).
 
 ## [1.1.0] - 2017-07-14
 ### Changed
