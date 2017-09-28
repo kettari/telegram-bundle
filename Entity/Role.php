@@ -15,8 +15,7 @@ use Doctrine\ORM\Mapping\Index;
 
 /**
  * @ORM\Entity
- * @ORM\Table(name="role",indexes={@Index(name="role_name_idx",columns={"name"}),
- *   @Index(name="permissions_anonymous_idx",columns={"anonymous"}),
+ * @ORM\Table(name="role",indexes={@Index(name="permissions_anonymous_idx",columns={"anonymous"}),
  *   @Index(name="permissions_administrator_idx",columns={"administrator"})},
  *   options={"collate":"utf8mb4_general_ci", "charset":"utf8mb4"})
  */
@@ -30,7 +29,7 @@ class Role {
   private $id;
 
   /**
-   * @ORM\Column(type="string",length=50)
+   * @ORM\Column(type="string",length=50,unique=true)
    *
    */
   private $name;

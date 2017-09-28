@@ -10,12 +10,9 @@ namespace Kaula\TelegramBundle\Telegram\Subscriber;
 
 
 use Kaula\TelegramBundle\Entity\Chat;
-use Kaula\TelegramBundle\Entity\Role;
-use Kaula\TelegramBundle\Entity\User;
 use Kaula\TelegramBundle\Telegram\Event\MessageReceivedEvent;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use unreal4u\TelegramAPI\Telegram\Types\Chat as TelegramChat;
-use unreal4u\TelegramAPI\Telegram\Types\User as TelegramUser;
 
 class IdentityWatchdogSubscriber extends AbstractBotSubscriber implements EventSubscriberInterface
 {
@@ -51,15 +48,6 @@ class IdentityWatchdogSubscriber extends AbstractBotSubscriber implements EventS
    */
   public function onMessageReceived(MessageReceivedEvent $event)
   {
-    // Update the user
-    if (!is_null($event->getMessage()->from)) {
-      // Get user and optionally mark it for update
-      $user = $this->getUser($event->getMessage()->from);
-      // Load anonymous roles and assign them to the user
-      $roles = $this->getAnonymousRoles();
-      $this->assignRoles($roles, $user);
-    }
-
     // Update the chat
     $this->updateChat($event->getMessage()->chat);
 
@@ -67,68 +55,6 @@ class IdentityWatchdogSubscriber extends AbstractBotSubscriber implements EventS
     $this->getDoctrine()
       ->getManager()
       ->flush();
-  }
-
-  /**
-   * Returns the User object by telegram user.
-   *
-   * @param TelegramUser $telegram_user
-   * @return User|null
-   */
-  private function getUser($telegram_user)
-  {
-    // Find user object. If not found, create new
-    $user = $this->getBot()
-      ->getUserHq()
-      ->getCurrentUser();
-    if (!$user) {
-      $user = new User();
-      $this->getDoctrine()
-        ->getManager()
-        ->persist($user);
-    }
-    // Update information
-    $user->setTelegramId($telegram_user->id)
-      ->setFirstName($telegram_user->first_name)
-      ->setLastName($telegram_user->last_name)
-      ->setUsername($telegram_user->username);
-
-    return $user;
-  }
-
-  /**
-   * Returns array with roles for anonymous users.
-   *
-   * @return array
-   */
-  private function getAnonymousRoles()
-  {
-    $roles = $this->getDoctrine()
-      ->getRepository('KaulaTelegramBundle:Role')
-      ->findBy(['anonymous' => true]);
-    if (0 == count($roles)) {
-      throw new \LogicException('Roles for guests not found');
-    }
-
-    return $roles;
-  }
-
-  /**
-   * Assigns specified roles to the user.
-   *
-   * @param array $roles
-   * @param User $user
-   */
-  private function assignRoles(array $roles, User $user)
-  {
-    /** @var Role $single_role */
-    foreach ($roles as $single_role) {
-      if (!$user->getRoles()
-        ->contains($single_role)
-      ) {
-        $user->addRole($single_role);
-      }
-    }
   }
 
   /**
