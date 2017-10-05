@@ -460,6 +460,7 @@ class UserManCommand extends AbstractCommand
       ->getContainer()
       ->get('doctrine');
 
+    /** @var Role $role_to_add */
     if (is_null(
       $role_to_add = $d->getRepository('KaulaTelegramBundle:Role')
         ->findOneBy(['name' => $selection])
