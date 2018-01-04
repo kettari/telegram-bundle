@@ -69,7 +69,7 @@ class Chat
   private $all_members_are_administrators;
 
   /**
-   * Inverse side
+   * ~~INVERSE SIDE~~
    *
    * @ORM\OneToMany(targetEntity="Kaula\TelegramBundle\Entity\ChatMember",mappedBy="chat")
    */

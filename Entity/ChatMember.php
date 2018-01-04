@@ -8,6 +8,8 @@
 
 namespace Kaula\TelegramBundle\Entity;
 
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Doctrine\ORM\Mapping\Index;
 
@@ -16,7 +18,8 @@ use Doctrine\ORM\Mapping\Index;
  * @ORM\Table(name="chat_member",indexes={@Index(name="chat_user_idx", columns={"chat_id","user_id"})},
  *   options={"collate":"utf8mb4_general_ci", "charset":"utf8mb4"})
  */
-class ChatMember {
+class ChatMember
+{
 
   /**
    * @ORM\Column(type="integer")
@@ -26,13 +29,14 @@ class ChatMember {
   private $id;
 
   /**
-   * @ORM\ManyToOne(targetEntity="Kaula\TelegramBundle\Entity\User")
+   * ~~OWNING SIDE~~
    *
+   * @ORM\ManyToOne(targetEntity="Kaula\TelegramBundle\Entity\User")
    */
   private $user;
 
   /**
-   * Owning side
+   * ~~OWNING SIDE~~
    *
    * @ORM\ManyToOne(targetEntity="Kaula\TelegramBundle\Entity\Chat",inversedBy="chat_members")
    *
@@ -47,21 +51,47 @@ class ChatMember {
   /**
    * @ORM\Column(type="datetime",nullable=true)
    */
-  private $join_date;
+  private $joinDate;
 
   /**
    * @ORM\Column(type="datetime",nullable=true)
    */
-  private $leave_date;
+  private $leaveDate;
 
+  /**
+   * ~~INVERSE SIDE~~
+   *
+   * @var Collection
+   * @ORM\OneToMany(targetEntity="Kaula\TelegramBundle\Entity\ChatMemberProperty",mappedBy="chatMember")
+   */
+  private $properties;
+
+  /**
+   * ChatMember constructor.
+   */
+  public function __construct()
+  {
+    $this->properties = new ArrayCollection();
+  }
 
   /**
    * Get id
    *
    * @return integer
    */
-  public function getId() {
+  public function getId()
+  {
     return $this->id;
+  }
+
+  /**
+   * Get status
+   *
+   * @return string
+   */
+  public function getStatus()
+  {
+    return $this->status;
   }
 
   /**
@@ -71,30 +101,9 @@ class ChatMember {
    *
    * @return ChatMember
    */
-  public function setStatus($status) {
+  public function setStatus($status)
+  {
     $this->status = $status;
-
-    return $this;
-  }
-
-  /**
-   * Get status
-   *
-   * @return string
-   */
-  public function getStatus() {
-    return $this->status;
-  }
-
-  /**
-   * Set joinDate
-   *
-   * @param \DateTime $joinDate
-   *
-   * @return ChatMember
-   */
-  public function setJoinDate($joinDate) {
-    $this->join_date = $joinDate;
 
     return $this;
   }
@@ -104,19 +113,21 @@ class ChatMember {
    *
    * @return \DateTime
    */
-  public function getJoinDate() {
-    return $this->join_date;
+  public function getJoinDate()
+  {
+    return $this->joinDate;
   }
 
   /**
-   * Set leaveDate
+   * Set joinDate
    *
-   * @param \DateTime $leaveDate
+   * @param \DateTime $joinDate
    *
    * @return ChatMember
    */
-  public function setLeaveDate($leaveDate) {
-    $this->leave_date = $leaveDate;
+  public function setJoinDate($joinDate)
+  {
+    $this->joinDate = $joinDate;
 
     return $this;
   }
@@ -126,19 +137,21 @@ class ChatMember {
    *
    * @return \DateTime
    */
-  public function getLeaveDate() {
-    return $this->leave_date;
+  public function getLeaveDate()
+  {
+    return $this->leaveDate;
   }
 
   /**
-   * Set user
+   * Set leaveDate
    *
-   * @param User $user
+   * @param \DateTime $leaveDate
    *
    * @return ChatMember
    */
-  public function setUser(User $user = NULL) {
-    $this->user = $user;
+  public function setLeaveDate($leaveDate)
+  {
+    $this->leaveDate = $leaveDate;
 
     return $this;
   }
@@ -148,19 +161,21 @@ class ChatMember {
    *
    * @return User
    */
-  public function getUser() {
+  public function getUser()
+  {
     return $this->user;
   }
 
   /**
-   * Set chat
+   * Set user
    *
-   * @param Chat $chat
+   * @param User $user
    *
    * @return ChatMember
    */
-  public function setChat(Chat $chat = NULL) {
-    $this->chat = $chat;
+  public function setUser(User $user = null)
+  {
+    $this->user = $user;
 
     return $this;
   }
@@ -170,7 +185,59 @@ class ChatMember {
    *
    * @return Chat
    */
-  public function getChat() {
+  public function getChat()
+  {
     return $this->chat;
+  }
+
+  /**
+   * Set chat
+   *
+   * @param Chat $chat
+   *
+   * @return ChatMember
+   */
+  public function setChat(Chat $chat = null)
+  {
+    $this->chat = $chat;
+
+    return $this;
+  }
+
+  /**
+   * Add property
+   *
+   * @param \Kaula\TelegramBundle\Entity\ChatMemberProperty $chatMemberProperty
+   *
+   * @return \Kaula\TelegramBundle\Entity\ChatMember
+   */
+  public function addProperty(ChatMemberProperty $chatMemberProperty)
+  {
+    if (!$this->getProperties()
+      ->contains($chatMemberProperty)) {
+      $this->properties[] = $chatMemberProperty;
+    }
+
+    return $this;
+  }
+
+  /**
+   * Get properties
+   *
+   * @return \Doctrine\Common\Collections\Collection
+   */
+  public function getProperties()
+  {
+    return $this->properties;
+  }
+
+  /**
+   * Remove property
+   *
+   * @param \Kaula\TelegramBundle\Entity\ChatMemberProperty $chatMemberProperty
+   */
+  public function removeProperty(ChatMemberProperty $chatMemberProperty)
+  {
+    $this->properties->removeElement($chatMemberProperty);
   }
 }
