@@ -9,11 +9,12 @@
 namespace Kaula\TelegramBundle\Telegram\Command;
 
 
+use GuzzleHttp\Client;
 use Kaula\TelegramBundle\Entity\User;
 use RuntimeException;
-use Tallanto\Api\Aggregator\UserAggregator;
-use Tallanto\Api\Provider\Http\Request;
-use Tallanto\Api\Provider\Http\ServiceProvider;
+use Tallanto\ClientApiBundle\Api\Method\TallantoGetUsersMethod;
+use Tallanto\ClientApiBundle\Api\TallantoApiClient;
+use Tallanto\ClientApiBundle\Api\TallantoPump;
 use unreal4u\TelegramAPI\Telegram\Types\Contact as TelegramContact;
 
 
@@ -25,12 +26,19 @@ class UserRegisterCommand extends RegisterCommand
    *
    * @param \unreal4u\TelegramAPI\Telegram\Types\Contact $contact
    * @return bool
+   * @throws \Exception
    */
   protected function registerUser(TelegramContact $contact)
   {
+    $c = $this->getBus()
+      ->getBot()
+      ->getContainer();
+    $url = $c->getParameter('tallanto.url');
+    $login = $c->getParameter('tallanto.login');
+    $password = $c->getParameter('tallanto.token');
     $phone = $this->sanitizePhone($contact->phone_number);
-    $user_aggregator = $this->loadTallantoUsers($phone);
-    if ($this->bindTallantoUser($user_aggregator, $phone)) {
+    $users = $this->downloadUsers($url, $login, $password, $phone);
+    if ($this->bindTallantoUser($users, $phone)) {
       return parent::registerUser($contact);
     }
 
@@ -38,46 +46,69 @@ class UserRegisterCommand extends RegisterCommand
   }
 
   /**
-   * Loads user(s) from the Tallanto by phone.
+   * Downloads users from Tallanto matching $phone.
    *
-   * @param $phone
-   * @return \Tallanto\Api\Aggregator\UserAggregator
+   * @param string $url
+   * @param string $login
+   * @param string $password
+   * @param string $phone
+   * @return array Array of contact objects
+   * @throws \Exception
    */
-  private function loadTallantoUsers($phone)
+  private function downloadUsers($url, $login, $password, $phone)
   {
-    $c = $this->getBus()
+    $l = $this->getBus()
       ->getBot()
-      ->getContainer();
+      ->getLogger();
+    $l->debug(
+      'About to download users from the Tallanto',
+      [
+        'url'   => $url,
+        'login' => $login,
+      ]
+    );
 
-    // Create HTTP Request object for ServiceProvider
-    $request = new Request();
-    $request->setLogger($c->get('logger'))
-      ->setUrl($c->getParameter('tallanto.url'))
-      ->setMethod('/api/v1/users')
-      ->setLogin($c->getParameter('tallanto.login'))
-      ->setApiHash($c->getParameter('tallanto.token'));
+    // Create Guzzle client
+    $client = new Client(['base_uri' => $url]);
+    // Create method
+    $method = new TallantoGetUsersMethod($phone);
+    $method->setLogin($login)
+      ->setPassword($password);
+    // Create Tallanto API client
+    $api = new TallantoApiClient($client, $l);
+    // Download all users matching phone
+    $pump = new TallantoPump($api, $method);
+    $items = $pump->suck();
 
-    // Create ServiceProvider object
-    $provider = new ServiceProvider($request);
-    $provider->setLogger($c->get('logger'));
+    // Make array of objects
+    $existingUsers = $method->getUsers($items);
 
-    // Create contacts aggregator
-    $user_aggregator = new UserAggregator($provider);
-    $user_aggregator->search($phone);
+    $l->debug(
+      'Downloaded {users_count} items from the Tallanto',
+      [
+        'users_count'    => count($existingUsers),
+        'existing_users' => substr(
+          print_r($existingUsers, true),
+          0,
+          1024
+        ),
+      ]
+    );
 
-    return $user_aggregator;
+    // Convert array of array to array of users objects
+    return $existingUsers;
   }
 
   /**
    * Connects Telegram and Tallanto users.
    *
-   * @param \Tallanto\Api\Aggregator\UserAggregator $user_aggregator
+   * @param array $users
    * @param string $phone
    * @return bool
    */
-  private function bindTallantoUser(UserAggregator $user_aggregator, $phone)
+  private function bindTallantoUser($users, $phone)
   {
-    if (0 == $user_aggregator->count()) {
+    if (0 == count($users)) {
 
       // User not found in the Tallanto CRM, deny
       $this->replyWithMessage(
@@ -88,7 +119,7 @@ class UserRegisterCommand extends RegisterCommand
 
       return false;
 
-    } elseif ($user_aggregator->count() > 1) {
+    } elseif (count($users) > 1) {
 
       // Several contacts found, deny
       $this->replyWithMessage(
@@ -102,12 +133,10 @@ class UserRegisterCommand extends RegisterCommand
     }
 
     // Single contact found in the Tallanto CRM, proceed
-    $iterator = $user_aggregator->getIterator();
-    /** @var \Tallanto\Api\Entity\User $tallanto_user */
-    $tallanto_user = $iterator->current();
-    if (($tallanto_user->getPhoneMobile() != $phone) &&
-      ($tallanto_user->getPhoneWork() != $phone)
-    ) {
+    /** @var \Tallanto\Api\Entity\User $tallantoUser */
+    $tallantoUser = reset($contacts);
+    if (($tallantoUser->getPhoneMobile() != $phone) &&
+      ($tallantoUser->getPhoneWork() != $phone)) {
       throw new RuntimeException(
         'Mobile and Work phones from Tallanto do not match Telegram contact phone '.
         $phone
@@ -115,7 +144,7 @@ class UserRegisterCommand extends RegisterCommand
     }
 
     // Check if user is active
-    if ('Active' != $tallanto_user->getUserStatus()) {
+    if ('Active' != $tallantoUser->getUserStatus()) {
       $this->replyWithMessage(
         'К сожалению, вы не являетесь действующим сотрудником Школы.'.PHP_EOL.
         PHP_EOL.
@@ -126,7 +155,7 @@ class UserRegisterCommand extends RegisterCommand
     }
 
     // Update User object
-    $this->updateTallantoUserInformation($tallanto_user);
+    $this->updateTallantoUserInformation($tallantoUser);
 
     return true;
   }

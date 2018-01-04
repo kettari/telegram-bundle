@@ -13,6 +13,7 @@
   "require": {
     "php": ">=5.6.0",
     "unreal4u/telegram-api": "~2.3",
+    "guzzlehttp/guzzle": "^6.0",
     "kettari/tallanto-client-api-bundle": "dev-master"
   },
   "autoload": {
