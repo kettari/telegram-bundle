@@ -100,7 +100,8 @@ class Bot
   const MT_NEW_CHAT_MEMBERS_MANY = 4194304;
   const MT_SUCCESSFUL_PAYMENT = 8388608;
   const MT_INVOICE = 16777216;
-  const MT_ANY = 33554431;
+  const MT_VIDEO_NOTE = 33554432;
+  const MT_ANY = 67108863;
 
   // Captions of the event types
   /**
@@ -151,6 +152,7 @@ class Bot
     self::MT_NEW_CHAT_MEMBERS_MANY   => 'MT_NEW_CHAT_MEMBERS_MANY',
     self::MT_SUCCESSFUL_PAYMENT      => 'MT_SUCCESSFUL_PAYMENT',
     self::MT_INVOICE                 => 'MT_INVOICE',
+    self::MT_VIDEO_NOTE              => 'MT_VIDEO_NOTE',
   ];
 
   /**
@@ -361,8 +363,7 @@ class Bot
 
     // Check if current user is blocked and abort execution if true
     if ($this->getUserHq()
-      ->isUserBlocked()
-    ) {
+      ->isUserBlocked()) {
       return;
     }
 
@@ -500,8 +501,7 @@ class Bot
     try {
       // Throttle control to avoid flood
       if ($this->getThrottleSingleton()
-        ->wait()
-      ) {
+        ->wait()) {
         $tg_log = new TgLog($config['api_token'], $l, $client);
         $this->getThrottleSingleton()
           ->requestSent();
@@ -1071,8 +1071,7 @@ class Bot
       $message_type = $message_type | self::MT_NEW_CHAT_MEMBER;
     }
     if (is_array($message->new_chat_members) &&
-      (count($message->new_chat_members) > 0)
-    ) {
+      (count($message->new_chat_members) > 0)) {
       $message_type = $message_type | self::MT_NEW_CHAT_MEMBERS_MANY;
     }
     if (!empty($message->left_chat_member)) {
@@ -1110,6 +1109,9 @@ class Bot
     }
     if (!empty($message->invoice)) {
       $message_type = $message_type | self::MT_INVOICE;
+    }
+    if (!empty($message->video_note)) {
+      $message_type = $message_type | self::MT_VIDEO_NOTE;
     }
 
     return $message_type;
