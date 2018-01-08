@@ -33,12 +33,16 @@ class WebhookSetCommand extends AbstractCommand {
     $set_webhook = new SetWebhook();
     $set_webhook->url = str_replace('{secret}', $this->config['secret'],
       $this->config['url']);
-    $set_webhook->certificate = new InputFile($this->config['certificate_file']);
-
     $this->io->writeln('Setting telegram webhook to URL: '.$set_webhook->url);
-    if ($this->output->isVerbose()) {
-      $this->io->writeln('Certificate file: '.$this->config['certificate_file']);
+
+    $certificate_file = $this->config['certificate_file'] ?? null;
+    if (!is_null($certificate_file)) {
+      $set_webhook->certificate = new InputFile($this->config['certificate_file']);
+      if ($this->output->isVerbose()) {
+        $this->io->writeln('Certificate file: '.$this->config['certificate_file']);
+      }
     }
+
 
     // Create API object and execute method
     $tgLog = new TgLog($this->config['api_token'], $this->getContainer()
