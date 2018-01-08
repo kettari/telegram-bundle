@@ -1,16 +1,16 @@
 services:
-    kaula_telegram.bot:
+    kettari.telegram.bot:
         class: Kaula\TelegramBundle\Telegram\Bot
         arguments: ['@service_container']
 
-    kaula_telegram.bus:
+    kettari.telegram.bus:
         class: Kaula\TelegramBundle\Telegram\CommandBus
-        arguments: ['@kaula_telegram.bot']
+        arguments: ['@kettari.telegram.bot']
 
     telegram_bot:
-        alias: kaula_telegram.bot
+        alias: kettari.telegram.bot
         arguments: ['@service_container']
 
     command_bus:
-        alias: kaula_telegram.bus
-        arguments: ['@kaula_telegram.bot']
+        alias: kettari.telegram.bus
+        arguments: ['@kettari.telegram.bot']

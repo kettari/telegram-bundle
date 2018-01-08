@@ -76,7 +76,7 @@ abstract class AbstractCommand extends ContainerAwareCommand {
     $this->io = new SymfonyStyle($input, $output);
     $this->exit_code = self::RESULT_OK;
     // Get configuration
-    $this->config = $this->getContainer()->getParameter('kaula_telegram');
+    $this->config = $this->getContainer()->getParameter('kettari.telegram');
   }
 
   /**

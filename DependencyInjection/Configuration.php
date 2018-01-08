@@ -19,7 +19,7 @@ class Configuration implements ConfigurationInterface {
    */
   public function getConfigTreeBuilder() {
     $treeBuilder = new TreeBuilder();
-    $rootNode = $treeBuilder->root('kaula_telegram');
+    $rootNode = $treeBuilder->root('kettari.telegram');
 
     // @formatter:off
     /** @noinspection PhpUndefinedMethodInspection */

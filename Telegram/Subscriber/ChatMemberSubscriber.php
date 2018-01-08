@@ -182,7 +182,7 @@ class ChatMemberSubscriber extends AbstractBotSubscriber implements EventSubscri
     // Check if joined user is the bot itself and dispatch appropriate event if yes
     $config = $this->getBot()
       ->getContainer()
-      ->getParameter('kaula_telegram');
+      ->getParameter('kettari.telegram');
     $self_user_id = $config['self_user_id'] ?? 0;
     if ($self_user_id == $tu->id) {
       $this->dispatchJoinedBotEvent($update, $tu, $chat_entity, $user_entity);
@@ -285,7 +285,7 @@ class ChatMemberSubscriber extends AbstractBotSubscriber implements EventSubscri
     // Check if left user is the bot itself and dispatch appropriate event if yes
     $config = $this->getBot()
       ->getContainer()
-      ->getParameter('kaula_telegram');
+      ->getParameter('kettari.telegram');
     $self_user_id = $config['self_user_id'] ?? 0;
     if ($self_user_id == $tu->id) {
       $this->dispatchLeftBotEvent($update, $tu, $chat_entity, $user_entity);

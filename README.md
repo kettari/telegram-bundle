@@ -4,16 +4,17 @@
 No known issues.
 
 ## Configuration
-  * `telegram.secret` -- arbitrary key that is not known to the public. This key is used in the
+  * `kettari.telegram`:
+    * `secret` -- arbitrary key that is not known to the public. This key is used in the
   `telegram.url` parameter when setting webhook. The idea is the resulting URL is known only to you and
   Telegram server so you can trust updates you receive at your endpoint. Good idea is to
    make it quite long ([0-9a-z]{32} for example).
-  * `telegram.token` -- Telegram bot API key you got from the BotFather.
-  * `telegram.certificate_file` -- open part of the certificate to send to Telegram server
+    * `api_token` -- Telegram bot API key you got from the BotFather.
+    * `certificate_file` -- open part of the certificate to send to Telegram server
   when registering webhook. This might be a self-signed certificate, see [Telegram documentation](https://core.telegram.org/bots/self-signed).
-  * `telegram.url` -- a URL of this bot with a `{secret}` substring in it. For example:
+    * `url` -- a URL of this bot with a `{secret}` substring in it. For example:
   `https://www.your-domain.com/api/v1/{secret}/webhook`
-  * `telegram.self_user_id` -- Telegram „user ID“ of the bot. It is required to distinguish
+    * `self_user_id` -- Telegram „user ID“ of the bot. It is required to distinguish
   the bot itself on chat join/left events.
   
 ## Events
