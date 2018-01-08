@@ -24,7 +24,7 @@ class KaulaTelegramExtension extends Extension {
     $configuration = new Configuration();
     $config = $this->processConfiguration($configuration, $configs);
     // Set parameters
-    $container->setParameter('kettari.telegram', $config);
+    $container->setParameter('kettari_telegram', $config);
 
     $loader = new YamlFileLoader($container,
       new FileLocator(__DIR__.'/../Resources/config'));

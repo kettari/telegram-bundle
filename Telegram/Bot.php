@@ -297,7 +297,7 @@ class Bot
   public function getBus(): CommandBus
   {
     return $this->getContainer()
-      ->get('kettari.telegram.bus');
+      ->get('kettari_telegram.bus');
   }
 
   /**
@@ -493,7 +493,7 @@ class Bot
       ->get('logger');
     // Get configuration
     $config = $this->getContainer()
-      ->getParameter('kettari.telegram');
+      ->getParameter('kettari_telegram');
     $dispatcher = $this->getEventDispatcher();
     $client = new Client();
 

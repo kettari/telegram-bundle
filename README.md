@@ -4,7 +4,7 @@
 No known issues.
 
 ## Configuration
-  * `kettari.telegram`:
+  * `kettari_telegram`:
     * `secret` -- arbitrary key that is not known to the public. This key is used in the
   `telegram.url` parameter when setting webhook. The idea is the resulting URL is known only to you and
   Telegram server so you can trust updates you receive at your endpoint. Good idea is to
