@@ -57,6 +57,8 @@ use unreal4u\TelegramAPI\Telegram\Methods\EditMessageReplyMarkup;
 use unreal4u\TelegramAPI\Telegram\Methods\EditMessageText;
 use unreal4u\TelegramAPI\Telegram\Methods\SendChatAction;
 use unreal4u\TelegramAPI\Telegram\Methods\SendMessage;
+use unreal4u\TelegramAPI\Telegram\Methods\SendPhoto;
+use unreal4u\TelegramAPI\Telegram\Types\Custom\InputFile;
 use unreal4u\TelegramAPI\Telegram\Types\Message;
 use unreal4u\TelegramAPI\Telegram\Types\Update;
 use unreal4u\TelegramAPI\TgLog;
@@ -1001,6 +1003,58 @@ class Bot
 
     /** @var Message $message */
     $message = $this->performRequest($send_message);
+
+    return $message;
+  }
+
+  /**
+   * Use this method to send photos. On success, the sent Message is
+   * returned.
+   *
+   * @param string $chatId Unique identifier for the target chat or username
+   *   of the target channel (in the format @channelusername)
+   * @param string|\unreal4u\TelegramAPI\Telegram\Types\Custom\InputFile $inputFile Photo
+   *   to send. Pass a file_id as String to send a photo that exists on the
+   *   Telegram servers (recommended), pass an HTTP URL as a String for
+   *   Telegram to get a photo from the Internet, or upload a new photo using
+   *   the InputFile class.
+   * @param string $caption Photo caption (may also be used when resending
+   *   photos by file_id), 0-200 characters
+   * @param KeyboardMethods $replyMarkup Additional interface options. A
+   *   JSON-serialized object for an inline keyboard, custom reply keyboard,
+   *   instructions to remove reply keyboard or to force a reply from the user.
+   * @param bool $disableNotification Sends the message silently. iOS users
+   *   will not receive a notification, Android users will receive a
+   *   notification with no sound.
+   * @param string $replyToMessageId If the message is a reply, ID of the
+   *   original message
+   *
+   * @return Message
+   */
+  public function sendPhoto(
+    $chatId,
+    InputFile $inputFile,
+    $caption = null,
+    $replyMarkup = null,
+    $disableNotification = false,
+    $replyToMessageId = null
+  ) {
+    /** @var LoggerInterface $l */
+    $l = $this->container->get('logger');
+
+    $sendPhoto = new SendPhoto();
+    $sendPhoto->chat_id = $chatId;
+    $sendPhoto->photo = $inputFile;
+    $sendPhoto->caption = $caption;
+    $sendPhoto->disable_notification = $disableNotification;
+    $sendPhoto->reply_to_message_id = $replyToMessageId;
+    $sendPhoto->reply_markup = $replyMarkup;
+
+    // Allow some debug info
+    $l->info('Bot is sending photo');
+
+    /** @var Message $message */
+    $message = $this->performRequest($sendPhoto);
 
     return $message;
   }
