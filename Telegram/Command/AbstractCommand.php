@@ -79,6 +79,18 @@ abstract class AbstractCommand
   private $parameter = '';
 
   /**
+   * AbstractCommand constructor.
+   *
+   * @param \Kaula\TelegramBundle\Telegram\CommandBus $bus
+   * @param \unreal4u\TelegramAPI\Telegram\Types\Update $update
+   */
+  public function __construct(CommandBus $bus, Update $update)
+  {
+    $this->bus = $bus;
+    $this->update = $update;
+  }
+
+  /**
    * Returns name of the command.
    *
    * @return string
@@ -136,18 +148,6 @@ abstract class AbstractCommand
   static public function getDeclaredNotifications(): array
   {
     return static::$declared_notifications;
-  }
-
-  /**
-   * AbstractCommand constructor.
-   *
-   * @param \Kaula\TelegramBundle\Telegram\CommandBus $bus
-   * @param \unreal4u\TelegramAPI\Telegram\Types\Update $update
-   */
-  public function __construct(CommandBus $bus, Update $update)
-  {
-    $this->bus = $bus;
-    $this->update = $update;
   }
 
   /**
@@ -214,6 +214,22 @@ abstract class AbstractCommand
   }
 
   /**
+   * @return \unreal4u\TelegramAPI\Telegram\Types\Update
+   */
+  public function getUpdate(): Update
+  {
+    return $this->update;
+  }
+
+  /**
+   * @return \Kaula\TelegramBundle\Telegram\CommandBus
+   */
+  public function getBus(): CommandBus
+  {
+    return $this->bus;
+  }
+
+  /**
    * Use this method when you need to tell the user that something is happening
    * on the bot's side. The status is set for 5 seconds or less (when a message
    * arrives from your bot, Telegram clients clear its typing status).
@@ -243,27 +259,32 @@ abstract class AbstractCommand
   }
 
   /**
-   * @return \Kaula\TelegramBundle\Telegram\CommandBus
-   */
-  public function getBus(): CommandBus
-  {
-    return $this->bus;
-  }
-
-  /**
-   * @return \unreal4u\TelegramAPI\Telegram\Types\Update
-   */
-  public function getUpdate(): Update
-  {
-    return $this->update;
-  }
-
-  /**
    * @return string
    */
   public function getParameter(): string
   {
     return $this->parameter;
+  }
+
+  /**
+   * Returns text if we have some non-empty text in the message object.
+   *
+   * @return null|string
+   */
+  public function getText()
+  {
+    return $this->hasText() ? $this->update->message->text : null;
+  }
+
+  /**
+   * Returns true if we have some non-empty text in the message object.
+   *
+   * @return bool
+   */
+  public function hasText()
+  {
+    return !is_null($this->update->message) &&
+      !empty($this->update->message->text);
   }
 
 }
