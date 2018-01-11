@@ -13,7 +13,7 @@ use Doctrine\ORM\Mapping as ORM;
 
 
 /**
- * @ORM\Entity
+ * @ORM\Entity(repositoryClass="Kaula\TelegramBundle\Repository\ChatRepository")
  * @ORM\Table(name="chat",
  *   options={"collate":"utf8mb4_general_ci", "charset":"utf8mb4"})
  */
