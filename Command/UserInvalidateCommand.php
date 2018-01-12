@@ -8,9 +8,10 @@
 
 namespace Kaula\TelegramBundle\Command;
 
-use Tallanto\Api\Aggregator\UserAggregator;
-use Tallanto\Api\Provider\Http\Request;
-use Tallanto\Api\Provider\Http\ServiceProvider;
+use GuzzleHttp\Client;
+use Tallanto\ClientApiBundle\Api\Method\TallantoGetUsersMethod;
+use Tallanto\ClientApiBundle\Api\TallantoApiClient;
+use Tallanto\ClientApiBundle\Api\TallantoPump;
 
 class UserInvalidateCommand extends AbstractCommand
 {
@@ -30,67 +31,93 @@ class UserInvalidateCommand extends AbstractCommand
 
   /**
    * Execute actual code of the command.
+   *
+   * @throws \Exception
    */
   protected function executeCommand()
   {
     $this->io->writeln('Invalidating users');
-    $user_aggregator = $this->loadTallantoUsers();
-    $this->io->writeln(sprintf('Loaded %d users', $user_aggregator->count()));
-    $this->blockInactiveUsers($user_aggregator);;
+
+    $c = $this->getContainer();
+    $url = $c->getParameter('tallanto.url');
+    $login = $c->getParameter('tallanto.login');
+    $password = $c->getParameter('tallanto.token');
+    $users = $this->downloadUsers($url, $login, $password);
+
+    $this->io->writeln(sprintf('Loaded %d users', count($users)));
+    $this->blockInactiveUsers($users);
     $this->io->success('Users invalidated.');
   }
 
   /**
-   * Loads users from the Tallanto.
+   * Downloads users from Tallanto matching $phone.
    *
-   * @return \Tallanto\Api\Aggregator\UserAggregator
+   * @param string $url
+   * @param string $login
+   * @param string $password
+   * @return array Array of contact objects
+   * @throws \Exception
    */
-  private function loadTallantoUsers()
+  private function downloadUsers($url, $login, $password)
   {
-    $c = $this->getContainer();
+    $this->logger->debug(
+      'About to download users from the Tallanto',
+      [
+        'url'   => $url,
+        'login' => $login,
+      ]
+    );
 
-    // Create HTTP Request object for ServiceProvider
-    $request = new Request();
-    $request->setLogger($c->get('logger'))
-      ->setUrl($c->getParameter('tallanto.url'))
-      ->setMethod('/api/v1/users')
-      ->setLogin($c->getParameter('tallanto.login'))
-      ->setApiHash($c->getParameter('tallanto.token'));
+    // Create Guzzle client
+    $client = new Client(['base_uri' => $url]);
+    // Create method
+    $method = new TallantoGetUsersMethod();
+    $method->setLogin($login)
+      ->setPassword($password);
+    // Create Tallanto API client
+    $api = new TallantoApiClient($client, $this->logger);
+    // Download all users matching phone
+    $pump = new TallantoPump($api, $method);
+    $items = $pump->suck();
 
-    // Create ServiceProvider object
-    $provider = new ServiceProvider($request);
-    $provider->setLogger($c->get('logger'))
-      ->setPageSize(1000);
+    // Make array of objects
+    $existingUsers = $method->getUsers($items);
 
-    // Create contacts aggregator
-    $user_aggregator = new UserAggregator($provider);
-    $user_aggregator->searchEx(null);
+    $this->logger->debug(
+      'Downloaded {users_count} items from the Tallanto',
+      [
+        'users_count'    => count($existingUsers),
+        'existing_users' => substr(
+          print_r($existingUsers, true),
+          0,
+          1024
+        ),
+      ]
+    );
 
-    return $user_aggregator;
+    // Convert array of array to array of users objects
+    return $existingUsers;
   }
 
   /**
    * Blocks telegram accounts for inactive users.
    *
-   * @param \Tallanto\Api\Aggregator\UserAggregator $user_aggregator
+   * @param array $users
    */
-  private function blockInactiveUsers($user_aggregator)
+  private function blockInactiveUsers($users)
   {
     $d = $this->getContainer()
       ->get('doctrine');
     $em = $d->getManager();
 
-    for ($iterator = $user_aggregator->getIterator(); $iterator->valid(
-    ); $iterator->next()) {
-      /** @var \Tallanto\Api\Entity\User $tallanto_user */
-      $tallanto_user = $iterator->current();
-
-      /** @var \Kaula\TelegramBundle\Entity\User $db_user */
+    /** @var \Tallanto\Api\Entity\User $userItem */
+    foreach ($users as $userItem) {
+      /** @var \Kaula\TelegramBundle\Entity\User $dbUser */
       if (is_null(
-        $db_user = $d->getRepository('KaulaTelegramBundle:User')
+        $dbUser = $d->getRepository('KaulaTelegramBundle:User')
           ->findOneBy(
             [
-              'tallanto_user_id' => $tallanto_user->getId(),
+              'tallanto_user_id' => $userItem->getId(),
               'blocked'          => false,
             ]
           )
@@ -99,20 +126,24 @@ class UserInvalidateCommand extends AbstractCommand
         continue;
       }
 
-      if (('Active' != $tallanto_user->getUserStatus()) ||
-        ('Active' != $tallanto_user->getEmployeeStatus())
-      ) {
-        $db_user->setBlocked(true);
+      if (('Active' != $userItem->getUserStatus()) ||
+        ('Active' != $userItem->getEmployeeStatus())) {
+        $dbUser->setBlocked(true);
         $this->io->writeln(
           sprintf(
             'User "%s" blocked',
-            trim($db_user->getLastName().' '.$db_user->getFirstName())
+            trim($dbUser->getLastName().' '.$dbUser->getFirstName())
+          )
+        );
+        $this->logger->info(
+          sprintf(
+            'User "%s" blocked',
+            trim($dbUser->getLastName().' '.$dbUser->getFirstName())
           )
         );
       }
     }
     $em->flush();
   }
-
 
 }

@@ -79,6 +79,18 @@ abstract class AbstractCommand
   private $parameter = '';
 
   /**
+   * AbstractCommand constructor.
+   *
+   * @param \Kaula\TelegramBundle\Telegram\CommandBus $bus
+   * @param \unreal4u\TelegramAPI\Telegram\Types\Update $update
+   */
+  public function __construct(CommandBus $bus, Update $update)
+  {
+    $this->bus = $bus;
+    $this->update = $update;
+  }
+
+  /**
    * Returns name of the command.
    *
    * @return string
@@ -139,18 +151,6 @@ abstract class AbstractCommand
   }
 
   /**
-   * AbstractCommand constructor.
-   *
-   * @param \Kaula\TelegramBundle\Telegram\CommandBus $bus
-   * @param \unreal4u\TelegramAPI\Telegram\Types\Update $update
-   */
-  public function __construct(CommandBus $bus, Update $update)
-  {
-    $this->bus = $bus;
-    $this->update = $update;
-  }
-
-  /**
    * Initialize command.
    *
    * @param string $parameter
@@ -171,32 +171,86 @@ abstract class AbstractCommand
   abstract public function execute();
 
   /**
+   * Replies with a long text message to the user. Splits message by PHP_EOL if
+   * message exceeds maximum allowed by Telegram (4096 Unicode bytes).
+   *
+   * @param string $text Text of the message to be sent
+   * @param string $parseMode Send Markdown or HTML, if you want Telegram apps
+   *   to show bold, italic, fixed-width text or inline URLs in your bot's
+   *   message.
+   * @param KeyboardMethods $replyMarkup Additional interface options. A
+   *   JSON-serialized object for an inline keyboard, custom reply keyboard,
+   *   instructions to remove reply keyboard or to force a reply from the user.
+   * @param bool $disableWebPagePreview Disables link previews for links in
+   *   this message
+   * @param bool $disableNotification Sends the message silently. iOS users
+   *   will not receive a notification, Android users will receive a
+   *   notification with no sound.
+   * @param string $replyToMessageId If the message is a reply, ID of the
+   *   original message
+   */
+  public function replyWithLongMessage(
+    $text,
+    $parseMode = null,
+    $replyMarkup = null,
+    $disableWebPagePreview = false,
+    $disableNotification = false,
+    $replyToMessageId = null
+  ) {
+    // Split the message into lines and implode again respecting max length
+    $lines = explode(PHP_EOL, $text);
+    $nextMessage = '';
+    $messages = [];
+    foreach ($lines as $oneLine) {
+      if (mb_strlen($nextMessage.$oneLine) > 4095) {
+        $messages[] = mb_substr($nextMessage.$oneLine, 0, 4096);
+        $nextMessage = mb_substr($nextMessage.$oneLine, 4096, 4095).PHP_EOL;
+      } else {
+        $nextMessage .= $oneLine.PHP_EOL;
+      }
+    }
+    $messages[] = $nextMessage;
+
+    // Send all messages
+    foreach ($messages as $oneMessage) {
+      $this->replyWithMessage(
+        $oneMessage,
+        $parseMode,
+        $replyMarkup,
+        $disableWebPagePreview,
+        $disableNotification,
+        $replyToMessageId
+      );
+    }
+  }
+
+  /**
    * Replies with a text message to the user.
    *
    * @param string $text Text of the message to be sent
-   * @param string $parse_mode Send Markdown or HTML, if you want Telegram apps
+   * @param string $parseMode Send Markdown or HTML, if you want Telegram apps
    *   to show bold, italic, fixed-width text or inline URLs in your bot's
    *   message.
-   * @param KeyboardMethods $reply_markup Additional interface options. A
+   * @param KeyboardMethods $replyMarkup Additional interface options. A
    *   JSON-serialized object for an inline keyboard, custom reply keyboard,
    *   instructions to remove reply keyboard or to force a reply from the user.
-   * @param bool $disable_web_page_preview Disables link previews for links in
+   * @param bool $disableWebPagePreview Disables link previews for links in
    *   this message
-   * @param bool $disable_notification Sends the message silently. iOS users
+   * @param bool $disableNotification Sends the message silently. iOS users
    *   will not receive a notification, Android users will receive a
    *   notification with no sound.
-   * @param string $reply_to_message_id If the message is a reply, ID of the
+   * @param string $replyToMessageId If the message is a reply, ID of the
    *   original message
    *
    * @return Message
    */
   public function replyWithMessage(
     $text,
-    $parse_mode = null,
-    $reply_markup = null,
-    $disable_web_page_preview = false,
-    $disable_notification = false,
-    $reply_to_message_id = null
+    $parseMode = null,
+    $replyMarkup = null,
+    $disableWebPagePreview = false,
+    $disableNotification = false,
+    $replyToMessageId = null
   ) {
     $update = $this->getUpdate();
 
@@ -205,12 +259,28 @@ abstract class AbstractCommand
       ->sendMessage(
         $update->message->chat->id,
         $text,
-        $parse_mode,
-        $reply_markup,
-        $disable_web_page_preview,
-        $disable_notification,
-        $reply_to_message_id
+        $parseMode,
+        $replyMarkup,
+        $disableWebPagePreview,
+        $disableNotification,
+        $replyToMessageId
       );
+  }
+
+  /**
+   * @return \unreal4u\TelegramAPI\Telegram\Types\Update
+   */
+  public function getUpdate(): Update
+  {
+    return $this->update;
+  }
+
+  /**
+   * @return \Kaula\TelegramBundle\Telegram\CommandBus
+   */
+  public function getBus(): CommandBus
+  {
+    return $this->bus;
   }
 
   /**
@@ -242,21 +312,6 @@ abstract class AbstractCommand
       ->sendAction($update->message->chat->id, $action);
   }
 
-  /**
-   * @return \Kaula\TelegramBundle\Telegram\CommandBus
-   */
-  public function getBus(): CommandBus
-  {
-    return $this->bus;
-  }
-
-  /**
-   * @return \unreal4u\TelegramAPI\Telegram\Types\Update
-   */
-  public function getUpdate(): Update
-  {
-    return $this->update;
-  }
 
   /**
    * @return string
@@ -264,6 +319,27 @@ abstract class AbstractCommand
   public function getParameter(): string
   {
     return $this->parameter;
+  }
+
+  /**
+   * Returns text if we have some non-empty text in the message object.
+   *
+   * @return null|string
+   */
+  public function getText()
+  {
+    return $this->hasText() ? $this->update->message->text : null;
+  }
+
+  /**
+   * Returns true if we have some non-empty text in the message object.
+   *
+   * @return bool
+   */
+  public function hasText()
+  {
+    return !is_null($this->update->message) &&
+      !empty($this->update->message->text);
   }
 
 }

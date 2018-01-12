@@ -50,6 +50,7 @@ class TextSubscriber extends AbstractBotSubscriber implements EventSubscriberInt
    */
   public function onTextReceived(TextReceivedEvent $event)
   {
+    /** @noinspection PhpStatementHasEmptyBodyInspection */
     if (!$this->parseCommand($event)) {
       // Not a command. Well, do nothing
     }

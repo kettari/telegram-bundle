@@ -9,12 +9,14 @@
 namespace Kaula\TelegramBundle\Telegram\Command;
 
 
+use GuzzleHttp\Client;
 use Kaula\TelegramBundle\Entity\User;
 use RuntimeException;
-use Tallanto\Api\Aggregator\ContactAggregator;
-use Tallanto\Api\Entity\Contact as TallantoContact;
-use Tallanto\Api\Provider\Http\Request;
-use Tallanto\Api\Provider\Http\ServiceProvider;
+
+
+use Tallanto\ClientApiBundle\Api\Method\TallantoGetContactsMethod;
+use Tallanto\ClientApiBundle\Api\TallantoApiClient;
+use Tallanto\ClientApiBundle\Api\TallantoPump;
 use unreal4u\TelegramAPI\Telegram\Types\Contact as TelegramContact;
 
 
@@ -26,12 +28,19 @@ class ContactRegisterCommand extends RegisterCommand
    *
    * @param \unreal4u\TelegramAPI\Telegram\Types\Contact $contact
    * @return bool
+   * @throws \Exception
    */
   protected function registerUser(TelegramContact $contact)
   {
+    $c = $this->getBus()
+      ->getBot()
+      ->getContainer();
+    $url = $c->getParameter('tallanto.url');
+    $login = $c->getParameter('tallanto.login');
+    $password = $c->getParameter('tallanto.token');
     $phone = $this->sanitizePhone($contact->phone_number);
-    $contact_aggregator = $this->loadTallantoContacts($phone);
-    if ($this->bindTallantoContact($contact_aggregator, $phone)) {
+    $contacts = $this->downloadContacts($url, $login, $password, $phone);
+    if ($this->bindTallantoContact($contacts, $phone)) {
       return parent::registerUser($contact);
     }
 
@@ -39,48 +48,71 @@ class ContactRegisterCommand extends RegisterCommand
   }
 
   /**
-   * Loads contact(s) from the Tallanto by phone.
+   * Downloads contacts from Tallanto matching $phone.
    *
-   * @param $phone
-   * @return \Tallanto\Api\Aggregator\ContactAggregator
+   * @param string $url
+   * @param string $login
+   * @param string $password
+   * @param string $phone
+   * @return array Array of contact objects
+   * @throws \Exception
    */
-  private function loadTallantoContacts($phone)
+  private function downloadContacts($url, $login, $password, $phone)
   {
-    $c = $this->getBus()
+    $l = $this->getBus()
       ->getBot()
-      ->getContainer();
+      ->getLogger();
+    $l->debug(
+      'About to download contacts from the Tallanto',
+      [
+        'url'   => $url,
+        'login' => $login,
+      ]
+    );
 
-    // Create HTTP Request object for ServiceProvider
-    $request = new Request();
-    $request->setLogger($c->get('logger'))
-      ->setUrl($c->getParameter('tallanto.url'))
-      ->setMethod('/api/v1/contacts')
-      ->setLogin($c->getParameter('tallanto.login'))
-      ->setApiHash($c->getParameter('tallanto.token'));
+    // Create Guzzle client
+    $client = new Client(['base_uri' => $url]);
+    // Create method
+    $method = new TallantoGetContactsMethod($phone);
+    $method->setLogin($login)
+      ->setPassword($password);
+    // Create Tallanto API client
+    $api = new TallantoApiClient($client, $l);
+    // Download all contacts matching phone
+    $pump = new TallantoPump($api, $method);
+    $items = $pump->suck();
 
-    // Create ServiceProvider object
-    $provider = new ServiceProvider($request);
-    $provider->setLogger($c->get('logger'));
+    // Make array of objects
+    $existingContacts = $method->getContacts($items);
 
-    // Create contacts aggregator
-    $contacts_aggregator = new ContactAggregator($provider);
-    $contacts_aggregator->search($phone);
+    $l->debug(
+      'Downloaded {contacts_count} items from the Tallanto',
+      [
+        'contacts_count'    => count($existingContacts),
+        'existing_contacts' => substr(
+          print_r($existingContacts, true),
+          0,
+          1024
+        ),
+      ]
+    );
 
-    return $contacts_aggregator;
+    // Convert array of array to array of contacts objects
+    return $existingContacts;
   }
 
   /**
    * Connects Telegram user and Tallanto contact.
    *
-   * @param \Tallanto\Api\Aggregator\ContactAggregator $contact_aggregator
+   * @param array $contacts
    * @param string $phone
    * @return bool
    */
   private function bindTallantoContact(
-    ContactAggregator $contact_aggregator,
+    $contacts,
     $phone
   ) {
-    if (0 == $contact_aggregator->count()) {
+    if (0 == count($contacts)) {
 
       // Contact not found in the Tallanto CRM, deny
       $this->replyWithMessage(
@@ -97,7 +129,7 @@ class ContactRegisterCommand extends RegisterCommand
         $phone
       );*/
 
-    } elseif ($contact_aggregator->count() > 1) {
+    } elseif (count($contacts) > 1) {
 
       // Several contacts found, deny
       $this->replyWithMessage(
@@ -107,16 +139,13 @@ class ContactRegisterCommand extends RegisterCommand
       );
 
       return false;
-
     }
 
     // Single contact found in the Tallanto CRM, proceed
-    $iterator = $contact_aggregator->getIterator();
-    /** @var \Tallanto\Api\Entity\Contact $tallanto_contact */
-    $tallanto_contact = $iterator->current();
-    if (($tallanto_contact->getPhoneMobile() != $phone) &&
-      ($tallanto_contact->getPhoneWork() != $phone)
-    ) {
+    /** @var \Tallanto\Api\Entity\Contact $tallantoContact */
+    $tallantoContact = reset($contacts);
+    if (($tallantoContact->getPhoneMobile() != $phone) &&
+      ($tallantoContact->getPhoneWork() != $phone)) {
       throw new RuntimeException(
         'Mobile and Work phones from Tallanto do not match Telegram contact phone '.
         $phone
@@ -124,7 +153,7 @@ class ContactRegisterCommand extends RegisterCommand
     }
 
     // Update User object
-    $this->updateTallantoUserInformation($tallanto_contact);
+    $this->updateTallantoUserInformation($tallantoContact);
 
     return true;
   }
@@ -132,9 +161,9 @@ class ContactRegisterCommand extends RegisterCommand
   /**
    * Updates user information in the database.
    *
-   * @param \Tallanto\Api\Entity\Contact $tallanto_contact
+   * @param \Tallanto\Api\Entity\Contact $tallantoContact
    */
-  protected function updateTallantoUserInformation($tallanto_contact)
+  protected function updateTallantoUserInformation($tallantoContact)
   {
     $tu = $this->getUpdate()->message->from;
     $d = $this->getBus()
@@ -150,45 +179,11 @@ class ContactRegisterCommand extends RegisterCommand
     if (!$user) {
       throw new \RuntimeException('User is expected to exist at this point.');
     }
-    $user->setTallantoContactId($tallanto_contact->getId())
-      ->setExternalLastName($tallanto_contact->getLastName())
-      ->setExternalFirstName($tallanto_contact->getFirstName());
+    $user->setTallantoContactId($tallantoContact->getId())
+      ->setExternalLastName($tallantoContact->getLastName())
+      ->setExternalFirstName($tallantoContact->getFirstName());
 
     // Commit changes
     $em->flush();
   }
-
-  /**
-   * Creates contact in the Tallanto CRM.
-   *
-   * @param \Tallanto\Api\Aggregator\ContactAggregator $contact_aggregator
-   * @param string $phone
-   * @return string Returns Tallanto ID
-   */
-  protected function createTallantoContact(
-    /** @noinspection PhpUnusedParameterInspection */
-    ContactAggregator $contact_aggregator,
-    $phone
-  ) {
-    /*    $c = $this->getBus()
-          ->getBot()
-          ->getContainer();*/
-    $tu = $this->getUpdate()->message->from;
-
-    // Create Contact object
-    /** @noinspection PhpUnusedLocalVariableInspection */
-    $contact = new TallantoContact(
-      [
-        'first_name'   => $tu->first_name,
-        'last_name'    => $tu->last_name,
-        'phone_mobile' => $phone,
-      ]
-    );
-    // TODO implement ContactAggregator::add() method
-    //$contact_aggregator->add($contact);
-
-    return 'mock';
-  }
-
-
 }
