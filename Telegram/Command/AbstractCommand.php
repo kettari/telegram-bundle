@@ -261,7 +261,7 @@ abstract class AbstractCommand
   /**
    * @return string
    */
-  public function getParameter(): string
+  public function getParameter()
   {
     return $this->parameter;
   }
