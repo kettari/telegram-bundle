@@ -74,18 +74,6 @@ class User
   private $notifications;
 
   /**
-   * @ORM\Column(type="string",length=255,nullable=true)
-   *
-   */
-  private $tallanto_contact_id;
-
-  /**
-   * @ORM\Column(type="string",length=255,nullable=true)
-   *
-   */
-  private $tallanto_user_id;
-
-  /**
    * @ORM\Column(type="boolean")
    *
    */
@@ -277,54 +265,6 @@ class User
     }
 
     return false;
-  }
-
-  /**
-   * Set tallantoContactId
-   *
-   * @param string $tallantoContactId
-   *
-   * @return User
-   */
-  public function setTallantoContactId($tallantoContactId)
-  {
-    $this->tallanto_contact_id = $tallantoContactId;
-
-    return $this;
-  }
-
-  /**
-   * Get tallantoContactId
-   *
-   * @return string
-   */
-  public function getTallantoContactId()
-  {
-    return $this->tallanto_contact_id;
-  }
-
-  /**
-   * Set tallantoUserId
-   *
-   * @param string $tallantoUserId
-   *
-   * @return User
-   */
-  public function setTallantoUserId($tallantoUserId)
-  {
-    $this->tallanto_user_id = $tallantoUserId;
-
-    return $this;
-  }
-
-  /**
-   * Get tallantoUserId
-   *
-   * @return string
-   */
-  public function getTallantoUserId()
-  {
-    return $this->tallanto_user_id;
   }
 
   /**
