@@ -64,4 +64,15 @@ class UserRepository extends EntityRepository
 
     return $query->getResult();
   }
+
+  /**
+   * Finds user entity by Telegram ID.
+   *
+   * @param string $telegramId
+   * @return null|object
+   */
+  public function findByTelegramId($telegramId)
+  {
+    return $this->findOneBy(['telegram_id' => $telegramId]);
+  }
 }

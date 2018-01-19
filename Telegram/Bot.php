@@ -756,31 +756,31 @@ class Bot
    * @param string $notification Notification name. If $recipient is specified,
    *   this option is ignored.
    * @param string $text Text of the message to be sent
-   * @param string $parse_mode Send Markdown or HTML, if you want Telegram apps
+   * @param string $parseMode Send Markdown or HTML, if you want Telegram apps
    *   to show bold, italic, fixed-width text or inline URLs in your bot's
    *   message.
-   * @param KeyboardMethods $reply_markup Additional interface options. A
+   * @param KeyboardMethods $replyMarkup Additional interface options. A
    *   JSON-serialized object for an inline keyboard, custom reply keyboard,
    *   instructions to remove reply keyboard or to force a reply from the user.
-   * @param bool $disable_web_page_preview Disables link previews for links in
+   * @param bool $disableWebPagePreview Disables link previews for links in
    *   this message
-   * @param bool $disable_notification Sends the message silently. iOS users
+   * @param bool $disableNotification Sends the message silently. iOS users
    *   will not receive a notification, Android users will receive a
    *   notification with no sound.
    * @param \Kaula\TelegramBundle\Entity\User|null $recipient If specified,
    *   send notification only to this user.
-   * @param string|null $chat_id Only if $recipient is specified: use this chat
+   * @param string|null $chatId Only if $recipient is specified: use this chat
    *   instead of private. If skipped, message is send privately
    */
   public function pushNotification(
     $notification,
     $text,
-    $parse_mode = '',
-    $reply_markup = null,
-    $disable_web_page_preview = false,
-    $disable_notification = false,
+    $parseMode = '',
+    $replyMarkup = null,
+    $disableWebPagePreview = false,
+    $disableNotification = false,
     User $recipient = null,
-    $chat_id = null
+    $chatId = null
   ) {
     $now = new \DateTime('now', new \DateTimeZone('UTC'));
     $d = $this->getContainer()
@@ -795,7 +795,7 @@ class Bot
         'notification'     => $notification,
         'telegram_user_id' => !is_null($recipient) ? $recipient->getTelegramId(
         ) : '(all)',
-        'chat_id'          => $chat_id,
+        'chat_id'          => $chatId,
       ]
     );
 
@@ -805,9 +805,9 @@ class Bot
       ['subscribers_count' => count($subscribers)]
     );
 
-    /** @var \Kaula\TelegramBundle\Entity\User $user_item */
-    foreach ($subscribers as $user_item) {
-      if ($user_item->isBlocked()) {
+    /** @var \Kaula\TelegramBundle\Entity\User $userItem */
+    foreach ($subscribers as $userItem) {
+      if ($userItem->isBlocked()) {
         continue;
       }
 
@@ -815,17 +815,19 @@ class Bot
         $chat = $d->getRepository('KaulaTelegramBundle:Chat')
           ->findOneBy(
             [
-              'telegram_id' => is_null($chat_id) ? $user_item->getTelegramId(
-              ) : $chat_id,
+              'telegram_id' => is_null($chatId) ? $userItem->getTelegramId(
+              ) : $chatId,
             ]
           )
       )) {
-        throw new TelegramBundleException(
+        $l->error(
           sprintf(
             'Queue for push failed: unable to find chat for given user (telegram_user_id=%s)',
-            $user_item->getTelegramId()
+            $userItem->getTelegramId()
           )
         );
+
+        return;
       }
 
       $queue = new Queue();
@@ -833,12 +835,12 @@ class Bot
         ->setCreated($now)
         ->setChat($chat)
         ->setText($text)
-        ->setParseMode($parse_mode)
+        ->setParseMode($parseMode)
         ->setReplyMarkup(
-          !is_null($reply_markup) ? serialize($reply_markup) : null
+          !is_null($replyMarkup) ? serialize($replyMarkup) : null
         )
-        ->setDisableWebPagePreview($disable_web_page_preview)
-        ->setDisableNotification($disable_notification);
+        ->setDisableWebPagePreview($disableWebPagePreview)
+        ->setDisableNotification($disableNotification);
       $d->getManager()
         ->persist($queue);
     }

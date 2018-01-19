@@ -25,7 +25,7 @@ class UserHq
   /**
    * @var User
    */
-  private $current_user;
+  private $currentUser;
 
   /**
    * UserHq constructor.
@@ -116,50 +116,45 @@ class UserHq
       ]
     );
     // Check if already resolved
-    if ($this->current_user) {
-      $l->debug('Already resolved', ['current_user' => $this->current_user]);
+    if ($this->currentUser) {
+      $l->debug('Already resolved', ['current_user' => $this->currentUser]);
       if ($telegramUser) {
-        $this->updateUserEntity($this->current_user, $telegramUser);
+        $this->currentUser->setTelegramId($telegramUser->id)
+          ->setFirstName($telegramUser->first_name)
+          ->setLastName($telegramUser->last_name)
+          ->setUsername($telegramUser->username);
+        $this->getBot()
+          ->getDoctrine()
+          ->getManager()
+          ->flush();
       }
 
-      return $this->current_user;
+      return $this->currentUser;
     }
     // Well?..
     if (is_null($telegramUser)) {
+      $l->warning('Telegram user is null, unable to resolve');
+
       return null;
     }
 
     /** @var User $user */
     if (is_null(
-      $this->current_user = $this->getBot()
+      $this->currentUser = $this->getBot()
         ->getDoctrine()
         ->getRepository('KaulaTelegramBundle:User')
-        ->findOneBy(['telegram_id' => $telegramUser->id])
+        ->findByTelegramId($telegramUser->id)
     )) {
-      $l->debug(
-        'Telegram user not found in the database with ID={telegram_id}, creating',
-        ['telegram_id' => $telegramUser->id]
-      );
-
       // Get user entity by telegram user
-      $this->current_user = $this->createUser($telegramUser);
-      // Load anonymous roles and assign them to the user
-      $roles = $this->getAnonymousRoles();
-      $this->assignRoles($roles, $this->current_user);
-
-      // Commit changes
-      $this->getBot()
-        ->getDoctrine()
-        ->getManager()
-        ->flush();
+      $this->currentUser = $this->createAnonymousUser($telegramUser);
     }
 
     $l->debug(
       'Telegram user resolved to entity',
-      ['user' => $this->current_user]
+      ['user' => $this->currentUser]
     );
 
-    return $this->current_user;
+    return $this->currentUser;
   }
 
   /**
@@ -171,34 +166,40 @@ class UserHq
   }
 
   /**
-   * Updates user entity.
+   * Creates user in the database. Assigns anonymous roles.
    *
-   * @param User $user
-   * @param TelegramUser $telegramUser
+   * @param \unreal4u\TelegramAPI\Telegram\Types\User $tu
+   * @return \Kaula\TelegramBundle\Entity\User
    */
-  private function updateUserEntity($user, $telegramUser)
+  public function createAnonymousUser(TelegramUser $tu)
   {
-    // Update information
-    $user->setTelegramId($telegramUser->id)
-      ->setFirstName($telegramUser->first_name)
-      ->setLastName($telegramUser->last_name)
-      ->setUsername($telegramUser->username);
-  }
+    $l = $this->getBot()
+      ->getLogger();
+    $l->debug(
+      'About to create anonymous user for TelegramID={telegram_id}',
+      ['telegram_id' => $tu->id, 'telegram_user' => $tu]
+    );
+    $d = $this->getBot()
+      ->getDoctrine();
+    $em = $d->getManager();
 
-  /**
-   * Returns the User object by telegram user.
-   *
-   * @param TelegramUser $telegramUser
-   * @return User
-   */
-  private function createUser($telegramUser)
-  {
+    // Create user entity and assign roles
     $user = new User();
-    $this->getBot()
-      ->getDoctrine()
-      ->getManager()
-      ->persist($user);
-    $this->updateUserEntity($user, $telegramUser);
+    $user->setTelegramId($tu->id)
+      ->setFirstName($tu->first_name)
+      ->setLastName($tu->last_name)
+      ->setUsername($tu->username);
+    // Get roles and assign them
+    $roles = $this->getAnonymousRoles();
+    $l->debug(
+      'Assigning {roles_count} role(s) to the user',
+      ['roles_count' => count($roles), 'roles' => $roles]
+    );
+    $this->assignRoles($roles, $user);
+
+    // Commit changes
+    $em->persist($user);
+    $em->flush();
 
     return $user;
   }
@@ -229,11 +230,11 @@ class UserHq
    */
   private function assignRoles(array $roles, User $user)
   {
-    /** @var Role $single_role */
-    foreach ($roles as $single_role) {
+    /** @var Role $roleItem */
+    foreach ($roles as $roleItem) {
       if (!$user->getRoles()
-        ->contains($single_role)) {
-        $user->addRole($single_role);
+        ->contains($roleItem)) {
+        $user->addRole($roleItem);
       }
     }
   }
@@ -245,7 +246,7 @@ class UserHq
    */
   public function isUserBlocked()
   {
-    if (is_null($this->current_user)) {
+    if (is_null($this->currentUser)) {
       return false;
     }
 
@@ -260,7 +261,7 @@ class UserHq
    */
   public function getCurrentUser()
   {
-    return $this->current_user;
+    return $this->currentUser;
   }
 
   /**
@@ -277,13 +278,13 @@ class UserHq
 
     // Load roles and each role's permissions
     $roles = $user->getRoles();
-    /** @var \Kaula\TelegramBundle\Entity\Role $role_item */
-    foreach ($roles as $role_item) {
-      $role_perms = $role_item->getPermissions();
-      /** @var \Kaula\TelegramBundle\Entity\Permission $role_perm_item */
-      foreach ($role_perms as $role_perm_item) {
-        if (!$permissions->contains($role_perm_item)) {
-          $permissions->add($role_perm_item);
+    /** @var \Kaula\TelegramBundle\Entity\Role $roleItem */
+    foreach ($roles as $roleItem) {
+      $rolePerms = $roleItem->getPermissions();
+      /** @var \Kaula\TelegramBundle\Entity\Permission $rolePermItem */
+      foreach ($rolePerms as $rolePermItem) {
+        if (!$permissions->contains($rolePermItem)) {
+          $permissions->add($rolePermItem);
         }
       }
     }
@@ -308,16 +309,16 @@ class UserHq
   /**
    * Returns database User entity by telegram User object.
    *
-   * @param \unreal4u\TelegramAPI\Telegram\Types\User $telegram_user
+   * @param TelegramUser $telegramUser
    * @return \Kaula\TelegramBundle\Entity\User|null
    */
-  public function getEntityByTelegram($telegram_user)
+  public function getEntityByTelegram($telegramUser)
   {
     /** @var User $user */
     return $this->getBot()
       ->getDoctrine()
       ->getRepository('KaulaTelegramBundle:User')
-      ->findOneBy(['telegram_id' => $telegram_user->id]);
+      ->findByTelegramId($telegramUser->id);
   }
 
 }
