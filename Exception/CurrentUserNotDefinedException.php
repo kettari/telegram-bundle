@@ -6,7 +6,7 @@
  * Time: 0:07
  */
 
-namespace Kaula\TelegramBundle\Exception;
+namespace Kettari\TelegramBundle\Exception;
 
 
 class CurrentUserNotDefinedException extends TelegramBundleException

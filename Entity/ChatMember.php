@@ -1,12 +1,7 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: ant
- * Date: 18.03.2017
- * Time: 0:11
- */
+declare(strict_types=1);
 
-namespace Kaula\TelegramBundle\Entity;
+namespace Kettari\TelegramBundle\Entity;
 
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
@@ -31,14 +26,14 @@ class ChatMember
   /**
    * ~~OWNING SIDE~~
    *
-   * @ORM\ManyToOne(targetEntity="Kaula\TelegramBundle\Entity\User")
+   * @ORM\ManyToOne(targetEntity="Kettari\TelegramBundle\Entity\User")
    */
   private $user;
 
   /**
    * ~~OWNING SIDE~~
    *
-   * @ORM\ManyToOne(targetEntity="Kaula\TelegramBundle\Entity\Chat",inversedBy="chat_members")
+   * @ORM\ManyToOne(targetEntity="Kettari\TelegramBundle\Entity\Chat",inversedBy="chatMembers")
    *
    */
   private $chat;
@@ -62,7 +57,7 @@ class ChatMember
    * ~~INVERSE SIDE~~
    *
    * @var Collection
-   * @ORM\OneToMany(targetEntity="Kaula\TelegramBundle\Entity\ChatMemberProperty",mappedBy="chatMember")
+   * @ORM\OneToMany(targetEntity="Kettari\TelegramBundle\Entity\ChatMemberProperty",mappedBy="chatMember")
    */
   private $properties;
 
@@ -207,9 +202,9 @@ class ChatMember
   /**
    * Add property
    *
-   * @param \Kaula\TelegramBundle\Entity\ChatMemberProperty $chatMemberProperty
+   * @param \Kettari\TelegramBundle\Entity\ChatMemberProperty $chatMemberProperty
    *
-   * @return \Kaula\TelegramBundle\Entity\ChatMember
+   * @return \Kettari\TelegramBundle\Entity\ChatMember
    */
   public function addProperty(ChatMemberProperty $chatMemberProperty)
   {
@@ -234,7 +229,7 @@ class ChatMember
   /**
    * Remove property
    *
-   * @param \Kaula\TelegramBundle\Entity\ChatMemberProperty $chatMemberProperty
+   * @param \Kettari\TelegramBundle\Entity\ChatMemberProperty $chatMemberProperty
    */
   public function removeProperty(ChatMemberProperty $chatMemberProperty)
   {

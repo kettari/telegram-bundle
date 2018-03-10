@@ -6,35 +6,35 @@
  * Time: 14:19
  */
 
-namespace Kaula\TelegramBundle\Telegram\Subscriber;
+namespace Kettari\TelegramBundle\Telegram\Subscriber;
 
 
 use Exception;
-use Kaula\TelegramBundle\Telegram\Bot;
-use Kaula\TelegramBundle\Telegram\Event\AudioReceivedEvent;
-use Kaula\TelegramBundle\Telegram\Event\ChatDeletePhotoEvent;
-use Kaula\TelegramBundle\Telegram\Event\ChatNewPhotoEvent;
-use Kaula\TelegramBundle\Telegram\Event\ChatNewTitleEvent;
-use Kaula\TelegramBundle\Telegram\Event\ContactReceivedEvent;
-use Kaula\TelegramBundle\Telegram\Event\DocumentReceivedEvent;
-use Kaula\TelegramBundle\Telegram\Event\GameReceivedEvent;
-use Kaula\TelegramBundle\Telegram\Event\GroupCreatedEvent;
-use Kaula\TelegramBundle\Telegram\Event\JoinChatMembersManyEvent;
-use Kaula\TelegramBundle\Telegram\Event\LeftChatMemberEvent;
-use Kaula\TelegramBundle\Telegram\Event\LocationReceivedEvent;
-use Kaula\TelegramBundle\Telegram\Event\MessagePinnedEvent;
-use Kaula\TelegramBundle\Telegram\Event\MessageReceivedEvent;
-use Kaula\TelegramBundle\Telegram\Event\MigrateFromChatIdEvent;
-use Kaula\TelegramBundle\Telegram\Event\MigrateToChatIdEvent;
-use Kaula\TelegramBundle\Telegram\Event\PaymentInvoiceEvent;
-use Kaula\TelegramBundle\Telegram\Event\PaymentSuccessfulEvent;
-use Kaula\TelegramBundle\Telegram\Event\PhotoReceivedEvent;
-use Kaula\TelegramBundle\Telegram\Event\StickerReceivedEvent;
-use Kaula\TelegramBundle\Telegram\Event\TextReceivedEvent;
-use Kaula\TelegramBundle\Telegram\Event\VenueReceivedEvent;
-use Kaula\TelegramBundle\Telegram\Event\VideoNoteReceivedEvent;
-use Kaula\TelegramBundle\Telegram\Event\VideoReceivedEvent;
-use Kaula\TelegramBundle\Telegram\Event\VoiceReceivedEvent;
+use Kettari\TelegramBundle\Telegram\Bot;
+use Kettari\TelegramBundle\Telegram\Event\AudioReceivedEvent;
+use Kettari\TelegramBundle\Telegram\Event\ChatDeletePhotoEvent;
+use Kettari\TelegramBundle\Telegram\Event\ChatNewPhotoEvent;
+use Kettari\TelegramBundle\Telegram\Event\ChatNewTitleEvent;
+use Kettari\TelegramBundle\Telegram\Event\ContactReceivedEvent;
+use Kettari\TelegramBundle\Telegram\Event\DocumentReceivedEvent;
+use Kettari\TelegramBundle\Telegram\Event\GameReceivedEvent;
+use Kettari\TelegramBundle\Telegram\Event\GroupCreatedEvent;
+use Kettari\TelegramBundle\Telegram\Event\JoinChatMembersManyEvent;
+use Kettari\TelegramBundle\Telegram\Event\LeftChatMemberEvent;
+use Kettari\TelegramBundle\Telegram\Event\LocationReceivedEvent;
+use Kettari\TelegramBundle\Telegram\Event\MessagePinnedEvent;
+use Kettari\TelegramBundle\Telegram\Event\MessageReceivedEvent;
+use Kettari\TelegramBundle\Telegram\Event\MigrateFromChatIdEvent;
+use Kettari\TelegramBundle\Telegram\Event\MigrateToChatIdEvent;
+use Kettari\TelegramBundle\Telegram\Event\PaymentInvoiceEvent;
+use Kettari\TelegramBundle\Telegram\Event\PaymentSuccessfulEvent;
+use Kettari\TelegramBundle\Telegram\Event\PhotoReceivedEvent;
+use Kettari\TelegramBundle\Telegram\Event\StickerReceivedEvent;
+use Kettari\TelegramBundle\Telegram\Event\TextReceivedEvent;
+use Kettari\TelegramBundle\Telegram\Event\VenueReceivedEvent;
+use Kettari\TelegramBundle\Telegram\Event\VideoNoteReceivedEvent;
+use Kettari\TelegramBundle\Telegram\Event\VideoReceivedEvent;
+use Kettari\TelegramBundle\Telegram\Event\VoiceReceivedEvent;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use unreal4u\TelegramAPI\Telegram\Types\ReplyKeyboardRemove;
@@ -312,7 +312,7 @@ class MessageSubscriber extends AbstractBotSubscriber implements EventSubscriber
   /**
    * Handles situation when user sent us message and it is not handled.
    *
-   * @param \Kaula\TelegramBundle\Telegram\Event\MessageReceivedEvent $event
+   * @param \Kettari\TelegramBundle\Telegram\Event\MessageReceivedEvent $event
    */
   public function onMessageCheckUnhandled(MessageReceivedEvent $event)
   {

@@ -6,11 +6,11 @@
  * Time: 14:19
  */
 
-namespace Kaula\TelegramBundle\Telegram\Subscriber;
+namespace Kettari\TelegramBundle\Telegram\Subscriber;
 
 
-use Kaula\TelegramBundle\Entity\Chat;
-use Kaula\TelegramBundle\Telegram\Event\MessageReceivedEvent;
+use Kettari\TelegramBundle\Entity\Chat;
+use Kettari\TelegramBundle\Telegram\Event\MessageReceivedEvent;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use unreal4u\TelegramAPI\Telegram\Types\Chat as TelegramChat;
 
@@ -67,7 +67,7 @@ class IdentityWatchdogSubscriber extends AbstractBotSubscriber implements EventS
   {
     // Find chat object. If not found, create new
     $chat = $this->getDoctrine()
-      ->getRepository('KaulaTelegramBundle:Chat')
+      ->getRepository('KettariTelegramBundle:Chat')
       ->findOneBy(['telegram_id' => $telegram_chat->id]);
     if (!$chat) {
       $chat = new Chat();

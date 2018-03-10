@@ -1,12 +1,7 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: ant
- * Date: 13.09.2017
- * Time: 20:10
- */
+declare(strict_types=1);
 
-namespace Kaula\TelegramBundle\DBAL\Type;
+namespace Kettari\TelegramBundle\DBAL\Type;
 
 
 class NowDateHelper
@@ -15,17 +10,18 @@ class NowDateHelper
   static private $utc = null;
 
   /**
-   * @return \DateTimeZone
+   * @return \DateTime
    */
-  public static function getUtc()
+  public static function getNow(): \DateTime
   {
-    return self::$utc ? self::$utc : self::$utc = new \DateTimeZone('UTC');
+    return new \DateTime('now', self::getUtc());
   }
 
   /**
-   * @return \DateTime
+   * @return \DateTimeZone
    */
-  public static function getNow() {
-    return new \DateTime('now', self::getUtc());
+  public static function getUtc(): \DateTimeZone
+  {
+    return self::$utc ? self::$utc : self::$utc = new \DateTimeZone('UTC');
   }
 }

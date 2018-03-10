@@ -1,43 +1,43 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: ant
- * Date: 15.03.2017
- * Time: 18:14
- */
+declare(strict_types=1);
 
-namespace Kaula\TelegramBundle\Command;
-
-
+namespace Kettari\TelegramBundle\Command;
 
 
 use unreal4u\TelegramAPI\Telegram\Methods\DeleteWebhook;
-
 use unreal4u\TelegramAPI\TgLog;
 
-class WebhookDeleteCommand extends AbstractCommand {
+class WebhookDeleteCommand extends AbstractCommand
+{
 
   /**
    * Configures the current command.
    */
-  protected function configure() {
+  protected function configure()
+  {
     $this->setName('telegram:webhook:delete')
       ->setDescription('Deletes Telegram webhook')
-      ->setHelp('Use this method to remove webhook integration if you decide to switch back to getUpdates.');
+      ->setHelp(
+        'Use this method to remove webhook integration if you decide to switch back to getUpdates.'
+      );
   }
 
   /**
    * Execute actual code of the command.
    */
-  protected function executeCommand() {
-    $delete_webhook = new DeleteWebhook();
+  protected function executeCommand()
+  {
+    $deleteWebhook = new DeleteWebhook();
 
     $this->io->writeln('Deleting telegram webhook');
 
     // Create API object and execute method
-    $tgLog = new TgLog($this->config['api_token'], $this->getContainer()
-      ->get('logger'));
-    $tgLog->performApiRequest($delete_webhook);
+    $tgLog = new TgLog(
+      $this->config['api_token'],
+      $this->getContainer()
+        ->get('logger')
+    );
+    $tgLog->performApiRequest($deleteWebhook);
 
     $this->io->success('Webhook deleted');
   }

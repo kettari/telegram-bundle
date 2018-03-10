@@ -6,11 +6,11 @@
  * Time: 14:19
  */
 
-namespace Kaula\TelegramBundle\Telegram\Subscriber;
+namespace Kettari\TelegramBundle\Telegram\Subscriber;
 
 
-use Kaula\TelegramBundle\Telegram\Event\CommandReceivedEvent;
-use Kaula\TelegramBundle\Telegram\Event\TextReceivedEvent;
+use Kettari\TelegramBundle\Telegram\Event\CommandReceivedEvent;
+use Kettari\TelegramBundle\Telegram\Event\TextReceivedEvent;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use unreal4u\TelegramAPI\Telegram\Types\Update;

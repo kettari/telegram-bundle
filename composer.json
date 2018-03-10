@@ -1,7 +1,7 @@
 {
   "name": "kettari/telegram-bundle",
   "type": "symfony-bundle",
-  "description": "Kaula TelegramBundle",
+  "description": "Bundle to create Telegram bot on the Symfony platform.",
   "license": "MIT",
   "authors": [
     {
@@ -16,7 +16,7 @@
   },
   "autoload": {
     "psr-4": {
-      "Kaula\\TelegramBundle\\": ""
+      "Kettari\\TelegramBundle\\": ""
     }
   }
 }

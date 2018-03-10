@@ -1,12 +1,7 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: ant
- * Date: 16.03.2017
- * Time: 18:18
- */
+declare(strict_types=1);
 
-namespace Kaula\TelegramBundle\Telegram\Command;
+namespace Kettari\TelegramBundle\Telegram\Command;
 
 
 use Doctrine\Bundle\DoctrineBundle\Registry;
@@ -16,7 +11,7 @@ class ListRolesCommand extends AbstractCommand
 
   static public $name = 'listroles';
   static public $description = 'Показать список ролей и разрешений';
-  static public $required_permissions = ['execute command listroles'];
+  static public $requiredPermissions = ['execute command listroles'];
 
   /**
    * Executes command.
@@ -61,13 +56,13 @@ class ListRolesCommand extends AbstractCommand
   private function getRolesAndPermissions(Registry $d)
   {
     $result = [];
-    $roles = $d->getRepository('KaulaTelegramBundle:Role')
+    $roles = $d->getRepository('KettariTelegramBundle:Role')
       ->findAll();
-    /** @var \Kaula\TelegramBundle\Entity\Role $role_item */
+    /** @var \Kettari\TelegramBundle\Entity\Role $role_item */
     foreach ($roles as $role_item) {
       $permissions = $role_item->getPermissions();
       $perms = [];
-      /** @var \Kaula\TelegramBundle\Entity\Permission $permission_item */
+      /** @var \Kettari\TelegramBundle\Entity\Permission $permission_item */
       foreach ($permissions as $permission_item) {
         $perms[] = $permission_item->getName();
       }

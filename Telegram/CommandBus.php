@@ -6,14 +6,14 @@
  * Time: 18:11
  */
 
-namespace Kaula\TelegramBundle\Telegram;
+namespace Kettari\TelegramBundle\Telegram;
 
 
-use Kaula\TelegramBundle\Entity\Permission;
-use Kaula\TelegramBundle\Entity\Role;
-use Kaula\TelegramBundle\Exception\InvalidCommand;
-use Kaula\TelegramBundle\Telegram\Command\AbstractCommand;
-use Kaula\TelegramBundle\Telegram\Event\CommandUnauthorizedEvent;
+use Kettari\TelegramBundle\Entity\Permission;
+use Kettari\TelegramBundle\Entity\Role;
+use Kettari\TelegramBundle\Exception\InvalidCommand;
+use Kettari\TelegramBundle\Telegram\Command\AbstractCommand;
+use Kettari\TelegramBundle\Telegram\Event\CommandUnauthorizedEvent;
 use Psr\Log\LoggerInterface;
 use unreal4u\TelegramAPI\Telegram\Types\Update;
 use unreal4u\TelegramAPI\Telegram\Types\User as TelegramUser;
@@ -39,13 +39,13 @@ class CommandBus
    *
    * @var array
    */
-  protected $commands_classes = [];
+  protected $commandsClasses = [];
 
   /**
    * CommandBus constructor.
    *
-   * @param \Kaula\TelegramBundle\Telegram\Bot $bot
-   * @param \Kaula\TelegramBundle\Telegram\Hooker $hooker
+   * @param \Kettari\TelegramBundle\Telegram\Bot $bot
+   * @param \Kettari\TelegramBundle\Telegram\Hooker $hooker
    */
   public function __construct(Bot $bot, Hooker $hooker = null)
   {
@@ -60,23 +60,23 @@ class CommandBus
   /**
    * Registers command.
    *
-   * @param string $command_class
-   * @return \Kaula\TelegramBundle\Telegram\CommandBus
+   * @param string $commandClass
+   * @return \Kettari\TelegramBundle\Telegram\CommandBus
    */
-  public function registerCommand($command_class)
+  public function registerCommand($commandClass)
   {
-    if (class_exists($command_class)) {
-      if (is_subclass_of($command_class, AbstractCommand::class)) {
-        $this->commands_classes[$command_class] = true;
+    if (class_exists($commandClass)) {
+      if (is_subclass_of($commandClass, AbstractCommand::class)) {
+        $this->commandsClasses[$commandClass] = true;
       } else {
         throw new InvalidCommand(
-          'Unable to register command: '.$command_class.
+          'Unable to register command: '.$commandClass.
           ' The command should be a subclass of '.AbstractCommand::class
         );
       }
     } else {
       throw new InvalidCommand(
-        'Unable to register command: '.$command_class.' Class is not found'
+        'Unable to register command: '.$commandClass.' Class is not found'
       );
     }
 
@@ -86,14 +86,14 @@ class CommandBus
   /**
    * Return TRUE if command is registered.
    *
-   * @param string $command_name
+   * @param string $commandName
    * @return bool
    */
-  public function isCommandRegistered($command_name)
+  public function isCommandRegistered($commandName)
   {
-    foreach ($this->commands_classes as $command_class => $placeholder) {
-      /** @var AbstractCommand $command_class */
-      if ($command_class::getName() == $command_name) {
+    foreach ($this->commandsClasses as $commandClass => $placeholder) {
+      /** @var AbstractCommand $commandClass */
+      if ($commandClass::getName() == $commandName) {
         return true;
       }
     }
@@ -117,15 +117,15 @@ class CommandBus
       ->getContainer()
       ->get('logger');
 
-    foreach ($this->commands_classes as $command_class => $placeholder) {
-      /** @var AbstractCommand $command_class */
-      if ($command_class::getName() == $name) {
+    foreach ($this->commandsClasses as $commandClass => $placeholder) {
+      /** @var AbstractCommand $commandClass */
+      if ($commandClass::getName() == $name) {
 
         // Check permissions for current user
-        if (!$this->isAuthorized($update->message->from, $command_class)) {
+        if (!$this->isAuthorized($update->message->from, $commandClass)) {
           $l->notice(
             'User is not authorized to execute /{command_name} command with the class "{class_name}"',
-            ['command_name' => $name, 'class_name' => $command_class]
+            ['command_name' => $name, 'class_name' => $commandClass]
           );
 
           // Dispatch command is unauthorized
@@ -137,11 +137,11 @@ class CommandBus
         // User is authorized, OK
         $l->info(
           'Executing /{command_name} command with the class "{class_name}"',
-          ['command_name' => $name, 'class_name' => $command_class]
+          ['command_name' => $name, 'class_name' => $commandClass]
         );
 
         /** @var AbstractCommand $command */
-        $command = new $command_class($this, $update);
+        $command = new $commandClass($this, $update);
         $command->initialize($parameter)
           ->execute();
 
@@ -155,7 +155,7 @@ class CommandBus
   /**
    * Returns bot object.
    *
-   * @return \Kaula\TelegramBundle\Telegram\Bot
+   * @return \Kettari\TelegramBundle\Telegram\Bot
    */
   public function getBot()
   {
@@ -166,10 +166,10 @@ class CommandBus
    * Return TRUE if telegram user is authorized to execute specified command.
    *
    * @param \unreal4u\TelegramAPI\Telegram\Types\User $tu
-   * @param $command_class
+   * @param $commandClass
    * @return bool
    */
-  public function isAuthorized(TelegramUser $tu, $command_class)
+  public function isAuthorized(TelegramUser $tu, $commandClass)
   {
     if (is_null($tu)) {
       return false;
@@ -184,45 +184,45 @@ class CommandBus
       ->get('doctrine');
 
     // Find user object
-    $user = $d->getRepository('KaulaTelegramBundle:User')
+    $user = $d->getRepository('KettariTelegramBundle:User')
       ->findOneBy(['telegram_id' => $tu->id]);
     if (is_null($user)) {
       return false;
     }
     // Fetch roles and iterate permissions
     $roles = $user->getRoles();
-    $user_permissions = [];
-    /** @var Role $role_item */
-    foreach ($roles as $role_item) {
-      $permissions_collection = $role_item->getPermissions();
-      $permissions_array = [];
-      /** @var Permission $permission_item */
-      foreach ($permissions_collection as $permission_item) {
-        $permissions_array[] = $permission_item->getName();
+    $userPermissions = [];
+    /** @var Role $roleItem */
+    foreach ($roles as $roleItem) {
+      $permissionsCollection = $roleItem->getPermissions();
+      $permissionsArray = [];
+      /** @var Permission $permissionItem */
+      foreach ($permissionsCollection as $permissionItem) {
+        $permissionsArray[] = $permissionItem->getName();
       }
-      $user_permissions = array_merge($user_permissions, $permissions_array);
+      $userPermissions = array_merge($userPermissions, $permissionsArray);
     }
 
-    /** @var AbstractCommand $command_class */
-    $required_permissions = $command_class::getRequiredPermissions();
+    /** @var AbstractCommand $commandClass */
+    $requiredPermissions = $commandClass::getRequiredPermissions();
 
     // First check required permissions against existing permissions
     // and then check all required permissions are present
-    $applicable_permissions = array_intersect(
-      $required_permissions,
-      $user_permissions
+    $applicablePermissions = array_intersect(
+      $requiredPermissions,
+      $userPermissions
     );
-    $result = !array_diff($applicable_permissions, $required_permissions) &&
-      !array_diff($required_permissions, $applicable_permissions);
+    $result = !array_diff($applicablePermissions, $requiredPermissions) &&
+      !array_diff($requiredPermissions, $applicablePermissions);
 
     // Write to the log permissions check result
     $l->info(
       'Authorization check: {auth_check}',
       [
         'auth_check'             => $result ? 'OK' : 'not authorized',
-        'required_permissions'   => $required_permissions,
-        'user_permissions'       => $user_permissions,
-        'applicable_permissions' => $applicable_permissions,
+        'required_permissions'   => $requiredPermissions,
+        'user_permissions'       => $userPermissions,
+        'applicable_permissions' => $applicablePermissions,
       ]
     );
 
@@ -233,24 +233,24 @@ class CommandBus
    * Dispatches command is unauthorized.
    *
    * @param Update $update
-   * @param string $command_name
+   * @param string $commandName
    * @param string $parameter
    */
   private function dispatchUnauthorizedCommand(
     Update $update,
-    $command_name,
+    $commandName,
     $parameter
   ) {
     $dispatcher = $this->getBot()
       ->getEventDispatcher();
 
     // Dispatch command event
-    $command_unauthorized_event = new CommandUnauthorizedEvent(
-      $update, $command_name, $parameter
+    $commandUnauthorizedEvent = new CommandUnauthorizedEvent(
+      $update, $commandName, $parameter
     );
     $dispatcher->dispatch(
       CommandUnauthorizedEvent::NAME,
-      $command_unauthorized_event
+      $commandUnauthorizedEvent
     );
   }
 
@@ -261,7 +261,7 @@ class CommandBus
    */
   public function getCommands()
   {
-    return $this->commands_classes;
+    return $this->commandsClasses;
   }
 
   /**

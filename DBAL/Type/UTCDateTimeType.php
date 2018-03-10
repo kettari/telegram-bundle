@@ -1,6 +1,7 @@
 <?php
+declare(strict_types=1);
 
-namespace Kaula\TelegramBundle\DBAL\Type;
+namespace Kettari\TelegramBundle\DBAL\Type;
 
 use Doctrine\DBAL\Platforms\AbstractPlatform;
 use Doctrine\DBAL\Types\ConversionException;

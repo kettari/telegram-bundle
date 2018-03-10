@@ -6,7 +6,7 @@
  * Time: 13:15
  */
 
-namespace Kaula\TelegramBundle\Telegram\Event;
+namespace Kettari\TelegramBundle\Telegram\Event;
 
 
 class RequestSentEvent extends AbstractMethodEvent

@@ -1,6 +1,6 @@
 <?php
 
-namespace Kaula\TelegramBundle\Repository;
+namespace Kettari\TelegramBundle\Repository;
 
 
 use Doctrine\ORM\EntityRepository;
@@ -22,6 +22,6 @@ class ChatRepository extends EntityRepository
    */
   public function findOneByTelegramId($telegramId)
   {
-    return $this->findOneBy(['telegram_id' => $telegramId], ['title' => 'ASC']);
+    return $this->findOneBy(['telegramId' => $telegramId], ['title' => 'ASC']);
   }
 }

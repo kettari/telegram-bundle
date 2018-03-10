@@ -6,7 +6,7 @@
  * Time: 18:45
  */
 
-namespace Kaula\TelegramBundle\Exception;
+namespace Kettari\TelegramBundle\Exception;
 
 
 class TelegramBundleException extends \RuntimeException {

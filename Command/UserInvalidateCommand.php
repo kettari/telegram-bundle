@@ -1,12 +1,7 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: ant
- * Date: 15.03.2017
- * Time: 18:14
- */
+declare(strict_types=1);
 
-namespace Kaula\TelegramBundle\Command;
+namespace Kettari\TelegramBundle\Command;
 
 use GuzzleHttp\Client;
 use Tallanto\ClientApiBundle\Api\Method\TallantoGetUsersMethod;
@@ -112,9 +107,9 @@ class UserInvalidateCommand extends AbstractCommand
 
     /** @var \Tallanto\Api\Entity\User $userItem */
     foreach ($users as $userItem) {
-      /** @var \Kaula\TelegramBundle\Entity\User $dbUser */
+      /** @var \Kettari\TelegramBundle\Entity\User $dbUser */
       if (is_null(
-        $dbUser = $d->getRepository('KaulaTelegramBundle:User')
+        $dbUser = $d->getRepository('KettariTelegramBundle:User')
           ->findOneBy(
             [
               'tallanto_user_id' => $userItem->getId(),

@@ -1,12 +1,7 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: ant
- * Date: 17.03.2017
- * Time: 20:02
- */
+declare(strict_types=1);
 
-namespace Kaula\TelegramBundle\Command;
+namespace Kettari\TelegramBundle\Command;
 
 
 use Exception;
@@ -32,7 +27,7 @@ abstract class AbstractCommand extends ContainerAwareCommand
   /**
    * @var int
    */
-  protected $exit_code;
+  protected $exitCode;
 
   /**
    * @var InputInterface
@@ -90,7 +85,7 @@ abstract class AbstractCommand extends ContainerAwareCommand
     $this->input = $input;
     $this->output = $output;
     $this->io = new SymfonyStyle($input, $output);
-    $this->exit_code = self::RESULT_OK;
+    $this->exitCode = static::RESULT_OK;
     // Get configuration
     $this->config = $this->getContainer()
       ->getParameter('kettari_telegram');
@@ -119,13 +114,13 @@ abstract class AbstractCommand extends ContainerAwareCommand
         ['command_name' => $this->getName()]
       );
       // Acquire lock. We can not move further without lock to avoid race conditions
-      if (!$this->lock(self::LOCK_TELEGRAM_OPERATIONS, $this->isBlocking())) {
+      if (!$this->lock(static::LOCK_TELEGRAM_OPERATIONS, $this->isBlocking())) {
         $this->io->warning(
           'Unable to acquire lock. It seems another TelegramBundle command is currently running.'
         );
-        $this->exit_code = self::RESULT_ALREADY_RUNNING;
+        $this->exitCode = static::RESULT_ALREADY_RUNNING;
 
-        return $this->exit_code;
+        return $this->exitCode;
       }
       if ($this->output->isVerbose()) {
         $this->io->writeln('Acquired lock');
@@ -155,7 +150,7 @@ abstract class AbstractCommand extends ContainerAwareCommand
       // Log exception
       $this->logger->error($message, ['exception' => $e]);
 
-      $this->exit_code = self::RESULT_EXCEPTION;
+      $this->exitCode = static::RESULT_EXCEPTION;
     } finally {
       // Stop timer and write information and log
       $event = $this->stopwatch->stop('execute');
@@ -184,7 +179,7 @@ abstract class AbstractCommand extends ContainerAwareCommand
       $this->exitCodeLog();
     }
 
-    return $this->exit_code;
+    return $this->exitCode;
   }
 
   /**
@@ -222,7 +217,7 @@ abstract class AbstractCommand extends ContainerAwareCommand
         '{command_name} finished with exit code {exit_code}',
         [
           'command_name' => $this->getName(),
-          'exit_code'    => $this->exit_code,
+          'exit_code'    => $this->exitCode,
         ]
       );
   }

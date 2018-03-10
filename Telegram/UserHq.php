@@ -6,12 +6,12 @@
  * Time: 23:35
  */
 
-namespace Kaula\TelegramBundle\Telegram;
+namespace Kettari\TelegramBundle\Telegram;
 
 
 use Doctrine\Common\Collections\ArrayCollection;
-use Kaula\TelegramBundle\Entity\Role;
-use Kaula\TelegramBundle\Entity\User;
+use Kettari\TelegramBundle\Entity\Role;
+use Kettari\TelegramBundle\Entity\User;
 use unreal4u\TelegramAPI\Telegram\Types\Update;
 use unreal4u\TelegramAPI\Telegram\Types\User as TelegramUser;
 
@@ -48,35 +48,35 @@ class UserHq
   {
     if (!is_null($userEntity)) {
       // User set
-      $user_name = trim(
+      $userName = trim(
         $userEntity->getFirstName().' '.$userEntity->getLastName()
       );
-      $external_name = trim(
+      $externalName = trim(
         $userEntity->getExternalFirstName().' '.
         $userEntity->getExternalLastName()
       );
     } else {
       // User not set
-      $user_name = 'не указан';
-      $external_name = '';
+      $userName = 'не указан';
+      $externalName = '';
     }
 
-    if (!empty($external_name)) {
+    if (!empty($externalName)) {
 
       // Return both native and external names
       if ($redundantFormat) {
-        $user_name = sprintf(
+        $userName = sprintf(
           '%s (%s)',
-          $user_name,
-          $external_name
+          $userName,
+          $externalName
         );
       } else {
-        $user_name = $external_name;
+        $userName = $externalName;
       }
 
     }
 
-    return $user_name;
+    return $userName;
   }
 
   /**
@@ -142,7 +142,7 @@ class UserHq
     if (is_null(
       $this->currentUser = $this->getBot()
         ->getDoctrine()
-        ->getRepository('KaulaTelegramBundle:User')
+        ->getRepository('KettariTelegramBundle:User')
         ->findByTelegramId($telegramUser->id)
     )) {
       // Get user entity by telegram user
@@ -169,7 +169,7 @@ class UserHq
    * Creates user in the database. Assigns anonymous roles.
    *
    * @param \unreal4u\TelegramAPI\Telegram\Types\User $tu
-   * @return \Kaula\TelegramBundle\Entity\User
+   * @return \Kettari\TelegramBundle\Entity\User
    */
   public function createAnonymousUser(TelegramUser $tu)
   {
@@ -213,7 +213,7 @@ class UserHq
   {
     $roles = $this->getBot()
       ->getDoctrine()
-      ->getRepository('KaulaTelegramBundle:Role')
+      ->getRepository('KettariTelegramBundle:Role')
       ->findBy(['anonymous' => true]);
     if (0 == count($roles)) {
       throw new \LogicException('Roles for guests not found');
@@ -278,10 +278,10 @@ class UserHq
 
     // Load roles and each role's permissions
     $roles = $user->getRoles();
-    /** @var \Kaula\TelegramBundle\Entity\Role $roleItem */
+    /** @var \Kettari\TelegramBundle\Entity\Role $roleItem */
     foreach ($roles as $roleItem) {
       $rolePerms = $roleItem->getPermissions();
-      /** @var \Kaula\TelegramBundle\Entity\Permission $rolePermItem */
+      /** @var \Kettari\TelegramBundle\Entity\Permission $rolePermItem */
       foreach ($rolePerms as $rolePermItem) {
         if (!$permissions->contains($rolePermItem)) {
           $permissions->add($rolePermItem);
@@ -310,14 +310,14 @@ class UserHq
    * Returns database User entity by telegram User object.
    *
    * @param TelegramUser $telegramUser
-   * @return \Kaula\TelegramBundle\Entity\User|null
+   * @return \Kettari\TelegramBundle\Entity\User|null
    */
   public function getEntityByTelegram($telegramUser)
   {
     /** @var User $user */
     return $this->getBot()
       ->getDoctrine()
-      ->getRepository('KaulaTelegramBundle:User')
+      ->getRepository('KettariTelegramBundle:User')
       ->findByTelegramId($telegramUser->id);
   }
 

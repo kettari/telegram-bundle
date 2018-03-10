@@ -6,17 +6,17 @@
  * Time: 14:19
  */
 
-namespace Kaula\TelegramBundle\Telegram\Subscriber;
+namespace Kettari\TelegramBundle\Telegram\Subscriber;
 
 
-use Kaula\TelegramBundle\Entity\Chat;
-use Kaula\TelegramBundle\Entity\ChatMember;
-use Kaula\TelegramBundle\Telegram\Event\JoinChatMemberBotEvent;
-use Kaula\TelegramBundle\Telegram\Event\JoinChatMemberEvent;
-use Kaula\TelegramBundle\Telegram\Event\JoinChatMembersManyEvent;
-use Kaula\TelegramBundle\Telegram\Event\LeftChatMemberBotEvent;
-use Kaula\TelegramBundle\Telegram\Event\LeftChatMemberEvent;
-use Kaula\TelegramBundle\Telegram\Event\TextReceivedEvent;
+use Kettari\TelegramBundle\Entity\Chat;
+use Kettari\TelegramBundle\Entity\ChatMember;
+use Kettari\TelegramBundle\Telegram\Event\JoinChatMemberBotEvent;
+use Kettari\TelegramBundle\Telegram\Event\JoinChatMemberEvent;
+use Kettari\TelegramBundle\Telegram\Event\JoinChatMembersManyEvent;
+use Kettari\TelegramBundle\Telegram\Event\LeftChatMemberBotEvent;
+use Kettari\TelegramBundle\Telegram\Event\LeftChatMemberEvent;
+use Kettari\TelegramBundle\Telegram\Event\TextReceivedEvent;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use unreal4u\TelegramAPI\Telegram\Types\Chat as TelegramChat;
 use unreal4u\TelegramAPI\Telegram\Types\Update;
@@ -87,13 +87,13 @@ class ChatMemberSubscriber extends AbstractBotSubscriber implements EventSubscri
    * Returns the Chat object.
    *
    * @param \unreal4u\TelegramAPI\Telegram\Types\Chat $tc
-   * @return \Kaula\TelegramBundle\Entity\Chat
+   * @return \Kettari\TelegramBundle\Entity\Chat
    */
   private function prepareChat(TelegramChat $tc)
   {
     // Find chat object. If not found, create new
     $chat = $this->getDoctrine()
-      ->getRepository('KaulaTelegramBundle:Chat')
+      ->getRepository('KettariTelegramBundle:Chat')
       ->findOneBy(['telegram_id' => $tc->id]);
     if (!$chat) {
       $chat = new Chat();
@@ -147,7 +147,7 @@ class ChatMemberSubscriber extends AbstractBotSubscriber implements EventSubscri
     // Find user object. If not found, create new
     if (is_null(
       $userEntity = $this->getDoctrine()
-        ->getRepository('KaulaTelegramBundle:User')
+        ->getRepository('KettariTelegramBundle:User')
         ->findByTelegramId($tu->id)
     )) {
       $userEntity = $this->getBot()
@@ -158,7 +158,7 @@ class ChatMemberSubscriber extends AbstractBotSubscriber implements EventSubscri
     // Find chat member object. If not found, create new
     $chatMember = $this->getDoctrine()
       ->getRepository(
-        'KaulaTelegramBundle:ChatMember'
+        'KettariTelegramBundle:ChatMember'
       )
       ->findOneBy(
         [
@@ -196,8 +196,8 @@ class ChatMemberSubscriber extends AbstractBotSubscriber implements EventSubscri
   /**
    * @param Update $update
    * @param \unreal4u\TelegramAPI\Telegram\Types\User $joinedUser
-   * @param \Kaula\TelegramBundle\Entity\Chat
-   * @param \Kaula\TelegramBundle\Entity\User
+   * @param \Kettari\TelegramBundle\Entity\Chat
+   * @param \Kettari\TelegramBundle\Entity\User
    */
   private function dispatchJoinedBotEvent(
     $update,
@@ -252,7 +252,7 @@ class ChatMemberSubscriber extends AbstractBotSubscriber implements EventSubscri
 
     // Find user object. If not found, create new
     $userEntity = $this->getDoctrine()
-      ->getRepository('KaulaTelegramBundle:User')
+      ->getRepository('KettariTelegramBundle:User')
       ->findByTelegramId($tu->id);
     if (!$userEntity) {
       $userEntity = $this->getBot()
@@ -263,7 +263,7 @@ class ChatMemberSubscriber extends AbstractBotSubscriber implements EventSubscri
     // Find chat member object. If not found, create new
     $chatMember = $this->getDoctrine()
       ->getRepository(
-        'KaulaTelegramBundle:ChatMember'
+        'KettariTelegramBundle:ChatMember'
       )
       ->findOneBy(
         [
@@ -300,8 +300,8 @@ class ChatMemberSubscriber extends AbstractBotSubscriber implements EventSubscri
   /**
    * @param Update $update
    * @param \unreal4u\TelegramAPI\Telegram\Types\User $leftUser
-   * @param \Kaula\TelegramBundle\Entity\Chat
-   * @param \Kaula\TelegramBundle\Entity\User
+   * @param \Kettari\TelegramBundle\Entity\Chat
+   * @param \Kettari\TelegramBundle\Entity\User
    */
   private function dispatchLeftBotEvent(
     $update,
@@ -351,7 +351,7 @@ class ChatMemberSubscriber extends AbstractBotSubscriber implements EventSubscri
 
     // Find user object. If not found, create new
     $userEntity = $this->getDoctrine()
-      ->getRepository('KaulaTelegramBundle:User')
+      ->getRepository('KettariTelegramBundle:User')
       ->findByTelegramId($tu->id);
     if (!$userEntity) {
       $userEntity = $this->getBot()
@@ -362,7 +362,7 @@ class ChatMemberSubscriber extends AbstractBotSubscriber implements EventSubscri
     // Find chat member object. If not found, create new
     $chatMember = $this->getDoctrine()
       ->getRepository(
-        'KaulaTelegramBundle:ChatMember'
+        'KettariTelegramBundle:ChatMember'
       )
       ->findOneBy(
         [

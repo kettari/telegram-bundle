@@ -6,7 +6,7 @@
  * Time: 19:03
  */
 
-namespace Kaula\TelegramBundle\Telegram\Event;
+namespace Kettari\TelegramBundle\Telegram\Event;
 
 
 use RuntimeException;
@@ -22,7 +22,7 @@ class JoinChatMemberEvent extends AbstractMessageEvent
   private $joined_user;
 
   /**
-   * @var \Kaula\TelegramBundle\Entity\Chat
+   * @var \Kettari\TelegramBundle\Entity\Chat
    */
   private $chat_entity;
 
@@ -31,7 +31,7 @@ class JoinChatMemberEvent extends AbstractMessageEvent
    *
    * @param Update $update
    * @param \unreal4u\TelegramAPI\Telegram\Types\User $joined_user
-   * @param \Kaula\TelegramBundle\Entity\Chat $chat_entity
+   * @param \Kettari\TelegramBundle\Entity\Chat $chat_entity
    */
   public function __construct(Update $update, $joined_user, $chat_entity)
   {
@@ -56,7 +56,7 @@ class JoinChatMemberEvent extends AbstractMessageEvent
   }
 
   /**
-   * @return \Kaula\TelegramBundle\Entity\Chat
+   * @return \Kettari\TelegramBundle\Entity\Chat
    */
   public function getChatEntity()
   {

@@ -1,12 +1,7 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: ant
- * Date: 16.03.2017
- * Time: 18:18
- */
+declare(strict_types=1);
 
-namespace Kaula\TelegramBundle\Telegram\Command;
+namespace Kettari\TelegramBundle\Telegram\Command;
 
 
 use unreal4u\TelegramAPI\Telegram\Types\KeyboardButton;
@@ -19,7 +14,7 @@ class PushCommand extends AbstractCommand
   const BTN_CANCEL = 'Отмена рассылки';
   static public $name = 'push';
   static public $description = 'Отправить широковещательное уведомление';
-  static public $required_permissions = ['execute command push'];
+  static public $requiredPermissions = ['execute command push'];
 
   /**
    * Executes command.
@@ -101,9 +96,9 @@ class PushCommand extends AbstractCommand
       ->getBot()
       ->getContainer()
       ->get('doctrine');
-    $notifications = $d->getRepository('KaulaTelegramBundle:Notification')
+    $notifications = $d->getRepository('KettariTelegramBundle:Notification')
       ->findBy([], ['order' => 'ASC']);
-    /** @var \Kaula\TelegramBundle\Entity\Notification $notification_item */
+    /** @var \Kettari\TelegramBundle\Entity\Notification $notification_item */
     foreach ($notifications as $notification_item) {
       $notification_btn = new KeyboardButton();
       $notification_btn->text = $notification_item->getTitle();
@@ -158,10 +153,10 @@ class PushCommand extends AbstractCommand
       ->getBot()
       ->getContainer()
       ->get('doctrine');
-    $notifications = $d->getRepository('KaulaTelegramBundle:Notification')
+    $notifications = $d->getRepository('KettariTelegramBundle:Notification')
       ->findAll();
     $channel_selected = null;
-    /** @var \Kaula\TelegramBundle\Entity\Notification $notification_item */
+    /** @var \Kettari\TelegramBundle\Entity\Notification $notification_item */
     foreach ($notifications as $notification_item) {
       if ($channel_name == $notification_item->getTitle()) {
         $channel_selected = $notification_item;

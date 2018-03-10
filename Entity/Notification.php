@@ -1,12 +1,7 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: ant
- * Date: 18.03.2017
- * Time: 0:11
- */
+declare(strict_types=1);
 
-namespace Kaula\TelegramBundle\Entity;
+namespace Kettari\TelegramBundle\Entity;
 
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
@@ -33,7 +28,7 @@ class Notification
   /**
    * @ORM\Column(type="integer",nullable=true)
    */
-  private $sort_order;
+  private $sortOrder;
 
   /**
    * @ORM\Column(type="string",length=50,unique=true)
@@ -50,10 +45,10 @@ class Notification
   /**
    * @ORM\Column(type="boolean")
    */
-  private $user_default = false;
+  private $userDefault = false;
 
   /**
-   * @ORM\ManyToOne(targetEntity="Kaula\TelegramBundle\Entity\Permission")
+   * @ORM\ManyToOne(targetEntity="Kettari\TelegramBundle\Entity\Permission")
    */
   private $permission;
 
@@ -61,7 +56,7 @@ class Notification
    * Many Notifications have Many Users.
    *
    * @var Collection
-   * @ORM\ManyToMany(targetEntity="Kaula\TelegramBundle\Entity\User",mappedBy="notifications")
+   * @ORM\ManyToMany(targetEntity="Kettari\TelegramBundle\Entity\User",mappedBy="notifications")
    */
   private $users;
 
@@ -86,13 +81,13 @@ class Notification
   /**
    * Set order
    *
-   * @param integer $sort_order
+   * @param integer $sortOrder
    *
    * @return Notification
    */
-  public function setSortOrder($sort_order)
+  public function setSortOrder($sortOrder)
   {
-    $this->sort_order = $sort_order;
+    $this->sortOrder = $sortOrder;
 
     return $this;
   }
@@ -104,7 +99,7 @@ class Notification
    */
   public function getSortOrder()
   {
-    return $this->sort_order;
+    return $this->sortOrder;
   }
 
   /**
@@ -158,13 +153,13 @@ class Notification
   /**
    * Set default
    *
-   * @param boolean $user_default
+   * @param boolean $userDefault
    *
    * @return Notification
    */
-  public function setUserDefault($user_default)
+  public function setUserDefault($userDefault)
   {
-    $this->user_default = $user_default;
+    $this->userDefault = $userDefault;
 
     return $this;
   }
@@ -176,13 +171,13 @@ class Notification
    */
   public function getUserDefault()
   {
-    return $this->user_default;
+    return $this->userDefault;
   }
 
   /**
    * Add user
    *
-   * @param \Kaula\TelegramBundle\Entity\User $user
+   * @param \Kettari\TelegramBundle\Entity\User $user
    *
    * @return Notification
    */
@@ -196,7 +191,7 @@ class Notification
   /**
    * Remove user
    *
-   * @param \Kaula\TelegramBundle\Entity\User $user
+   * @param \Kettari\TelegramBundle\Entity\User $user
    */
   public function removeUser(User $user)
   {
@@ -216,7 +211,7 @@ class Notification
   /**
    * Set permission
    *
-   * @param \Kaula\TelegramBundle\Entity\Permission $permission
+   * @param \Kettari\TelegramBundle\Entity\Permission $permission
    *
    * @return Notification
    */
@@ -231,7 +226,7 @@ class Notification
   /**
    * Get permission
    *
-   * @return \Kaula\TelegramBundle\Entity\Permission
+   * @return \Kettari\TelegramBundle\Entity\Permission
    */
   public function getPermission()
   {

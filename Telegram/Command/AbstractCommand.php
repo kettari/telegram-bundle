@@ -1,15 +1,10 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: ant
- * Date: 16.03.2017
- * Time: 18:15
- */
+declare(strict_types=1);
 
-namespace Kaula\TelegramBundle\Telegram\Command;
+namespace Kettari\TelegramBundle\Telegram\Command;
 
 
-use Kaula\TelegramBundle\Telegram\CommandBus;
+use Kettari\TelegramBundle\Telegram\CommandBus;
 use unreal4u\TelegramAPI\Abstracts\KeyboardMethods;
 use unreal4u\TelegramAPI\Telegram\Types\Message;
 use unreal4u\TelegramAPI\Telegram\Types\Update;
@@ -17,9 +12,24 @@ use unreal4u\TelegramAPI\Telegram\Types\Update;
 abstract class AbstractCommand
 {
 
+  /**
+   * Send message modes
+   */
   const PARSE_MODE_PLAIN = '';
   const PARSE_MODE_HTML = 'HTML';
   const PARSE_MODE_MARKDOWN = 'Markdown';
+
+  /**
+   * Actions
+   */
+  const ACTION_TYPING = 'typing';
+  const ACTION_UPLOAD_PHOTO = 'upload_photo';
+  const ACTION_RECORD_VIDEO = 'record_video';
+  const ACTION_UPLOAD_VIDEO = 'upload_video';
+  const ACTION_RECORD_AUDIO = 'record_audio';
+  const ACTION_UPLOAD_AUDIO = 'upload_audio';
+  const ACTION_UPLOAD_DOCUMENT = 'upload_document';
+  const ACTION_FIND_LOCATION = 'find_location';
 
   /**
    * Command name.
@@ -40,7 +50,7 @@ abstract class AbstractCommand
    *
    * @var array
    */
-  static public $supported_patterns = [];
+  static public $supportedPatterns = [];
 
   /**
    * If this command is showed in /help?
@@ -54,14 +64,14 @@ abstract class AbstractCommand
    *
    * @var array
    */
-  static public $required_permissions = [];
+  static public $requiredPermissions = [];
 
   /**
    * Notifications declared in this command.
    *
    * @var array
    */
-  static public $declared_notifications = [];
+  static public $declaredNotifications = [];
 
   /**
    * @var CommandBus
@@ -81,7 +91,7 @@ abstract class AbstractCommand
   /**
    * AbstractCommand constructor.
    *
-   * @param \Kaula\TelegramBundle\Telegram\CommandBus $bus
+   * @param \Kettari\TelegramBundle\Telegram\CommandBus $bus
    * @param \unreal4u\TelegramAPI\Telegram\Types\Update $update
    */
   public function __construct(CommandBus $bus, Update $update)
@@ -117,7 +127,7 @@ abstract class AbstractCommand
    */
   static public function getSupportedPatterns(): array
   {
-    return static::$supported_patterns;
+    return static::$supportedPatterns;
   }
 
   /**
@@ -137,7 +147,7 @@ abstract class AbstractCommand
    */
   static public function getRequiredPermissions(): array
   {
-    return static::$required_permissions;
+    return static::$requiredPermissions;
   }
 
   /**
@@ -147,16 +157,16 @@ abstract class AbstractCommand
    */
   static public function getDeclaredNotifications(): array
   {
-    return static::$declared_notifications;
+    return static::$declaredNotifications;
   }
 
   /**
    * Initialize command.
    *
    * @param string $parameter
-   * @return \Kaula\TelegramBundle\Telegram\Command\AbstractCommand
+   * @return \Kettari\TelegramBundle\Telegram\Command\AbstractCommand
    */
-  public function initialize($parameter = null)
+  public function initialize($parameter)
   {
     $this->parameter = $parameter;
 
@@ -276,7 +286,7 @@ abstract class AbstractCommand
   }
 
   /**
-   * @return \Kaula\TelegramBundle\Telegram\CommandBus
+   * @return \Kettari\TelegramBundle\Telegram\CommandBus
    */
   public function getBus(): CommandBus
   {
@@ -304,7 +314,7 @@ abstract class AbstractCommand
    *   record_audio or upload_audio for audio files, upload_document for
    *   general files, find_location for location data.
    */
-  public function replyWithAction($action = 'typing')
+  public function replyWithAction($action = self::ACTION_TYPING)
   {
     $update = $this->getUpdate();
     $this->getBus()

@@ -1,12 +1,7 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: ant
- * Date: 18.03.2017
- * Time: 2:40
- */
+declare(strict_types=1);
 
-namespace Kaula\TelegramBundle\Entity;
+namespace Kettari\TelegramBundle\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
 
@@ -32,12 +27,12 @@ class Hook
   private $created;
 
   /**
-   * @ORM\ManyToOne(targetEntity="Kaula\TelegramBundle\Entity\Chat")
+   * @ORM\ManyToOne(targetEntity="Kettari\TelegramBundle\Entity\Chat")
    */
   private $chat;
 
   /**
-   * @ORM\ManyToOne(targetEntity="Kaula\TelegramBundle\Entity\User")
+   * @ORM\ManyToOne(targetEntity="Kettari\TelegramBundle\Entity\User")
    */
   private $user;
 
@@ -45,13 +40,13 @@ class Hook
    * @ORM\Column(type="string",length=255)
    *
    */
-  private $class_name;
+  private $className;
 
   /**
    * @ORM\Column(type="string",length=255)
    *
    */
-  private $method_name;
+  private $methodName;
 
   /**
    * @ORM\Column(type="text",nullable=true)
@@ -103,7 +98,7 @@ class Hook
    */
   public function setClassName($className)
   {
-    $this->class_name = $className;
+    $this->className = $className;
 
     return $this;
   }
@@ -115,7 +110,7 @@ class Hook
    */
   public function getClassName()
   {
-    return $this->class_name;
+    return $this->className;
   }
 
   /**
@@ -127,7 +122,7 @@ class Hook
    */
   public function setMethodName($methodName)
   {
-    $this->method_name = $methodName;
+    $this->methodName = $methodName;
 
     return $this;
   }
@@ -139,7 +134,7 @@ class Hook
    */
   public function getMethodName()
   {
-    return $this->method_name;
+    return $this->methodName;
   }
 
   /**

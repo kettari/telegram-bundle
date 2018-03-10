@@ -6,11 +6,11 @@
  * Time: 14:46
  */
 
-namespace Kaula\TelegramBundle\Telegram\Subscriber;
+namespace Kettari\TelegramBundle\Telegram\Subscriber;
 
 
 use Doctrine\Bundle\DoctrineBundle\Registry;
-use Kaula\TelegramBundle\Telegram\Bot;
+use Kettari\TelegramBundle\Telegram\Bot;
 use unreal4u\TelegramAPI\Telegram\Types\Update;
 
 abstract class AbstractBotSubscriber
@@ -34,7 +34,7 @@ abstract class AbstractBotSubscriber
    * Tries to track down chat this update was sent from.
    *
    * @param Update $update
-   * @return \Kaula\TelegramBundle\Entity\Chat|null
+   * @return \Kettari\TelegramBundle\Entity\Chat|null
    */
   protected function resolveChat($update)
   {
@@ -53,7 +53,7 @@ abstract class AbstractBotSubscriber
     }
 
     return $this->getDoctrine()
-      ->getRepository('KaulaTelegramBundle:Chat')
+      ->getRepository('KettariTelegramBundle:Chat')
       ->findOneBy(['telegram_id' => $chat_id]);
   }
 
@@ -61,7 +61,7 @@ abstract class AbstractBotSubscriber
    * Tries to track down user this update was sent from.
    *
    * @param Update $update
-   * @return \Kaula\TelegramBundle\Entity\User|null
+   * @return \Kettari\TelegramBundle\Entity\User|null
    */
   protected function resolveUser($update) {
     // Resolve user object
@@ -84,7 +84,7 @@ abstract class AbstractBotSubscriber
       }
     }
     return $this->getDoctrine()
-      ->getRepository('KaulaTelegramBundle:User')
+      ->getRepository('KettariTelegramBundle:User')
       ->findOneBy(['telegram_id' => $user_id]);
   }
 

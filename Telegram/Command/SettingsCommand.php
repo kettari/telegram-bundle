@@ -1,12 +1,7 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: ant
- * Date: 16.03.2017
- * Time: 18:18
- */
+declare(strict_types=1);
 
-namespace Kaula\TelegramBundle\Telegram\Command;
+namespace Kettari\TelegramBundle\Telegram\Command;
 
 
 use unreal4u\TelegramAPI\Telegram\Types\Inline\Keyboard\Button;
@@ -20,7 +15,7 @@ class SettingsCommand extends AbstractCommand
 
   static public $name = 'settings';
   static public $description = 'Настройки бота';
-  static public $required_permissions = ['execute command settings'];
+  static public $requiredPermissions = ['execute command settings'];
 
   const BTN_NOTIFICATION = 'Уведомления';
   const BTN_CANCEL = 'Ничего не менять';
@@ -144,12 +139,12 @@ class SettingsCommand extends AbstractCommand
       ->get('doctrine');
 
     // Load notifications
-    /** @var \Kaula\TelegramBundle\Entity\Notification $notifications */
-    $notifications = $d->getRepository('KaulaTelegramBundle:Notification')
+    /** @var \Kettari\TelegramBundle\Entity\Notification $notifications */
+    $notifications = $d->getRepository('KettariTelegramBundle:Notification')
       ->findBy([], ['sort_order' => 'ASC']);
     // Check if user has required for each notification permission
     $inline_keyboard = new Markup();
-    /** @var \Kaula\TelegramBundle\Entity\Notification $notification_item */
+    /** @var \Kettari\TelegramBundle\Entity\Notification $notification_item */
     foreach ($notifications as $notification_item) {
       $row = [];
       if ($user_permissions->contains($notification_item->getPermission())) {
@@ -192,7 +187,7 @@ class SettingsCommand extends AbstractCommand
       ->getUserHq();
 
     // Load user's permissions and notifications
-    /** @var \Kaula\TelegramBundle\Entity\User $user */
+    /** @var \Kettari\TelegramBundle\Entity\User $user */
     $user = $hq->getCurrentUser();
     if (is_null($user)) {
       return;
@@ -201,12 +196,12 @@ class SettingsCommand extends AbstractCommand
     $user_notifications = $hq->getUserNotifications();
 
     // Load notification
-    /** @var \Kaula\TelegramBundle\Entity\Notification $notification */
+    /** @var \Kettari\TelegramBundle\Entity\Notification $notification */
     $notification = $this->getBus()
       ->getBot()
       ->getContainer()
       ->get('doctrine')
-      ->getRepository('KaulaTelegramBundle:Notification')
+      ->getRepository('KettariTelegramBundle:Notification')
       ->findOneBy(['name' => $cq->data]);
     if (is_null($notification)) {
       return;

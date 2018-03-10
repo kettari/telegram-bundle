@@ -1,27 +1,22 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: ant
- * Date: 25.04.2017
- * Time: 14:19
- */
+declare(strict_types=1);
 
-namespace Kaula\TelegramBundle\Telegram\Subscriber;
+namespace Kettari\TelegramBundle\Telegram\Subscriber;
 
-use Kaula\TelegramBundle\Entity\Chat;
-use Kaula\TelegramBundle\Entity\User;
-use Kaula\TelegramBundle\Telegram\Event\CommandExecutedEvent;
-use Kaula\TelegramBundle\Telegram\Event\JoinChatMemberBotEvent;
-use Kaula\TelegramBundle\Telegram\Event\JoinChatMemberEvent;
-use Kaula\TelegramBundle\Telegram\Event\LeftChatMemberBotEvent;
-use Kaula\TelegramBundle\Telegram\Event\LeftChatMemberEvent;
-use Kaula\TelegramBundle\Telegram\Event\RequestBlockedEvent;
-use Kaula\TelegramBundle\Telegram\Event\RequestExceptionEvent;
-use Kaula\TelegramBundle\Telegram\Event\RequestSentEvent;
-use Kaula\TelegramBundle\Telegram\Event\TextReceivedEvent;
-use Kaula\TelegramBundle\Telegram\Event\UpdateReceivedEvent;
-use Kaula\TelegramBundle\Telegram\Event\UserRegisteredEvent;
-use Kaula\TelegramBundle\Telegram\UserHq;
+use Kettari\TelegramBundle\Entity\Chat;
+use Kettari\TelegramBundle\Entity\User;
+use Kettari\TelegramBundle\Telegram\Event\CommandExecutedEvent;
+use Kettari\TelegramBundle\Telegram\Event\JoinChatMemberBotEvent;
+use Kettari\TelegramBundle\Telegram\Event\JoinChatMemberEvent;
+use Kettari\TelegramBundle\Telegram\Event\LeftChatMemberBotEvent;
+use Kettari\TelegramBundle\Telegram\Event\LeftChatMemberEvent;
+use Kettari\TelegramBundle\Telegram\Event\RequestBlockedEvent;
+use Kettari\TelegramBundle\Telegram\Event\RequestExceptionEvent;
+use Kettari\TelegramBundle\Telegram\Event\RequestSentEvent;
+use Kettari\TelegramBundle\Telegram\Event\TextReceivedEvent;
+use Kettari\TelegramBundle\Telegram\Event\UpdateReceivedEvent;
+use Kettari\TelegramBundle\Telegram\Event\UserRegisteredEvent;
+use Kettari\TelegramBundle\Telegram\UserHq;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use unreal4u\TelegramAPI\Telegram\Methods\SendMessage;
 use unreal4u\TelegramAPI\Telegram\Types\Update;
@@ -145,7 +140,7 @@ class AuditSubscriber extends AbstractBotSubscriber implements EventSubscriberIn
     // Try to make description more informative
     if ($method instanceof SendMessage) {
       $chat_entity = $this->getDoctrine()
-        ->getRepository('KaulaTelegramBundle:Chat')
+        ->getRepository('KettariTelegramBundle:Chat')
         ->findOneBy(['telegram_id' => $method->chat_id]);
     }
     /*if (!is_null($event->getUpdate()->message)) {
@@ -174,7 +169,7 @@ class AuditSubscriber extends AbstractBotSubscriber implements EventSubscriberIn
   /**
    * Writes audit log when command is executed.
    *
-   * @param \Kaula\TelegramBundle\Telegram\Event\CommandExecutedEvent $event
+   * @param \Kettari\TelegramBundle\Telegram\Event\CommandExecutedEvent $event
    */
   public function onCommandExecuted(CommandExecutedEvent $event)
   {
@@ -225,14 +220,14 @@ class AuditSubscriber extends AbstractBotSubscriber implements EventSubscriberIn
   /**
    * Writes audit log when chat member joined.
    *
-   * @param \Kaula\TelegramBundle\Telegram\Event\JoinChatMemberEvent $event
+   * @param \Kettari\TelegramBundle\Telegram\Event\JoinChatMemberEvent $event
    */
   public function onMemberJoined(JoinChatMemberEvent $event)
   {
     // Resolve chat and user objects
     $chat_entity = $this->resolveChat($event->getUpdate());
     $user_entity = $this->getDoctrine()
-      ->getRepository('KaulaTelegramBundle:User')
+      ->getRepository('KettariTelegramBundle:User')
       ->findOneBy(['telegram_id' => $event->getJoinedUser()->id]);
 
     // Format human-readable description
@@ -265,7 +260,7 @@ class AuditSubscriber extends AbstractBotSubscriber implements EventSubscriberIn
   /**
    * Writes audit log when current bot joined the group.
    *
-   * @param \Kaula\TelegramBundle\Telegram\Event\JoinChatMemberBotEvent $event
+   * @param \Kettari\TelegramBundle\Telegram\Event\JoinChatMemberBotEvent $event
    */
   public function onBotJoined(JoinChatMemberBotEvent $event)
   {
@@ -309,14 +304,14 @@ class AuditSubscriber extends AbstractBotSubscriber implements EventSubscriberIn
   /**
    * Writes audit log when chat member left.
    *
-   * @param \Kaula\TelegramBundle\Telegram\Event\LeftChatMemberEvent $event
+   * @param \Kettari\TelegramBundle\Telegram\Event\LeftChatMemberEvent $event
    */
   public function onMemberLeft(LeftChatMemberEvent $event)
   {
     // Resolve chat and user objects
     $chat_entity = $this->resolveChat($event->getUpdate());
     $user_entity = $this->getDoctrine()
-      ->getRepository('KaulaTelegramBundle:User')
+      ->getRepository('KettariTelegramBundle:User')
       ->findOneBy(
         ['telegram_id' => $event->getMessage()->left_chat_member->id]
       );
@@ -351,7 +346,7 @@ class AuditSubscriber extends AbstractBotSubscriber implements EventSubscriberIn
   /**
    * Writes audit log when bot left the group.
    *
-   * @param \Kaula\TelegramBundle\Telegram\Event\LeftChatMemberBotEvent $event
+   * @param \Kettari\TelegramBundle\Telegram\Event\LeftChatMemberBotEvent $event
    */
   public function onBotLeft(LeftChatMemberBotEvent $event)
   {
@@ -437,7 +432,7 @@ class AuditSubscriber extends AbstractBotSubscriber implements EventSubscriberIn
   {
     // Resolve chat object
     $chat_entity = $this->getDoctrine()
-      ->getRepository('KaulaTelegramBundle:Chat')
+      ->getRepository('KettariTelegramBundle:Chat')
       ->findOneBy(
         ['telegram_id' => $event->getChatId()]
       );
@@ -460,7 +455,7 @@ class AuditSubscriber extends AbstractBotSubscriber implements EventSubscriberIn
   /**
    * Writes audit log when user is registered.
    *
-   * @param \Kaula\TelegramBundle\Telegram\Event\UserRegisteredEvent $e
+   * @param \Kettari\TelegramBundle\Telegram\Event\UserRegisteredEvent $e
    */
   public function onUserRegistered(UserRegisteredEvent $e)
   {

@@ -6,11 +6,11 @@
  * Time: 14:19
  */
 
-namespace Kaula\TelegramBundle\Telegram\Subscriber;
+namespace Kettari\TelegramBundle\Telegram\Subscriber;
 
 
-use Kaula\TelegramBundle\Telegram\Event\UserRegisteredEvent;
-use Kaula\TelegramBundle\Telegram\UserHq;
+use Kettari\TelegramBundle\Telegram\Event\UserRegisteredEvent;
+use Kettari\TelegramBundle\Telegram\UserHq;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
 class UserRegistrationSubscriber extends AbstractBotSubscriber implements EventSubscriberInterface
@@ -46,7 +46,7 @@ class UserRegistrationSubscriber extends AbstractBotSubscriber implements EventS
   /**
    * Pushes notification.
    *
-   * @param \Kaula\TelegramBundle\Telegram\Event\UserRegisteredEvent $e
+   * @param \Kettari\TelegramBundle\Telegram\Event\UserRegisteredEvent $e
    */
   public function onUserRegistered(UserRegisteredEvent $e)
   {

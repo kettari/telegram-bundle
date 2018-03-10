@@ -6,7 +6,7 @@
  * Time: 19:03
  */
 
-namespace Kaula\TelegramBundle\Telegram\Event;
+namespace Kettari\TelegramBundle\Telegram\Event;
 
 
 use RuntimeException;

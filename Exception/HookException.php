@@ -6,7 +6,7 @@
  * Time: 3:55
  */
 
-namespace Kaula\TelegramBundle\Exception;
+namespace Kettari\TelegramBundle\Exception;
 
 
 class HookException extends TelegramBundleException {

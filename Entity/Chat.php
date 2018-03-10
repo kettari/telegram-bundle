@@ -1,19 +1,14 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: ant
- * Date: 18.03.2017
- * Time: 0:11
- */
+declare(strict_types=1);
 
-namespace Kaula\TelegramBundle\Entity;
+namespace Kettari\TelegramBundle\Entity;
 
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\Mapping as ORM;
 
 
 /**
- * @ORM\Entity(repositoryClass="Kaula\TelegramBundle\Repository\ChatRepository")
+ * @ORM\Entity(repositoryClass="Kettari\TelegramBundle\Repository\ChatRepository")
  * @ORM\Table(name="chat",
  *   options={"collate":"utf8mb4_general_ci", "charset":"utf8mb4"})
  */
@@ -30,7 +25,7 @@ class Chat
   /**
    * @ORM\Column(type="bigint",unique=true)
    */
-  private $telegram_id;
+  private $telegramId;
 
   /**
    * @ORM\Column(type="string",length=255)
@@ -54,26 +49,26 @@ class Chat
    * @ORM\Column(type="string",length=255,nullable=true)
    *
    */
-  private $first_name;
+  private $firstName;
 
   /**
    * @ORM\Column(type="string",length=255,nullable=true)
    *
    */
-  private $last_name;
+  private $lastName;
 
   /**
    * @ORM\Column(type="boolean")
    *
    */
-  private $all_members_are_administrators;
+  private $allMembersAreAdministrators;
 
   /**
    * ~~INVERSE SIDE~~
    *
-   * @ORM\OneToMany(targetEntity="Kaula\TelegramBundle\Entity\ChatMember",mappedBy="chat")
+   * @ORM\OneToMany(targetEntity="Kettari\TelegramBundle\Entity\ChatMember",mappedBy="chat")
    */
-  private $chat_members;
+  private $chatMembers;
 
   /**
    * Get id
@@ -164,7 +159,7 @@ class Chat
    */
   public function getFirstName()
   {
-    return $this->first_name;
+    return $this->firstName;
   }
 
   /**
@@ -176,7 +171,7 @@ class Chat
    */
   public function setFirstName($firstName)
   {
-    $this->first_name = $firstName;
+    $this->firstName = $firstName;
 
     return $this;
   }
@@ -188,7 +183,7 @@ class Chat
    */
   public function getLastName()
   {
-    return $this->last_name;
+    return $this->lastName;
   }
 
   /**
@@ -200,7 +195,7 @@ class Chat
    */
   public function setLastName($lastName)
   {
-    $this->last_name = $lastName;
+    $this->lastName = $lastName;
 
     return $this;
   }
@@ -212,7 +207,7 @@ class Chat
    */
   public function getAllMembersAreAdministrators()
   {
-    return $this->all_members_are_administrators;
+    return $this->allMembersAreAdministrators;
   }
 
   /**
@@ -224,7 +219,7 @@ class Chat
    */
   public function setAllMembersAreAdministrators($allMembersAreAdministrators)
   {
-    $this->all_members_are_administrators = $allMembersAreAdministrators;
+    $this->allMembersAreAdministrators = $allMembersAreAdministrators;
 
     return $this;
   }
@@ -236,7 +231,7 @@ class Chat
    */
   public function getTelegramId()
   {
-    return $this->telegram_id;
+    return $this->telegramId;
   }
 
   /**
@@ -248,7 +243,7 @@ class Chat
    */
   public function setTelegramId($telegramId)
   {
-    $this->telegram_id = $telegramId;
+    $this->telegramId = $telegramId;
 
     return $this;
   }
@@ -257,7 +252,7 @@ class Chat
    */
   public function __construct()
   {
-    $this->chat_members = new ArrayCollection();
+    $this->chatMembers = new ArrayCollection();
   }
 
   /**
@@ -269,7 +264,7 @@ class Chat
    */
   public function addChatMember(ChatMember $chatMember)
   {
-    $this->chat_members[] = $chatMember;
+    $this->chatMembers[] = $chatMember;
 
     return $this;
   }
@@ -281,7 +276,7 @@ class Chat
    */
   public function removeChatMember(ChatMember $chatMember)
   {
-    $this->chat_members->removeElement($chatMember);
+    $this->chatMembers->removeElement($chatMember);
   }
 
   /**
@@ -291,6 +286,6 @@ class Chat
    */
   public function getChatMembers()
   {
-    return $this->chat_members;
+    return $this->chatMembers;
   }
 }

@@ -6,7 +6,7 @@
  * Time: 14:33
  */
 
-namespace Kaula\TelegramBundle\Telegram\Event;
+namespace Kettari\TelegramBundle\Telegram\Event;
 
 
 use Symfony\Component\EventDispatcher\Event;

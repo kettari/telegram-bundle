@@ -1,12 +1,7 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: ant
- * Date: 04.01.2018
- * Time: 23:40
- */
+declare(strict_types=1);
 
-namespace Kaula\TelegramBundle\Entity;
+namespace Kettari\TelegramBundle\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
 use Doctrine\ORM\Mapping\Index;
@@ -28,7 +23,7 @@ class ChatMemberProperty
   /**
    * ~~OWNING SIDE~~
    *
-   * @ORM\ManyToOne(targetEntity="Kaula\TelegramBundle\Entity\ChatMember",inversedBy="properties")
+   * @ORM\ManyToOne(targetEntity="Kettari\TelegramBundle\Entity\ChatMember",inversedBy="properties")
    */
   private $chatMember;
 
@@ -55,7 +50,7 @@ class ChatMemberProperty
   /**
    * Get chat member
    *
-   * @return \Kaula\TelegramBundle\Entity\ChatMember
+   * @return \Kettari\TelegramBundle\Entity\ChatMember
    */
   public function getChatMember()
   {
@@ -65,8 +60,8 @@ class ChatMemberProperty
   /**
    * Set user
    *
-   * @param \Kaula\TelegramBundle\Entity\ChatMember|null $chatMember
-   * @return \Kaula\TelegramBundle\Entity\ChatMemberProperty
+   * @param \Kettari\TelegramBundle\Entity\ChatMember|null $chatMember
+   * @return \Kettari\TelegramBundle\Entity\ChatMemberProperty
    */
   public function setChatMember(ChatMember $chatMember = null)
   {
@@ -85,7 +80,7 @@ class ChatMemberProperty
 
   /**
    * @param string $propertyName
-   * @return \Kaula\TelegramBundle\Entity\ChatMemberProperty
+   * @return \Kettari\TelegramBundle\Entity\ChatMemberProperty
    */
   public function setPropertyName($propertyName)
   {

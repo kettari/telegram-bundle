@@ -1,17 +1,12 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: ant
- * Date: 16.03.2017
- * Time: 18:18
- */
+declare(strict_types=1);
 
-namespace Kaula\TelegramBundle\Telegram\Command;
+namespace Kettari\TelegramBundle\Telegram\Command;
 
 
-use Kaula\TelegramBundle\Entity\Role;
-use Kaula\TelegramBundle\Entity\User;
-use Kaula\TelegramBundle\Repository\UserRepository;
+use Kettari\TelegramBundle\Entity\Role;
+use Kettari\TelegramBundle\Entity\User;
+use Kettari\TelegramBundle\Repository\UserRepository;
 use unreal4u\TelegramAPI\Telegram\Types\KeyboardButton;
 use unreal4u\TelegramAPI\Telegram\Types\ReplyKeyboardMarkup;
 use unreal4u\TelegramAPI\Telegram\Types\ReplyKeyboardRemove;
@@ -26,7 +21,7 @@ class UserManCommand extends AbstractCommand
   const BTN_CANCEL = 'Отмена';
   static public $name = 'userman';
   static public $description = 'Управление ролями пользователей';
-  static public $required_permissions = ['execute command userman'];
+  static public $requiredPermissions = ['execute command userman'];
 
   /**
    * Executes command.
@@ -108,7 +103,7 @@ class UserManCommand extends AbstractCommand
       ->get('doctrine');
 
     /** @var UserRepository $r */
-    $r = $d->getRepository('KaulaTelegramBundle:User');
+    $r = $d->getRepository('KettariTelegramBundle:User');
     $users = $r->findAnyone($name);
     if (0 == count($users)) {
       $this->replyWithMessage(
@@ -131,7 +126,7 @@ class UserManCommand extends AbstractCommand
       return;
     }
 
-    /** @var \Kaula\TelegramBundle\Entity\User $found_user */
+    /** @var \Kettari\TelegramBundle\Entity\User $found_user */
     $found_user = reset($users);
     $this->replyWithMessage(
       $this->getUserInformation($found_user),
@@ -169,7 +164,7 @@ class UserManCommand extends AbstractCommand
     $text .= 'Заблокирован: '.($user->isBlocked() ? 'Да' : 'Нет').PHP_EOL;
     // Enumerate roles
     $text .= PHP_EOL.'<b>Роли:</b>'.PHP_EOL;
-    /** @var \Kaula\TelegramBundle\Entity\Role $role */
+    /** @var \Kettari\TelegramBundle\Entity\Role $role */
     foreach ($user->getRoles() as $role) {
       $text .= self::LIST_MARK.' '.$role->getName().PHP_EOL;
     }
@@ -235,7 +230,7 @@ class UserManCommand extends AbstractCommand
    */
   public function handleUserMan_Menu($serialized_found_user)
   {
-    /** @var \Kaula\TelegramBundle\Entity\User $found_user */
+    /** @var \Kettari\TelegramBundle\Entity\User $found_user */
     $found_user = unserialize($serialized_found_user);
     // Selection
     $selection = trim($this->getUpdate()->message->text);
@@ -329,7 +324,7 @@ class UserManCommand extends AbstractCommand
 
     /** @var User $user_to_manipulate */
     if (is_null(
-      $user_to_manipulate = $d->getRepository('KaulaTelegramBundle:User')
+      $user_to_manipulate = $d->getRepository('KettariTelegramBundle:User')
         ->find($found_user->getId())
     )) {
       $this->replyWithMessage(
@@ -339,8 +334,8 @@ class UserManCommand extends AbstractCommand
       return null;
     }
 
-    /** @var \Kaula\TelegramBundle\Entity\Role $role */
-    foreach ($d->getRepository('KaulaTelegramBundle:Role')
+    /** @var \Kettari\TelegramBundle\Entity\Role $role */
+    foreach ($d->getRepository('KettariTelegramBundle:Role')
                ->findBy(
                  [
                    'administrator' => false,
@@ -377,7 +372,7 @@ class UserManCommand extends AbstractCommand
     $reply_markup->one_time_keyboard = true;
     $reply_markup->resize_keyboard = true;
 
-    /** @var \Kaula\TelegramBundle\Entity\Role $role */
+    /** @var \Kettari\TelegramBundle\Entity\Role $role */
     foreach ($found_user->getRoles() as $role) {
       // Safe check
       if ($role->getAnonymous() || $role->getAdministrator()) {
@@ -409,7 +404,7 @@ class UserManCommand extends AbstractCommand
 
     /** @var User $user_to_manipulate */
     if (is_null(
-      $user_to_manipulate = $d->getRepository('KaulaTelegramBundle:User')
+      $user_to_manipulate = $d->getRepository('KettariTelegramBundle:User')
         ->find($found_user->getId())
     )) {
       $this->replyWithMessage(
@@ -442,7 +437,7 @@ class UserManCommand extends AbstractCommand
    */
   public function handleUserManRoleAdd($serialized_found_user)
   {
-    /** @var \Kaula\TelegramBundle\Entity\User $found_user */
+    /** @var \Kettari\TelegramBundle\Entity\User $found_user */
     $found_user = unserialize($serialized_found_user);
     // Selection
     $selection = trim($this->getUpdate()->message->text);
@@ -465,7 +460,7 @@ class UserManCommand extends AbstractCommand
 
     /** @var Role $role_to_add */
     if (is_null(
-      $role_to_add = $d->getRepository('KaulaTelegramBundle:Role')
+      $role_to_add = $d->getRepository('KettariTelegramBundle:Role')
         ->findOneBy(['name' => $selection])
     )) {
       $this->replyWithMessage(
@@ -477,7 +472,7 @@ class UserManCommand extends AbstractCommand
 
     /** @var User $user_to_manipulate */
     if (is_null(
-      $user_to_manipulate = $d->getRepository('KaulaTelegramBundle:User')
+      $user_to_manipulate = $d->getRepository('KettariTelegramBundle:User')
         ->find($found_user->getId())
     )) {
       $this->replyWithMessage(
@@ -508,7 +503,7 @@ class UserManCommand extends AbstractCommand
    */
   public function handleUserManRoleRemove($serialized_found_user)
   {
-    /** @var \Kaula\TelegramBundle\Entity\User $found_user */
+    /** @var \Kettari\TelegramBundle\Entity\User $found_user */
     $found_user = unserialize($serialized_found_user);
     // Selection
     $selection = trim($this->getUpdate()->message->text);
@@ -531,7 +526,7 @@ class UserManCommand extends AbstractCommand
 
     /** @var Role $role_to_remove */
     if (is_null(
-      $role_to_remove = $d->getRepository('KaulaTelegramBundle:Role')
+      $role_to_remove = $d->getRepository('KettariTelegramBundle:Role')
         ->findOneBy(['name' => $selection])
     )) {
       $this->replyWithMessage(
@@ -543,7 +538,7 @@ class UserManCommand extends AbstractCommand
 
     /** @var User $user_to_manipulate */
     if (is_null(
-      $user_to_manipulate = $d->getRepository('KaulaTelegramBundle:User')
+      $user_to_manipulate = $d->getRepository('KettariTelegramBundle:User')
         ->find($found_user->getId())
     )) {
       $this->replyWithMessage(
@@ -554,7 +549,7 @@ class UserManCommand extends AbstractCommand
     }
 
     // Remove notifications that are bound to the role going to be removed
-    /** @var \Kaula\TelegramBundle\Entity\Notification $notification */
+    /** @var \Kettari\TelegramBundle\Entity\Notification $notification */
     foreach ($user_to_manipulate->getNotifications() as $notification) {
       if ($role_to_remove->getPermissions()
         ->contains($notification->getPermission())

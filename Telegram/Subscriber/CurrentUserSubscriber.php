@@ -6,10 +6,10 @@
  * Time: 14:19
  */
 
-namespace Kaula\TelegramBundle\Telegram\Subscriber;
+namespace Kettari\TelegramBundle\Telegram\Subscriber;
 
 
-use Kaula\TelegramBundle\Telegram\Event\UpdateReceivedEvent;
+use Kettari\TelegramBundle\Telegram\Event\UpdateReceivedEvent;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
 class CurrentUserSubscriber extends AbstractBotSubscriber implements EventSubscriberInterface

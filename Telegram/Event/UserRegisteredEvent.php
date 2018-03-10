@@ -6,10 +6,10 @@
  * Time: 13:15
  */
 
-namespace Kaula\TelegramBundle\Telegram\Event;
+namespace Kettari\TelegramBundle\Telegram\Event;
 
 
-use Kaula\TelegramBundle\Entity\User;
+use Kettari\TelegramBundle\Entity\User;
 use RuntimeException;
 use unreal4u\TelegramAPI\Telegram\Types\Update;
 
@@ -18,7 +18,7 @@ class UserRegisteredEvent extends AbstractMessageEvent
   const NAME = 'telegram.user.registered';
 
   /**
-   * @var \Kaula\TelegramBundle\Entity\User
+   * @var \Kettari\TelegramBundle\Entity\User
    */
   private $registered_user;
 
@@ -42,7 +42,7 @@ class UserRegisteredEvent extends AbstractMessageEvent
   }
 
   /**
-   * @return \Kaula\TelegramBundle\Entity\User
+   * @return \Kettari\TelegramBundle\Entity\User
    */
   public function getRegisteredUser(): User
   {

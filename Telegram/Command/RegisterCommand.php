@@ -1,18 +1,13 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: ant
- * Date: 16.03.2017
- * Time: 18:18
- */
+declare(strict_types=1);
 
-namespace Kaula\TelegramBundle\Telegram\Command;
+namespace Kettari\TelegramBundle\Telegram\Command;
 
 
 use Doctrine\Bundle\DoctrineBundle\Registry;
-use Kaula\TelegramBundle\Entity\Role;
-use Kaula\TelegramBundle\Entity\User;
-use Kaula\TelegramBundle\Telegram\Event\UserRegisteredEvent;
+use Kettari\TelegramBundle\Entity\Role;
+use Kettari\TelegramBundle\Entity\User;
+use Kettari\TelegramBundle\Telegram\Event\UserRegisteredEvent;
 use unreal4u\TelegramAPI\Telegram\Types\Contact;
 use unreal4u\TelegramAPI\Telegram\Types\KeyboardButton;
 use unreal4u\TelegramAPI\Telegram\Types\ReplyKeyboardMarkup;
@@ -28,8 +23,8 @@ class RegisterCommand extends AbstractCommand
 
   static public $name = 'register';
   static public $description = 'Зарегистрироваться у бота';
-  static public $required_permissions = ['execute command register'];
-  static public $declared_notifications = [self::NOTIFICATION_NEW_REGISTER];
+  static public $requiredPermissions = ['execute command register'];
+  static public $declaredNotifications = [self::NOTIFICATION_NEW_REGISTER];
 
   /**
    * Executes command.
@@ -158,14 +153,14 @@ class RegisterCommand extends AbstractCommand
     $em = $d->getManager();
 
     // Find role object
-    $roles = $d->getRepository('KaulaTelegramBundle:Role')
+    $roles = $d->getRepository('KettariTelegramBundle:Role')
       ->findBy(['name' => 'registered']);
     if (0 == count($roles)) {
       throw new \LogicException('Roles for registered users not found');
     }
 
     // Find user object. If not found, create new
-    $user_entity = $d->getRepository('KaulaTelegramBundle:User')
+    $user_entity = $d->getRepository('KettariTelegramBundle:User')
       ->findOneBy(['telegram_id' => $tu->id]);
     if (!$user_entity) {
       $user_entity = new User();
@@ -226,7 +221,7 @@ class RegisterCommand extends AbstractCommand
    */
   private function getDefaultNotifications(Registry $d)
   {
-    $notifications = $d->getRepository('KaulaTelegramBundle:Notification')
+    $notifications = $d->getRepository('KettariTelegramBundle:Notification')
       ->findBy(['user_default' => true]);
     if (0 == count($notifications)) {
       // No error, just no default notifications defined
@@ -240,7 +235,7 @@ class RegisterCommand extends AbstractCommand
    * Assigns notifications to the User.
    *
    * @param \Doctrine\Bundle\DoctrineBundle\Registry $d
-   * @param \Kaula\TelegramBundle\Entity\User $user
+   * @param \Kettari\TelegramBundle\Entity\User $user
    * @param array $notifications
    */
   private function assignDefaultNotifications(
@@ -253,7 +248,7 @@ class RegisterCommand extends AbstractCommand
 
       // Load all current notifications assigned to user
       $current_notifications = $user->getNotifications();
-      /** @var \Kaula\TelegramBundle\Entity\Notification $new_notification */
+      /** @var \Kettari\TelegramBundle\Entity\Notification $new_notification */
       foreach ($notifications as $new_notification) {
         if (!$current_notifications->contains($new_notification)) {
           $user->addNotification($new_notification);
@@ -267,7 +262,7 @@ class RegisterCommand extends AbstractCommand
    * Dispatches command is unknown.
    *
    * @param Update $update
-   * @param \Kaula\TelegramBundle\Entity\User $userEntity
+   * @param \Kettari\TelegramBundle\Entity\User $userEntity
    */
   private function dispatchNewRegistration(
     Update $update,

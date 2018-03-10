@@ -6,11 +6,11 @@
  * Time: 14:19
  */
 
-namespace Kaula\TelegramBundle\Telegram\Subscriber;
+namespace Kettari\TelegramBundle\Telegram\Subscriber;
 
 
-use Kaula\TelegramBundle\Entity\Chat;
-use Kaula\TelegramBundle\Telegram\Event\GroupCreatedEvent;
+use Kettari\TelegramBundle\Entity\Chat;
+use Kettari\TelegramBundle\Telegram\Event\GroupCreatedEvent;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use unreal4u\TelegramAPI\Telegram\Types\Update;
 
@@ -70,7 +70,7 @@ class GroupSubscriber extends AbstractBotSubscriber implements EventSubscriberIn
 
     // Find chat object. If not found, create new
     $chat = $this->getDoctrine()
-      ->getRepository('KaulaTelegramBundle:Chat')
+      ->getRepository('KettariTelegramBundle:Chat')
       ->findOneBy(['telegram_id' => $tc->id]);
     if (!$chat) {
       $chat = new Chat();

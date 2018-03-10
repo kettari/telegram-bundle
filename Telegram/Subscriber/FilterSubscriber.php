@@ -6,11 +6,11 @@
  * Time: 14:19
  */
 
-namespace Kaula\TelegramBundle\Telegram\Subscriber;
+namespace Kettari\TelegramBundle\Telegram\Subscriber;
 
 
 use InvalidArgumentException;
-use Kaula\TelegramBundle\Telegram\Event\UpdateIncomingEvent;
+use Kettari\TelegramBundle\Telegram\Event\UpdateIncomingEvent;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use unreal4u\TelegramAPI\Telegram\Types\Update;
 
@@ -43,7 +43,7 @@ class FilterSubscriber implements EventSubscriberInterface
   /**
    * Handles incoming data and provides Update object.
    *
-   * @param \Kaula\TelegramBundle\Telegram\Event\UpdateIncomingEvent $e
+   * @param \Kettari\TelegramBundle\Telegram\Event\UpdateIncomingEvent $e
    */
   public function onUpdateIncoming(UpdateIncomingEvent $e)
   {

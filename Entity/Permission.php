@@ -1,12 +1,7 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: ant
- * Date: 23.03.2017
- * Time: 22:33
- */
+declare(strict_types=1);
 
-namespace Kaula\TelegramBundle\Entity;
+namespace Kettari\TelegramBundle\Entity;
 
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\Mapping as ORM;
@@ -33,7 +28,7 @@ class Permission {
   private $name;
 
   /**
-   * @ORM\ManyToMany(targetEntity="Kaula\TelegramBundle\Entity\Role",mappedBy="permissions")
+   * @ORM\ManyToMany(targetEntity="Kettari\TelegramBundle\Entity\Role",mappedBy="permissions")
    */
   private $roles;
 

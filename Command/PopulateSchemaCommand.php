@@ -1,43 +1,38 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: ant
- * Date: 15.03.2017
- * Time: 18:14
- */
+declare(strict_types=1);
 
-namespace Kaula\TelegramBundle\Command;
+namespace Kettari\TelegramBundle\Command;
 
 
-use Kaula\TelegramBundle\Entity\Notification;
-use Kaula\TelegramBundle\Entity\Permission;
-use Kaula\TelegramBundle\Entity\Role;
-use Kaula\TelegramBundle\Exception\TelegramBundleException;
-use Kaula\TelegramBundle\Telegram\Command\AbstractCommand as TelegramAbstractCommand;
-use Kaula\TelegramBundle\Telegram\Command\HelpCommand;
-use Kaula\TelegramBundle\Telegram\Command\ListRolesCommand;
-use Kaula\TelegramBundle\Telegram\Command\PushCommand;
-use Kaula\TelegramBundle\Telegram\Command\RegisterCommand;
-use Kaula\TelegramBundle\Telegram\Command\SettingsCommand;
-use Kaula\TelegramBundle\Telegram\Command\StartCommand;
-use Kaula\TelegramBundle\Telegram\Command\UserManCommand;
+use Kettari\TelegramBundle\Entity\Notification;
+use Kettari\TelegramBundle\Entity\Permission;
+use Kettari\TelegramBundle\Entity\Role;
+use Kettari\TelegramBundle\Exception\TelegramBundleException;
+use Kettari\TelegramBundle\Telegram\Command\AbstractCommand as TelegramAbstractCommand;
+use Kettari\TelegramBundle\Telegram\Command\HelpCommand;
+use Kettari\TelegramBundle\Telegram\Command\ListRolesCommand;
+use Kettari\TelegramBundle\Telegram\Command\PushCommand;
+use Kettari\TelegramBundle\Telegram\Command\RegisterCommand;
+use Kettari\TelegramBundle\Telegram\Command\SettingsCommand;
+use Kettari\TelegramBundle\Telegram\Command\StartCommand;
+use Kettari\TelegramBundle\Telegram\Command\UserManCommand;
 
 class PopulateSchemaCommand extends AbstractCommand
 {
   /**
    * @var Role
    */
-  private $role_guest;
+  private $roleGuest;
 
   /**
    * @var Role
    */
-  private $role_registered;
+  private $roleRegistered;
 
   /**
    * @var Role
    */
-  private $role_sysadmin;
+  private $roleSysadmin;
 
   /**
    * Configures the current command.
@@ -93,13 +88,13 @@ class PopulateSchemaCommand extends AbstractCommand
     $guest->setName('guest')
       ->setAnonymous(true);
     $em->persist($guest);
-    $this->role_guest = $guest;
+    $this->roleGuest = $guest;
 
     // Registered
     $registered = new Role();
     $registered->setName('registered');
     $em->persist($registered);
-    $this->role_registered = $registered;
+    $this->roleRegistered = $registered;
 
     // Supervisor
     $supervisor = new Role();
@@ -111,7 +106,7 @@ class PopulateSchemaCommand extends AbstractCommand
     $sysadmin->setName('sysadmin')
       ->setAdministrator(true);
     $em->persist($sysadmin);
-    $this->role_sysadmin = $sysadmin;
+    $this->roleSysadmin = $sysadmin;
 
     // Flush changes
     $em->flush();
@@ -129,7 +124,7 @@ class PopulateSchemaCommand extends AbstractCommand
       ->get('doctrine');
 
     return 0 == count(
-        $d->getRepository('KaulaTelegramBundle:Role')
+        $d->getRepository('KettariTelegramBundle:Role')
           ->findAll()
       );
   }
@@ -150,68 +145,68 @@ class PopulateSchemaCommand extends AbstractCommand
     $em = $d->getManager();
 
     // Permissions for the guest role
-    $guest_permissions = [];
+    $guestPermissions = [];
     // Permissions for the registered role
-    $registered_permissions = [];
+    $registeredPermissions = [];
     // Permissions for the sysadmin role
-    $sysadmin_permissions = [];
+    $sysadminPermissions = [];
 
     // Guest commands
-    $guest_permissions = array_merge(
-      $guest_permissions,
+    $guestPermissions = array_merge(
+      $guestPermissions,
       $this->populateCommandPermissionsRequired(StartCommand::class)
     );
-    $guest_permissions = array_merge(
-      $guest_permissions,
+    $guestPermissions = array_merge(
+      $guestPermissions,
       $this->populateCommandPermissionsRequired(HelpCommand::class)
     );
-    $guest_permissions = array_merge(
-      $guest_permissions,
+    $guestPermissions = array_merge(
+      $guestPermissions,
       $this->populateCommandPermissionsRequired(RegisterCommand::class)
     );
 
     // Registered commands
-    $registered_permissions = array_merge(
-      $registered_permissions,
+    $registeredPermissions = array_merge(
+      $registeredPermissions,
       $this->populateCommandPermissionsRequired(SettingsCommand::class)
     );
 
     // Sysadmin
-    $sysadmin_permissions = array_merge(
-      $sysadmin_permissions,
+    $sysadminPermissions = array_merge(
+      $sysadminPermissions,
       $this->populateCommandPermissionsRequired(ListRolesCommand::class)
     );
-    $sysadmin_permissions = array_merge(
-      $sysadmin_permissions,
+    $sysadminPermissions = array_merge(
+      $sysadminPermissions,
       $this->populateCommandPermissionsRequired(PushCommand::class)
     );
-    $sysadmin_permissions = array_merge(
-      $sysadmin_permissions,
+    $sysadminPermissions = array_merge(
+      $sysadminPermissions,
       $this->populateCommandPermissionsRequired(UserManCommand::class)
     );
     // 'new-register' notification → to sysadmin
-    $sysadmin_permissions = array_merge(
-      $sysadmin_permissions,
+    $sysadminPermissions = array_merge(
+      $sysadminPermissions,
       $this->populateCommandNotificationPermissions(RegisterCommand::class)
     );
 
     // Assign permissions to the roles
     // Guest
-    /** @var \Kaula\TelegramBundle\Entity\Permission $one_permission */
-    foreach ($guest_permissions as $one_permission) {
-      $this->role_guest->addPermission($one_permission);
+    /** @var \Kettari\TelegramBundle\Entity\Permission $one_permission */
+    foreach ($guestPermissions as $one_permission) {
+      $this->roleGuest->addPermission($one_permission);
     }
 
     // Registered
-    /** @var \Kaula\TelegramBundle\Entity\Permission $one_permission */
-    foreach ($registered_permissions as $one_permission) {
-      $this->role_registered->addPermission($one_permission);
+    /** @var \Kettari\TelegramBundle\Entity\Permission $one_permission */
+    foreach ($registeredPermissions as $one_permission) {
+      $this->roleRegistered->addPermission($one_permission);
     }
 
     // Sysadmin
-    /** @var \Kaula\TelegramBundle\Entity\Permission $one_permission */
-    foreach ($sysadmin_permissions as $one_permission) {
-      $this->role_sysadmin->addPermission($one_permission);
+    /** @var \Kettari\TelegramBundle\Entity\Permission $one_permission */
+    foreach ($sysadminPermissions as $one_permission) {
+      $this->roleSysadmin->addPermission($one_permission);
     }
 
     // Create permissions for well-known notifications
@@ -219,7 +214,7 @@ class PopulateSchemaCommand extends AbstractCommand
     $perm_self_update->setName('receive notification self-update');
     $em->persist($perm_self_update);
     // Assign 'self-update' permission to guest
-    $this->role_guest->addPermission($perm_self_update);
+    $this->roleGuest->addPermission($perm_self_update);
 
     // Flush changes
     $em->flush();
@@ -237,7 +232,7 @@ class PopulateSchemaCommand extends AbstractCommand
       ->get('doctrine');
 
     return 0 == count(
-        $d->getRepository('KaulaTelegramBundle:Permission')
+        $d->getRepository('KettariTelegramBundle:Permission')
           ->findAll()
       );
   }
@@ -263,23 +258,23 @@ class PopulateSchemaCommand extends AbstractCommand
     }
 
     // Return this array with entities
-    $permission_entities = [];
+    $permissionEntities = [];
 
     // Get list of permission names required and create them
-    $permission_names = $command::getRequiredPermissions();
-    foreach ($permission_names as $perm_name) {
+    $permissionNames = $command::getRequiredPermissions();
+    foreach ($permissionNames as $permName) {
       $permission = new Permission();
-      $permission->setName($perm_name);
+      $permission->setName($permName);
       $em->persist($permission);
 
       // Return created object in the array
-      $permission_entities[] = $permission;
+      $permissionEntities[] = $permission;
     }
 
     // Flush changes
     $em->flush();
 
-    return $permission_entities;
+    return $permissionEntities;
   }
 
   /**
@@ -303,23 +298,23 @@ class PopulateSchemaCommand extends AbstractCommand
     }
 
     // Return this array with entities
-    $permission_entities = [];
+    $permissionEntities = [];
 
     // Get list of notification names required and create permissions for them
-    $notification_names = $command::getDeclaredNotifications();
-    foreach ($notification_names as $notif_name) {
+    $notificationNames = $command::getDeclaredNotifications();
+    foreach ($notificationNames as $notifName) {
       $permission = new Permission();
-      $permission->setName(sprintf('receive notification %s', $notif_name));
+      $permission->setName(sprintf('receive notification %s', $notifName));
       $em->persist($permission);
 
       // Return created object in the array
-      $permission_entities[] = $permission;
+      $permissionEntities[] = $permission;
     }
 
     // Flush changes
     $em->flush();
 
-    return $permission_entities;
+    return $permissionEntities;
   }
 
   /**
@@ -341,7 +336,7 @@ class PopulateSchemaCommand extends AbstractCommand
      * 'self-update'
      */
     if (is_null(
-      $perm_self_update = $d->getRepository('KaulaTelegramBundle:Permission')
+      $permSelfUpdate = $d->getRepository('KettariTelegramBundle:Permission')
         ->findOneBy(['name' => 'receive notification self-update'])
     ))
     {
@@ -349,19 +344,19 @@ class PopulateSchemaCommand extends AbstractCommand
     }
 
     // Create notification 'self-update'
-    $notif_self_update = new Notification();
-    $notif_self_update->setName('self-update')
+    $notifSelfUpdate = new Notification();
+    $notifSelfUpdate->setName('self-update')
       ->setSortOrder(99999)
       ->setTitle('Что нового в боте')
       ->setUserDefault(true)
-      ->setPermission($perm_self_update);
-    $em->persist($notif_self_update);
+      ->setPermission($permSelfUpdate);
+    $em->persist($notifSelfUpdate);
 
     /**
      * 'new-register'
      */
     if (is_null(
-      $perm_new_register = $d->getRepository('KaulaTelegramBundle:Permission')
+      $permNewRegister = $d->getRepository('KettariTelegramBundle:Permission')
         ->findOneBy(['name' => 'receive notification new-register'])
     ))
     {
@@ -369,12 +364,12 @@ class PopulateSchemaCommand extends AbstractCommand
     }
 
     // Create notification 'new-register'
-    $notif_new_register = new Notification();
-    $notif_new_register->setName('new-register')
+    $notifNewRegister = new Notification();
+    $notifNewRegister->setName('new-register')
       ->setSortOrder(88888)
       ->setTitle('Новые регистрации')
-      ->setPermission($perm_new_register);
-    $em->persist($notif_new_register);
+      ->setPermission($permNewRegister);
+    $em->persist($notifNewRegister);
 
     // Flush changes
     $em->flush();
@@ -392,7 +387,7 @@ class PopulateSchemaCommand extends AbstractCommand
       ->get('doctrine');
 
     return 0 == count(
-        $d->getRepository('KaulaTelegramBundle:Notification')
+        $d->getRepository('KettariTelegramBundle:Notification')
           ->findAll()
       );
   }

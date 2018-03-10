@@ -1,12 +1,7 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: ant
- * Date: 16.03.2017
- * Time: 17:13
- */
+declare(strict_types=1);
 
-namespace Kaula\TelegramBundle\DependencyInjection;
+namespace Kettari\TelegramBundle\DependencyInjection;
 
 
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;

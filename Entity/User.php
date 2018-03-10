@@ -1,21 +1,15 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: ant
- * Date: 18.03.2017
- * Time: 0:11
- */
+declare(strict_types=1);
 
-namespace Kaula\TelegramBundle\Entity;
+namespace Kettari\TelegramBundle\Entity;
 
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
-use Doctrine\ORM\Mapping\Index;
 
 /**
- * @ORM\Entity(repositoryClass="Kaula\TelegramBundle\Repository\UserRepository")
- * @ORM\Table(name="user",indexes={@Index(name="tallanto_user_idx",columns={"tallanto_user_id","blocked"})},
+ * @ORM\Entity(repositoryClass="Kettari\TelegramBundle\Repository\UserRepository")
+ * @ORM\Table(name="user",indexes={)},
  *   options={"collate":"utf8mb4_general_ci", "charset":"utf8mb4"})
  */
 class User
@@ -31,19 +25,19 @@ class User
   /**
    * @ORM\Column(type="bigint",unique=true)
    */
-  private $telegram_id;
+  private $telegramId;
 
   /**
    * @ORM\Column(type="string",length=255,nullable=true)
    *
    */
-  private $first_name;
+  private $firstName;
 
   /**
    * @ORM\Column(type="string",length=255,nullable=true)
    *
    */
-  private $last_name;
+  private $lastName;
 
   /**
    * @ORM\Column(type="string",length=255,nullable=true)
@@ -63,7 +57,7 @@ class User
    * Many Users have Many Roles.
    *
    * @var Collection
-   * @ORM\ManyToMany(targetEntity="Kaula\TelegramBundle\Entity\Role",inversedBy="users")
+   * @ORM\ManyToMany(targetEntity="Kettari\TelegramBundle\Entity\Role",inversedBy="users")
    */
   private $roles;
 
@@ -73,7 +67,7 @@ class User
    * Many Users have Many Notifications.
    *
    * @var Collection
-   * @ORM\ManyToMany(targetEntity="Kaula\TelegramBundle\Entity\Notification",inversedBy="users")
+   * @ORM\ManyToMany(targetEntity="Kettari\TelegramBundle\Entity\Notification",inversedBy="users")
    */
   private $notifications;
 
@@ -87,13 +81,13 @@ class User
    * @ORM\Column(type="string",length=255,nullable=true)
    *
    */
-  private $external_last_name;
+  private $externalLastName;
 
   /**
    * @ORM\Column(type="string",length=255,nullable=true)
    *
    */
-  private $external_first_name;
+  private $externalFirstName;
 
   /**
    * Get id
@@ -114,7 +108,7 @@ class User
    */
   public function setFirstName($firstName)
   {
-    $this->first_name = $firstName;
+    $this->firstName = $firstName;
 
     return $this;
   }
@@ -126,7 +120,7 @@ class User
    */
   public function getFirstName()
   {
-    return $this->first_name;
+    return $this->firstName;
   }
 
   /**
@@ -138,7 +132,7 @@ class User
    */
   public function setLastName($lastName)
   {
-    $this->last_name = $lastName;
+    $this->lastName = $lastName;
 
     return $this;
   }
@@ -150,7 +144,7 @@ class User
    */
   public function getLastName()
   {
-    return $this->last_name;
+    return $this->lastName;
   }
 
   /**
@@ -250,7 +244,7 @@ class User
   /**
    * Check if user has specified role.
    *
-   * @param \Kaula\TelegramBundle\Entity\Role|string $roleToCheck
+   * @param \Kettari\TelegramBundle\Entity\Role|string $roleToCheck
    * @return bool
    */
   public function hasRole($roleToCheck)
@@ -261,7 +255,7 @@ class User
       $checkName = $roleToCheck;
     }
 
-    /** @var \Kaula\TelegramBundle\Entity\Role $role */
+    /** @var \Kettari\TelegramBundle\Entity\Role $role */
     foreach ($this->getRoles() as $role) {
       if ($role->getName() == $checkName) {
         return true;
@@ -280,7 +274,7 @@ class User
    */
   public function setTelegramId($telegramId)
   {
-    $this->telegram_id = $telegramId;
+    $this->telegramId = $telegramId;
 
     return $this;
   }
@@ -292,7 +286,7 @@ class User
    */
   public function getTelegramId()
   {
-    return $this->telegram_id;
+    return $this->telegramId;
   }
 
   /**
@@ -363,7 +357,7 @@ class User
    */
   public function setExternalLastName($externalLastName)
   {
-    $this->external_last_name = $externalLastName;
+    $this->externalLastName = $externalLastName;
 
     return $this;
   }
@@ -375,7 +369,7 @@ class User
    */
   public function getExternalLastName()
   {
-    return $this->external_last_name;
+    return $this->externalLastName;
   }
 
   /**
@@ -387,7 +381,7 @@ class User
    */
   public function setExternalFirstName($externalFirstName)
   {
-    $this->external_first_name = $externalFirstName;
+    $this->externalFirstName = $externalFirstName;
 
     return $this;
   }
@@ -399,6 +393,6 @@ class User
    */
   public function getExternalFirstName()
   {
-    return $this->external_first_name;
+    return $this->externalFirstName;
   }
 }

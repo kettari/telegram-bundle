@@ -1,12 +1,7 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: ant
- * Date: 18.03.2017
- * Time: 0:11
- */
+declare(strict_types=1);
 
-namespace Kaula\TelegramBundle\Entity;
+namespace Kettari\TelegramBundle\Entity;
 
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
@@ -19,7 +14,8 @@ use Doctrine\ORM\Mapping\Index;
  *   @Index(name="permissions_administrator_idx",columns={"administrator"})},
  *   options={"collate":"utf8mb4_general_ci", "charset":"utf8mb4"})
  */
-class Role {
+class Role
+{
 
   /**
    * @ORM\Column(type="integer")
@@ -38,7 +34,7 @@ class Role {
    * ~~OWNING SIDE~~
    *
    * @var Collection
-   * @ORM\ManyToMany(targetEntity="Kaula\TelegramBundle\Entity\Permission",inversedBy="roles")
+   * @ORM\ManyToMany(targetEntity="Kettari\TelegramBundle\Entity\Permission",inversedBy="roles")
    */
   private $permissions;
 
@@ -57,14 +53,15 @@ class Role {
   /**
    * ~~INVERSE SIDE~~
    *
-   * @ORM\ManyToMany(targetEntity="Kaula\TelegramBundle\Entity\User",mappedBy="roles")
+   * @ORM\ManyToMany(targetEntity="Kettari\TelegramBundle\Entity\User",mappedBy="roles")
    */
   private $users;
 
   /**
    * Constructor
    */
-  public function __construct() {
+  public function __construct()
+  {
     $this->users = new ArrayCollection();
   }
 
@@ -73,8 +70,19 @@ class Role {
    *
    * @return integer
    */
-  public function getId() {
+  public function getId()
+  {
     return $this->id;
+  }
+
+  /**
+   * Get name
+   *
+   * @return string
+   */
+  public function getName()
+  {
+    return $this->name;
   }
 
   /**
@@ -84,30 +92,9 @@ class Role {
    *
    * @return Role
    */
-  public function setName($name) {
+  public function setName($name)
+  {
     $this->name = $name;
-
-    return $this;
-  }
-
-  /**
-   * Get name
-   *
-   * @return string
-   */
-  public function getName() {
-    return $this->name;
-  }
-
-  /**
-   * Set anonymous
-   *
-   * @param boolean $anonymous
-   *
-   * @return Role
-   */
-  public function setAnonymous($anonymous) {
-    $this->anonymous = $anonymous;
 
     return $this;
   }
@@ -117,19 +104,21 @@ class Role {
    *
    * @return boolean
    */
-  public function getAnonymous() {
+  public function getAnonymous()
+  {
     return $this->anonymous;
   }
 
   /**
-   * Set administrator
+   * Set anonymous
    *
-   * @param boolean $administrator
+   * @param boolean $anonymous
    *
    * @return Role
    */
-  public function setAdministrator($administrator) {
-    $this->administrator = $administrator;
+  public function setAnonymous($anonymous)
+  {
+    $this->anonymous = $anonymous;
 
     return $this;
   }
@@ -139,8 +128,23 @@ class Role {
    *
    * @return boolean
    */
-  public function getAdministrator() {
+  public function getAdministrator()
+  {
     return $this->administrator;
+  }
+
+  /**
+   * Set administrator
+   *
+   * @param boolean $administrator
+   *
+   * @return Role
+   */
+  public function setAdministrator($administrator)
+  {
+    $this->administrator = $administrator;
+
+    return $this;
   }
 
   /**
@@ -150,10 +154,10 @@ class Role {
    *
    * @return Role
    */
-  public function addUser(User $user) {
+  public function addUser(User $user)
+  {
     if (!$this->getUsers()
-      ->contains($user)
-    ) {
+      ->contains($user)) {
       $this->users[] = $user;
     }
 
@@ -161,21 +165,23 @@ class Role {
   }
 
   /**
-   * Remove user
-   *
-   * @param User $user
-   */
-  public function removeUser(User $user) {
-    $this->users->removeElement($user);
-  }
-
-  /**
    * Get users
    *
    * @return \Doctrine\Common\Collections\Collection
    */
-  public function getUsers() {
+  public function getUsers()
+  {
     return $this->users;
+  }
+
+  /**
+   * Remove user
+   *
+   * @param User $user
+   */
+  public function removeUser(User $user)
+  {
+    $this->users->removeElement($user);
   }
 
   /**
@@ -185,7 +191,8 @@ class Role {
    *
    * @return Role
    */
-  public function addPermission(Permission $permission) {
+  public function addPermission(Permission $permission)
+  {
     $this->permissions[] = $permission;
 
     return $this;
@@ -196,7 +203,8 @@ class Role {
    *
    * @param Permission $permission
    */
-  public function removePermission(Permission $permission) {
+  public function removePermission(Permission $permission)
+  {
     $this->permissions->removeElement($permission);
   }
 
@@ -205,7 +213,8 @@ class Role {
    *
    * @return \Doctrine\Common\Collections\Collection
    */
-  public function getPermissions() {
+  public function getPermissions()
+  {
     return $this->permissions;
   }
 }

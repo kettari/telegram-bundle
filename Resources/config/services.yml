@@ -1,10 +1,10 @@
 services:
     kettari_telegram.bot:
-        class: Kaula\TelegramBundle\Telegram\Bot
+        class: Kettari\TelegramBundle\Telegram\Bot
         arguments: ['@service_container']
 
     kettari_telegram.bus:
-        class: Kaula\TelegramBundle\Telegram\CommandBus
+        class: Kettari\TelegramBundle\Telegram\CommandBus
         arguments: ['@kettari_telegram.bot']
 
     telegram_bot:

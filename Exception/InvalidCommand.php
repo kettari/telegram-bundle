@@ -6,7 +6,7 @@
  * Time: 18:46
  */
 
-namespace Kaula\TelegramBundle\Exception;
+namespace Kettari\TelegramBundle\Exception;
 
 
 class InvalidCommand extends TelegramBundleException {

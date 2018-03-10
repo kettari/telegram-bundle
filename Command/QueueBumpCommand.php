@@ -1,15 +1,7 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: ant
- * Date: 15.03.2017
- * Time: 18:14
- */
+declare(strict_types=1);
 
-namespace Kaula\TelegramBundle\Command;
-
-
-
+namespace Kettari\TelegramBundle\Command;
 
 
 class QueueBumpCommand extends AbstractCommand

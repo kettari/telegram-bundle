@@ -6,11 +6,11 @@
  * Time: 14:19
  */
 
-namespace Kaula\TelegramBundle\Telegram\Subscriber;
+namespace Kettari\TelegramBundle\Telegram\Subscriber;
 
 
-use Kaula\TelegramBundle\Telegram\Event\MigrateFromChatIdEvent;
-use Kaula\TelegramBundle\Telegram\Event\MigrateToChatIdEvent;
+use Kettari\TelegramBundle\Telegram\Event\MigrateFromChatIdEvent;
+use Kettari\TelegramBundle\Telegram\Event\MigrateToChatIdEvent;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
@@ -65,7 +65,7 @@ class MigrationSubscriber extends AbstractBotSubscriber implements EventSubscrib
 
     // Find chat object
     $chat = $this->getDoctrine()
-      ->getRepository('KaulaTelegramBundle:Chat')
+      ->getRepository('KettariTelegramBundle:Chat')
       ->findOneBy(['telegram_id' => $chat_from_id]);
     if (!$chat) {
       // Unknown chat for now. Nothing to do
@@ -105,9 +105,9 @@ class MigrationSubscriber extends AbstractBotSubscriber implements EventSubscrib
     $tc = $event->getMessage()->chat;
 
     // Find chat object
-    /** @var \Kaula\TelegramBundle\Entity\Chat $chat */
+    /** @var \Kettari\TelegramBundle\Entity\Chat $chat */
     $chat = $this->getDoctrine()
-      ->getRepository('KaulaTelegramBundle:Chat')
+      ->getRepository('KettariTelegramBundle:Chat')
       ->findOneBy(['telegram_id' => $tc->id]);
     if (!$chat) {
       // Unknown chat for now. Nothing to do

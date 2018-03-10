@@ -6,14 +6,14 @@
  * Time: 21:52
  */
 
-namespace Kaula\TelegramBundle\Telegram\Subscriber;
+namespace Kettari\TelegramBundle\Telegram\Subscriber;
 
 
 
-use Kaula\TelegramBundle\Telegram\Event\CommandExecutedEvent;
-use Kaula\TelegramBundle\Telegram\Event\CommandReceivedEvent;
-use Kaula\TelegramBundle\Telegram\Event\CommandUnauthorizedEvent;
-use Kaula\TelegramBundle\Telegram\Event\CommandUnknownEvent;
+use Kettari\TelegramBundle\Telegram\Event\CommandExecutedEvent;
+use Kettari\TelegramBundle\Telegram\Event\CommandReceivedEvent;
+use Kettari\TelegramBundle\Telegram\Event\CommandUnauthorizedEvent;
+use Kettari\TelegramBundle\Telegram\Event\CommandUnknownEvent;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use unreal4u\TelegramAPI\Telegram\Types\ReplyKeyboardRemove;
 use unreal4u\TelegramAPI\Telegram\Types\Update;

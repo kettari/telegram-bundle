@@ -1,12 +1,7 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: ant
- * Date: 16.03.2017
- * Time: 18:18
- */
+declare(strict_types=1);
 
-namespace Kaula\TelegramBundle\Telegram\Command;
+namespace Kettari\TelegramBundle\Telegram\Command;
 
 
 class StartCommand extends AbstractCommand
@@ -15,7 +10,7 @@ class StartCommand extends AbstractCommand
   static public $name = 'start';
   static public $description = 'Начать разговор с ботом';
   static public $visible = false;
-  static public $required_permissions = ['execute command start'];
+  static public $requiredPermissions = ['execute command start'];
 
   /**
    * Executes command.

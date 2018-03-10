@@ -1,6 +1,6 @@
 <?php
 
-namespace Kaula\TelegramBundle\Repository;
+namespace Kettari\TelegramBundle\Repository;
 
 
 use Doctrine\ORM\EntityRepository;
@@ -29,28 +29,28 @@ class UserRepository extends EntityRepository
     $parameters = [];
     $i = 1;
     foreach ($parts as $part) {
-      $param_name = 'needle_'.$i++;
+      $paramName = 'needle_'.$i++;
       $where .= sprintf(
         ' AND (u.first_name LIKE :%s OR 
-          u.last_name LIKE :%s OR 
+          u.lastName LIKE :%s OR 
           u.username LIKE :%s OR 
           u.phone LIKE :%s OR 
           u.phone LIKE :%s OR
-          u.external_last_name LIKE :%s OR 
-          u.external_first_name LIKE :%s)',
-        $param_name,
-        $param_name,
-        $param_name,
-        $param_name,
-        $param_name,
-        $param_name,
-        $param_name
+          u.externalLastName LIKE :%s OR 
+          u.externalFirstName LIKE :%s)',
+        $paramName,
+        $paramName,
+        $paramName,
+        $paramName,
+        $paramName,
+        $paramName,
+        $paramName
       );
-      $parameters[$param_name] = $part;
+      $parameters[$paramName] = $part;
     }
     $sql = sprintf(
-      'SELECT u FROM KaulaTelegramBundle:User u WHERE %s
-          ORDER BY u.last_name, u.first_name, u.external_last_name, u.external_first_name ASC',
+      'SELECT u FROM KettariTelegramBundle:User u WHERE %s
+          ORDER BY u.lastName, u.firstName, u.externalLastName, u.externalFirstName ASC',
       $where
     );
 
@@ -58,8 +58,8 @@ class UserRepository extends EntityRepository
     $query = $this->getEntityManager()
       ->createQuery($sql);
     // Populate parameters
-    foreach ($parameters as $param_name => $part) {
-      $query->setParameter($param_name, '%'.$part.'%');
+    foreach ($parameters as $paramName => $part) {
+      $query->setParameter($paramName, '%'.$part.'%');
     }
 
     return $query->getResult();
@@ -73,6 +73,6 @@ class UserRepository extends EntityRepository
    */
   public function findByTelegramId($telegramId)
   {
-    return $this->findOneBy(['telegram_id' => $telegramId]);
+    return $this->findOneBy(['telegramId' => $telegramId]);
   }
 }

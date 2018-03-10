@@ -6,7 +6,7 @@
  * Time: 1:24
  */
 
-namespace Kaula\TelegramBundle\Exception;
+namespace Kettari\TelegramBundle\Exception;
 
 
 class ThrottleControlException extends TelegramBundleException

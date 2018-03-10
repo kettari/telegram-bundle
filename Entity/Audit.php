@@ -1,12 +1,7 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: ant
- * Date: 17.04.2017
- * Time: 15:00
- */
+declare(strict_types=1);
 
-namespace Kaula\TelegramBundle\Entity;
+namespace Kettari\TelegramBundle\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
 
@@ -42,12 +37,12 @@ class Audit
   private $description;
 
   /**
-   * @ORM\ManyToOne(targetEntity="Kaula\TelegramBundle\Entity\Chat")
+   * @ORM\ManyToOne(targetEntity="Kettari\TelegramBundle\Entity\Chat")
    */
   private $chat;
 
   /**
-   * @ORM\ManyToOne(targetEntity="Kaula\TelegramBundle\Entity\User")
+   * @ORM\ManyToOne(targetEntity="Kettari\TelegramBundle\Entity\User")
    */
   private $user;
 
@@ -160,7 +155,7 @@ class Audit
   /**
    * Get chat
    *
-   * @return \Kaula\TelegramBundle\Entity\Chat
+   * @return \Kettari\TelegramBundle\Entity\Chat
    */
   public function getChat()
   {
@@ -170,7 +165,7 @@ class Audit
   /**
    * Set chat
    *
-   * @param \Kaula\TelegramBundle\Entity\Chat $chat
+   * @param \Kettari\TelegramBundle\Entity\Chat $chat
    *
    * @return Audit
    */
@@ -184,7 +179,7 @@ class Audit
   /**
    * Get user
    *
-   * @return \Kaula\TelegramBundle\Entity\User
+   * @return \Kettari\TelegramBundle\Entity\User
    */
   public function getUser()
   {
@@ -194,7 +189,7 @@ class Audit
   /**
    * Set user
    *
-   * @param \Kaula\TelegramBundle\Entity\User $user
+   * @param \Kettari\TelegramBundle\Entity\User $user
    *
    * @return Audit
    */
