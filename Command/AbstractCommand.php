@@ -10,6 +10,7 @@ namespace Kaula\TelegramBundle\Command;
 
 
 use Exception;
+use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Command\ContainerAwareCommand;
 use Symfony\Component\Console\Command\LockableTrait;
 use Symfony\Component\Console\Input\InputInterface;
@@ -17,7 +18,8 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\Stopwatch\Stopwatch;
 
-abstract class AbstractCommand extends ContainerAwareCommand {
+abstract class AbstractCommand extends ContainerAwareCommand
+{
 
   use LockableTrait;
 
@@ -48,6 +50,11 @@ abstract class AbstractCommand extends ContainerAwareCommand {
   protected $io;
 
   /**
+   * @var \Psr\Log\LoggerInterface
+   */
+  protected $logger;
+
+  /**
    * @var Stopwatch
    */
   protected $stopwatch;
@@ -57,7 +64,7 @@ abstract class AbstractCommand extends ContainerAwareCommand {
    *
    * @var bool
    */
-  protected $blocking = FALSE;
+  protected $blocking = false;
 
   /**
    * @var array
@@ -65,10 +72,19 @@ abstract class AbstractCommand extends ContainerAwareCommand {
   protected $config;
 
   /**
+   * @param \Psr\Log\LoggerInterface $logger
+   */
+  public function setLogger(LoggerInterface $logger)
+  {
+    $this->logger = $logger;
+  }
+
+  /**
    * @param \Symfony\Component\Console\Input\InputInterface $input
    * @param \Symfony\Component\Console\Output\OutputInterface $output
    */
-  protected function initialize(InputInterface $input, OutputInterface $output) {
+  protected function initialize(InputInterface $input, OutputInterface $output)
+  {
     $this->stopwatch = new Stopwatch();
     $this->stopwatch->start('initialized');
     $this->input = $input;
@@ -76,7 +92,10 @@ abstract class AbstractCommand extends ContainerAwareCommand {
     $this->io = new SymfonyStyle($input, $output);
     $this->exit_code = self::RESULT_OK;
     // Get configuration
-    $this->config = $this->getContainer()->getParameter('kettari_telegram');
+    $this->config = $this->getContainer()
+      ->getParameter('kettari_telegram');
+    $this->logger = $this->getContainer()
+      ->get('logger');
   }
 
   /**
@@ -87,27 +106,32 @@ abstract class AbstractCommand extends ContainerAwareCommand {
    * @return int|null null or 0 if everything went fine, or an error code
    *
    */
-  protected function execute(InputInterface $input, OutputInterface $output) {
+  protected function execute(InputInterface $input, OutputInterface $output)
+  {
     // Start the timer and acquire the lock
     $this->stopwatch->start('execute');
     $c = $this->getContainer();
 
     try {
       // Log execution
-      $c->get('logger')
-        ->info('Executing {command_name} command',
-          ['command_name' => $this->getName()]);
+      $this->logger->info(
+        'Executing {command_name} command',
+        ['command_name' => $this->getName()]
+      );
       // Acquire lock. We can not move further without lock to avoid race conditions
       if (!$this->lock(self::LOCK_TELEGRAM_OPERATIONS, $this->isBlocking())) {
-        $this->io->warning('Unable to acquire lock. It seems another TelegramBundle command is currently running.');
+        $this->io->warning(
+          'Unable to acquire lock. It seems another TelegramBundle command is currently running.'
+        );
         $this->exit_code = self::RESULT_ALREADY_RUNNING;
 
         return $this->exit_code;
       }
       if ($this->output->isVerbose()) {
         $this->io->writeln('Acquired lock');
-        $this->io->writeln('Environment: '.
-          $c->getParameter('kernel.environment'));
+        $this->io->writeln(
+          'Environment: '.$c->getParameter('kernel.environment')
+        );
       }
 
       // Execute command
@@ -119,13 +143,17 @@ abstract class AbstractCommand extends ContainerAwareCommand {
         $this->io->writeln('Lock released');
       }
     } catch (Exception $e) {
-      $message = sprintf('%s: %s (uncaught exception) at %s line %s while running console command',
-        get_class($e), $e->getMessage(), $e->getFile(), $e->getLine());
+      $message = sprintf(
+        '%s: %s (uncaught exception) at %s line %s while running console command',
+        get_class($e),
+        $e->getMessage(),
+        $e->getFile(),
+        $e->getLine()
+      );
       // Log exception to console
       $this->io->error($message);
       // Log exception
-      $c->get('logger')
-        ->error($message, ['exception' => $e]);
+      $this->logger->error($message, ['exception' => $e]);
 
       $this->exit_code = self::RESULT_EXCEPTION;
     } finally {
@@ -134,19 +162,24 @@ abstract class AbstractCommand extends ContainerAwareCommand {
       $execution_time = $event->getDuration() / 1000;
       $memory_peak = $event->getMemory() / 1024 / 1024;
       if ($this->output->isVerbose()) {
-        $this->io->writeln(sprintf('Command finished in %.2f seconds',
-          $execution_time));
+        $this->io->writeln(
+          sprintf(
+            'Command finished in %.2f seconds',
+            $execution_time
+          )
+        );
       }
       if ($this->output->isVerbose()) {
         $this->io->writeln(sprintf('Peak memory usage %.2f MB', $memory_peak));
       }
-      $c->get('logger')
-        ->debug('{command_name} finished in {execution_time} seconds, peak memory usage {memory_peak} MB',
-          [
-            'command_name'   => $this->getName(),
-            'execution_time' => sprintf('%.2f', $execution_time),
-            'memory_peak'    => sprintf('%.2f', $memory_peak),
-          ]);
+      $this->logger->debug(
+        '{command_name} finished in {execution_time} seconds, peak memory usage {memory_peak} MB',
+        [
+          'command_name'   => $this->getName(),
+          'execution_time' => sprintf('%.2f', $execution_time),
+          'memory_peak'    => sprintf('%.2f', $memory_peak),
+        ]
+      );
 
       $this->exitCodeLog();
     }
@@ -155,27 +188,10 @@ abstract class AbstractCommand extends ContainerAwareCommand {
   }
 
   /**
-   * Execute actual code of the command.
-   */
-  protected function executeCommand() {
-  }
-
-  /**
-   * Append log with exit code information
-   */
-  protected function exitCodeLog() {
-    $this->getContainer()
-      ->get('logger')
-      ->info('{command_name} finished with exit code {exit_code}', [
-        'command_name' => $this->getName(),
-        'exit_code'    => $this->exit_code,
-      ]);
-  }
-
-  /**
    * @return bool
    */
-  public function isBlocking(): bool {
+  public function isBlocking(): bool
+  {
     return $this->blocking;
   }
 
@@ -183,10 +199,32 @@ abstract class AbstractCommand extends ContainerAwareCommand {
    * @param bool $blocking
    * @return AbstractCommand
    */
-  public function setBlocking(bool $blocking): AbstractCommand {
+  public function setBlocking(bool $blocking): AbstractCommand
+  {
     $this->blocking = $blocking;
 
     return $this;
+  }
+
+  /**
+   * Execute actual code of the command.
+   */
+  protected function executeCommand()
+  {
+  }
+
+  /**
+   * Append log with exit code information
+   */
+  protected function exitCodeLog()
+  {
+    $this->logger->info(
+        '{command_name} finished with exit code {exit_code}',
+        [
+          'command_name' => $this->getName(),
+          'exit_code'    => $this->exit_code,
+        ]
+      );
   }
 
 }

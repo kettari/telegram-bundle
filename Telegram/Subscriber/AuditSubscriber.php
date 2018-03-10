@@ -130,6 +130,7 @@ class AuditSubscriber extends AbstractBotSubscriber implements EventSubscriberIn
    * Writes outgoing message to the log table in the database.
    *
    * @param RequestSentEvent $event
+   * @throws \ReflectionException
    */
   public function onRequestSent(RequestSentEvent $event)
   {

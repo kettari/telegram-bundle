@@ -30,6 +30,8 @@ class UserManCommand extends AbstractCommand
 
   /**
    * Executes command.
+   *
+   * @throws \Exception
    */
   public function execute()
   {
@@ -66,6 +68,7 @@ class UserManCommand extends AbstractCommand
    * Handles /userman user credentials request.
    *
    * @param string $inline_name
+   * @throws \Exception
    */
   public function showUserManMenu($inline_name = '')
   {
