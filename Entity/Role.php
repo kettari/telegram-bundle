@@ -35,6 +35,8 @@ class Role {
   private $name;
 
   /**
+   * ~~OWNING SIDE~~
+   *
    * @var Collection
    * @ORM\ManyToMany(targetEntity="Kaula\TelegramBundle\Entity\Permission",inversedBy="roles")
    */
@@ -53,7 +55,7 @@ class Role {
   private $administrator = false;
 
   /**
-   * Many Roles have Many Users.
+   * ~~INVERSE SIDE~~
    *
    * @ORM\ManyToMany(targetEntity="Kaula\TelegramBundle\Entity\User",mappedBy="roles")
    */

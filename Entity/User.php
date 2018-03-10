@@ -58,6 +58,8 @@ class User
   private $phone;
 
   /**
+   * ~~OWNING SIDE~~
+   *
    * Many Users have Many Roles.
    *
    * @var Collection
@@ -66,6 +68,8 @@ class User
   private $roles;
 
   /**
+   * ~~OWNING SIDE~~
+   *
    * Many Users have Many Notifications.
    *
    * @var Collection
