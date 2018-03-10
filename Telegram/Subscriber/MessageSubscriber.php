@@ -32,6 +32,7 @@ use Kaula\TelegramBundle\Telegram\Event\PhotoReceivedEvent;
 use Kaula\TelegramBundle\Telegram\Event\StickerReceivedEvent;
 use Kaula\TelegramBundle\Telegram\Event\TextReceivedEvent;
 use Kaula\TelegramBundle\Telegram\Event\VenueReceivedEvent;
+use Kaula\TelegramBundle\Telegram\Event\VideoNoteReceivedEvent;
 use Kaula\TelegramBundle\Telegram\Event\VideoReceivedEvent;
 use Kaula\TelegramBundle\Telegram\Event\VoiceReceivedEvent;
 use Psr\Log\LoggerInterface;
@@ -191,7 +192,7 @@ class MessageSubscriber extends AbstractBotSubscriber implements EventSubscriber
 
     // Dispatch chat member joined event
     // NB: 'new_chat_member' property of the Message object deprecated since May 18, 2017
-    // and should not be used (see https://core.telegram.org/bots/api#may-18-2017)
+    // and should not be used (see https://core.telegram.org/bots/api-changelog#may-18-2017)
     /*if ($message_type & Bot::MT_NEW_CHAT_MEMBER) {
       $join_member_event = new JoinChatMemberEvent($event->getUpdate());
       $dispatcher->dispatch(JoinChatMemberEvent::NAME, $join_member_event);
@@ -269,6 +270,11 @@ class MessageSubscriber extends AbstractBotSubscriber implements EventSubscriber
     if ($message_type & Bot::MT_INVOICE) {
       $invoice_event = new PaymentInvoiceEvent($event->getUpdate());
       $dispatcher->dispatch(PaymentInvoiceEvent::NAME, $invoice_event);
+    }
+    // Dispatch video note event
+    if ($message_type & Bot::MT_VIDEO_NOTE) {
+      $video_note_event = new VideoNoteReceivedEvent($event->getUpdate());
+      $dispatcher->dispatch(VideoNoteReceivedEvent::NAME, $video_note_event);
     }
 
   }
