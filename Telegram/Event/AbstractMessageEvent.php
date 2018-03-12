@@ -1,41 +1,58 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: ant
- * Date: 25.04.2017
- * Time: 13:15
- */
+declare(strict_types=1);
 
 namespace Kettari\TelegramBundle\Telegram\Event;
 
 
 use unreal4u\TelegramAPI\Telegram\Types\Message;
+use unreal4u\TelegramAPI\Telegram\Types\Update;
 
 abstract class AbstractMessageEvent extends AbstractUpdateEvent
 {
-
   /**
    * @var Message
    */
   private $message;
 
   /**
+   * AbstractMessageEvent constructor.
+   *
+   * @param \unreal4u\TelegramAPI\Telegram\Types\Update $update
+   */
+  public function __construct(Update $update)
+  {
+    if (is_null($update->message)) {
+      throw new \RuntimeException(
+        'Message can\'t be null for the AbstractMessageEvent.'
+      );
+    }
+    parent::__construct($update);
+    $this->message = $update->message;
+  }
+
+  /**
+   * @return string
+   */
+  public function getText(): string
+  {
+    return $this->getMessage()->text ? $this->getMessage()->text : '';
+  }
+
+  /**
    * @return Message
    */
-  public function getMessage()
+  public function getMessage(): Message
   {
     return $this->message;
   }
 
   /**
-   * @param Message $message
-   * @return AbstractMessageEvent
+   * Returns true if Message has non-empty text.
+   *
+   * @return bool
    */
-  public function setMessage(Message $message): AbstractMessageEvent
+  public function hasText(): bool
   {
-    $this->message = $message;
-
-    return $this;
+    return !empty($this->getMessage()->text);
   }
-
 }

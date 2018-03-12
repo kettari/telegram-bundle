@@ -1,33 +1,67 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: ant
- * Date: 25.04.2017
- * Time: 14:46
- */
+declare(strict_types=1);
 
 namespace Kettari\TelegramBundle\Telegram\Subscriber;
 
 
-use Doctrine\Bundle\DoctrineBundle\Registry;
-use Kettari\TelegramBundle\Telegram\Bot;
+use Kettari\TelegramBundle\Telegram\CommunicatorInterface;
+use Kettari\TelegramBundle\Telegram\UserHq;
+use Kettari\TelegramBundle\Telegram\UserHqInterface;
+use Psr\Log\LoggerInterface;
+use Symfony\Bridge\Doctrine\RegistryInterface;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use unreal4u\TelegramAPI\Telegram\Types\Update;
 
 abstract class AbstractBotSubscriber
 {
   /**
-   * @var Bot
+   * Logger interface.
+   *
+   * @var LoggerInterface
    */
-  private $bot;
+  protected $logger;
+
+  /**
+   * @var RegistryInterface
+   */
+  protected $doctrine;
+
+  /**
+   * @var EventDispatcherInterface
+   */
+  protected $dispatcher;
+
+  /**
+   * @var \Kettari\TelegramBundle\Telegram\UserHqInterface
+   */
+  protected $userHq;
+
+  /**
+   * @var CommunicatorInterface
+   */
+  protected $communicator;
 
   /**
    * AbstractBotSubscriber constructor.
    *
-   * @param Bot $bot
+   * @param \Psr\Log\LoggerInterface $logger
+   * @param \Symfony\Bridge\Doctrine\RegistryInterface $doctrine
+   * @param \Symfony\Component\EventDispatcher\EventDispatcherInterface $dispatcher
+   * @param \Kettari\TelegramBundle\Telegram\UserHqInterface $userHq
+   * @param \Kettari\TelegramBundle\Telegram\CommunicatorInterface $communicator
    */
-  public function __construct(Bot $bot)
-  {
-    $this->bot = $bot;
+  public function __construct(
+    LoggerInterface $logger,
+    RegistryInterface $doctrine,
+    EventDispatcherInterface $dispatcher,
+    UserHqInterface $userHq,
+    CommunicatorInterface $communicator
+  ) {
+    $this->logger = $logger;
+    $this->doctrine = $doctrine;
+    $this->dispatcher = $dispatcher;
+    $this->userHq = $userHq;
+    $this->communicator = $communicator;
   }
 
   /**
@@ -63,46 +97,28 @@ abstract class AbstractBotSubscriber
    * @param Update $update
    * @return \Kettari\TelegramBundle\Entity\User|null
    */
-  protected function resolveUser($update) {
+  protected function resolveUser($update)
+  {
     // Resolve user object
     $user_id = null;
     if (!is_null($update->message) && !is_null($update->message->from)) {
       $user_id = $update->message->from->id;
     } elseif (!is_null($update->edited_message) &&
-      !is_null($update->edited_message->from)
-    ) {
+      !is_null($update->edited_message->from)) {
       $user_id = $update->edited_message->from->id;
     } elseif (!is_null($update->channel_post) &&
-      !is_null($update->channel_post->from)
-    ) {
+      !is_null($update->channel_post->from)) {
       $user_id = $update->channel_post->from->id;
     } elseif (!is_null($update->callback_query)) {
       if (!is_null($update->callback_query->message) &&
-        !is_null($update->callback_query->from)
-      ) {
+        !is_null($update->callback_query->from)) {
         $user_id = $update->callback_query->from->id;
       }
     }
+
     return $this->getDoctrine()
       ->getRepository('KettariTelegramBundle:User')
       ->findOneBy(['telegram_id' => $user_id]);
-  }
-
-  /**
-   * @return Registry
-   */
-  public function getDoctrine(): Registry
-  {
-    return $this->getBot()
-      ->getDoctrine();
-  }
-
-  /**
-   * @return Bot
-   */
-  public function getBot(): Bot
-  {
-    return $this->bot;
   }
 
 }

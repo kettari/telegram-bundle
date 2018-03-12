@@ -1,14 +1,10 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: ant
- * Date: 25.04.2017
- * Time: 14:19
- */
+declare(strict_types=1);
 
 namespace Kettari\TelegramBundle\Telegram\Subscriber;
 
 
+use Kettari\TelegramBundle\Telegram\Communicator;
 use Kettari\TelegramBundle\Telegram\Event\UpdateReceivedEvent;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
@@ -42,25 +38,23 @@ class CurrentUserSubscriber extends AbstractBotSubscriber implements EventSubscr
    * Resolves telegram user into database object and stores it for the future
    * use.
    *
-   * @param UpdateReceivedEvent $e
+   * @param UpdateReceivedEvent $event
    */
-  public function onUpdateReceived(UpdateReceivedEvent $e)
+  public function onUpdateReceived(UpdateReceivedEvent $event)
   {
-    $user_hq = $this->getBot()
-      ->getUserHq();
     // Resolve current user
-    $user_hq->resolveCurrentUser($e->getUpdate());
-    // If current user is blocked, stop event propagation >:E
-    if ($user_hq->isUserBlocked()) {
+    $this->userHq->resolveCurrentUser($event->getUpdate());
+    if ($this->userHq->isUserBlocked()) {
+      $this->logger->notice('Current user is blocked from out side');
 
-      // First things first
-      $e->stopPropagation();
+      // Current user is blocked, stop event propagation >:E
+      $event->stopPropagation();
       // Then
-      if (!is_null($e->getUpdate()->message)) {
-        $this->getBot()
-          ->sendMessage(
-            $e->getUpdate()->message->chat->id,
-            'Извините, ваш аккаунт заблокирован.'
+      if (!is_null($event->getUpdate()->message)) {
+        $this->communicator->sendMessage(
+            $event->getUpdate()->message->chat->id,
+            'Извините, ваш аккаунт заблокирован.',
+            Communicator::PARSE_MODE_PLAIN
           );
       }
 

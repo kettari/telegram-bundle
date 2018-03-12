@@ -71,7 +71,7 @@ class UserRepository extends EntityRepository
    * @param string $telegramId
    * @return null|object
    */
-  public function findByTelegramId($telegramId)
+  public function findOneByTelegramId($telegramId)
   {
     return $this->findOneBy(['telegramId' => $telegramId]);
   }

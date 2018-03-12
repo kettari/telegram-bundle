@@ -1,26 +1,32 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: ant
- * Date: 11.04.2017
- * Time: 23:35
- */
+declare(strict_types=1);
 
 namespace Kettari\TelegramBundle\Telegram;
 
 
+use Doctrine\Bundle\DoctrineBundle\Registry;
 use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Kettari\TelegramBundle\Entity\Role;
 use Kettari\TelegramBundle\Entity\User;
+use Kettari\TelegramBundle\Exception\CurrentUserNotDefinedException;
+use Kettari\TelegramBundle\Exception\TelegramBundleException;
+use Psr\Log\LoggerInterface;
+use Symfony\Bridge\Doctrine\RegistryInterface;
 use unreal4u\TelegramAPI\Telegram\Types\Update;
 use unreal4u\TelegramAPI\Telegram\Types\User as TelegramUser;
 
-class UserHq
+class UserHq implements UserHqInterface
 {
   /**
-   * @var Bot
+   * @var LoggerInterface
    */
-  private $bot;
+  private $logger;
+
+  /**
+   * @var Registry
+   */
+  private $doctrine;
 
   /**
    * @var User
@@ -30,11 +36,15 @@ class UserHq
   /**
    * UserHq constructor.
    *
-   * @param Bot $bot
+   * @param \Psr\Log\LoggerInterface $logger
+   * @param \Symfony\Bridge\Doctrine\RegistryInterface $doctrine
    */
-  public function __construct(Bot $bot)
-  {
-    $this->bot = $bot;
+  public function __construct(
+    LoggerInterface $logger,
+    RegistryInterface $doctrine
+  ) {
+    $this->logger = $logger;
+    $this->doctrine = $doctrine;
   }
 
   /**
@@ -43,6 +53,7 @@ class UserHq
    * @param User $userEntity
    * @param bool $redundantFormat Return both native and external names
    * @return string
+   * @deprecated To be removed
    */
   public static function formatUserName($userEntity, $redundantFormat = false)
   {
@@ -80,89 +91,72 @@ class UserHq
   }
 
   /**
-   * Finds current telegram user in the database and stores the object for
-   * later use.
-   *
-   * @param Update $update
-   * @return User
+   * {@inheritdoc}
    */
-  public function resolveCurrentUser(Update $update)
+  public function resolveCurrentUser(Update $update): User
   {
-    $updateType = $this->getBot()
-      ->whatUpdateType($update);
-    $l = $this->getBot()
-      ->getLogger();
-    $l->debug(
-      'About to resolve current user for update type {update_type}',
+    $updateType = UpdateTypeResolver::getUpdateType($update);
+    $this->logger->debug(
+      'About to resolve current user for the update type {update_type}',
       ['update_type' => $updateType]
     );
 
     // Assign telegram user object depending on update type
     $telegramUser = null;
-    if (Bot::UT_MESSAGE == $updateType) {
+    if (UpdateTypeResolver::UT_MESSAGE == $updateType) {
       if (!is_null($update->message)) {
         $telegramUser = $update->message->from;
       }
-    } elseif (Bot::UT_CALLBACK_QUERY == $updateType) {
+    } elseif (UpdateTypeResolver::UT_CALLBACK_QUERY == $updateType) {
       if (!is_null($update->callback_query)) {
         $telegramUser = $update->callback_query->from;
       }
     }
-    $l->debug(
-      'Telegram user ID: {telegram_id}',
+    // Can't go further without proper user resolving
+    if (is_null($telegramUser)) {
+      throw new TelegramBundleException('Telegram user object not found in the update object.');
+    }
+
+    $this->logger->debug(
+      'Telegram user ID={telegram_id}',
       [
-        'telegram_id'   => ($telegramUser) ? $telegramUser->id : 'not resolved',
+        'telegram_id'   => $telegramUser->id,
         'telegram_user' => $telegramUser,
       ]
     );
     // Check if already resolved
     if ($this->currentUser) {
-      $l->debug('Already resolved', ['current_user' => $this->currentUser]);
-      if ($telegramUser) {
-        $this->currentUser->setTelegramId($telegramUser->id)
-          ->setFirstName($telegramUser->first_name)
-          ->setLastName($telegramUser->last_name)
-          ->setUsername($telegramUser->username);
-        $this->getBot()
-          ->getDoctrine()
-          ->getManager()
-          ->flush();
-      }
+      $this->logger->debug(
+        'Already resolved',
+        ['current_user' => $this->currentUser]
+      );
+      $this->currentUser->setTelegramId($telegramUser->id)
+        ->setFirstName($telegramUser->first_name)
+        ->setLastName($telegramUser->last_name)
+        ->setUsername($telegramUser->username);
+      $this->doctrine->getManager()
+        ->flush();
 
       return $this->currentUser;
-    }
-    // Well?..
-    if (is_null($telegramUser)) {
-      $l->warning('Telegram user is null, unable to resolve');
-
-      return null;
     }
 
     /** @var User $user */
     if (is_null(
-      $this->currentUser = $this->getBot()
-        ->getDoctrine()
-        ->getRepository('KettariTelegramBundle:User')
-        ->findByTelegramId($telegramUser->id)
+      $this->currentUser = $this->doctrine->getRepository(
+        'KettariTelegramBundle:User'
+      )
+        ->findOneByTelegramId($telegramUser->id)
     )) {
       // Get user entity by telegram user
       $this->currentUser = $this->createAnonymousUser($telegramUser);
     }
 
-    $l->debug(
-      'Telegram user resolved to entity',
-      ['user' => $this->currentUser]
+    $this->logger->debug(
+      'Telegram user successfully resolved to entity ID={user_id}',
+      ['user_id' => $this->currentUser->getId(), 'user' => $this->currentUser]
     );
 
     return $this->currentUser;
-  }
-
-  /**
-   * @return Bot
-   */
-  public function getBot(): Bot
-  {
-    return $this->bot;
   }
 
   /**
@@ -171,17 +165,12 @@ class UserHq
    * @param \unreal4u\TelegramAPI\Telegram\Types\User $tu
    * @return \Kettari\TelegramBundle\Entity\User
    */
-  public function createAnonymousUser(TelegramUser $tu)
+  private function createAnonymousUser(TelegramUser $tu)
   {
-    $l = $this->getBot()
-      ->getLogger();
-    $l->debug(
+    $this->logger->debug(
       'About to create anonymous user for TelegramID={telegram_id}',
       ['telegram_id' => $tu->id, 'telegram_user' => $tu]
     );
-    $d = $this->getBot()
-      ->getDoctrine();
-    $em = $d->getManager();
 
     // Create user entity and assign roles
     $user = new User();
@@ -191,15 +180,25 @@ class UserHq
       ->setUsername($tu->username);
     // Get roles and assign them
     $roles = $this->getAnonymousRoles();
-    $l->debug(
+    $this->logger->debug(
       'Assigning {roles_count} role(s) to the user',
       ['roles_count' => count($roles), 'roles' => $roles]
     );
     $this->assignRoles($roles, $user);
 
     // Commit changes
+    $em = $this->doctrine->getManager();
     $em->persist($user);
     $em->flush();
+
+    $this->logger->debug(
+      'Created anonymous user for TelegramID={telegram_id}, entity ID={user_id}',
+      [
+        'telegram_id'   => $tu->id,
+        'telegram_user' => $tu,
+        'user_id'       => $user->getId(),
+      ]
+    );
 
     return $user;
   }
@@ -211,10 +210,8 @@ class UserHq
    */
   private function getAnonymousRoles()
   {
-    $roles = $this->getBot()
-      ->getDoctrine()
-      ->getRepository('KettariTelegramBundle:Role')
-      ->findBy(['anonymous' => true]);
+    $roles = $this->doctrine->getRepository('KettariTelegramBundle:Role')
+      ->findAnonymous();
     if (0 == count($roles)) {
       throw new \LogicException('Roles for guests not found');
     }
@@ -240,14 +237,12 @@ class UserHq
   }
 
   /**
-   * Returns true if current user is blocked.
-   *
-   * @return boolean
+   * {@inheritdoc}
    */
-  public function isUserBlocked()
+  public function isUserBlocked(): bool
   {
     if (is_null($this->currentUser)) {
-      return false;
+      throw new CurrentUserNotDefinedException('Unable to tell if user is blocked. Current user not resolved.');
     }
 
     return $this->getCurrentUser()
@@ -255,9 +250,7 @@ class UserHq
   }
 
   /**
-   * Get database entity for current database user.
-   *
-   * @return User
+   * {@inheritdoc}
    */
   public function getCurrentUser()
   {
@@ -265,19 +258,17 @@ class UserHq
   }
 
   /**
-   * Returns collection of Permissions for telegram user.
-   *
-   * @return \Doctrine\Common\Collections\Collection
+   * {@inheritdoc}
    */
-  public function getUserPermissions()
+  public function getUserPermissions(): Collection
   {
-    $permissions = new ArrayCollection();
-    if (is_null($user = $this->getCurrentUser())) {
-      return $permissions;
+    if (is_null($this->currentUser)) {
+      throw new CurrentUserNotDefinedException('Unable to get user permissions. Current user not resolved.');
     }
 
+    $permissions = new ArrayCollection();
     // Load roles and each role's permissions
-    $roles = $user->getRoles();
+    $roles = $this->currentUser->getRoles();
     /** @var \Kettari\TelegramBundle\Entity\Role $roleItem */
     foreach ($roles as $roleItem) {
       $rolePerms = $roleItem->getPermissions();
@@ -293,32 +284,15 @@ class UserHq
   }
 
   /**
-   * Returns collection of Notifications for telegram user.
-   *
-   * @return \Doctrine\Common\Collections\Collection
+   * {@inheritdoc}
    */
-  public function getUserNotifications()
+  public function getUserNotifications(): Collection
   {
-    if (is_null($user = $this->getCurrentUser())) {
-      return new ArrayCollection();
+    if (is_null($this->currentUser)) {
+      throw new TelegramBundleException('Unable to get user notifications. Current user not resolved.');
     }
 
-    return $user->getNotifications();
-  }
-
-  /**
-   * Returns database User entity by telegram User object.
-   *
-   * @param TelegramUser $telegramUser
-   * @return \Kettari\TelegramBundle\Entity\User|null
-   */
-  public function getEntityByTelegram($telegramUser)
-  {
-    /** @var User $user */
-    return $this->getBot()
-      ->getDoctrine()
-      ->getRepository('KettariTelegramBundle:User')
-      ->findByTelegramId($telegramUser->id);
+    return $this->currentUser->getNotifications();
   }
 
 }

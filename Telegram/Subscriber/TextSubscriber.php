@@ -75,19 +75,19 @@ class TextSubscriber extends AbstractBotSubscriber implements EventSubscriberInt
       $matches
     )) {
 
-      if (isset($matches[1]) && ($command_name = $matches[1])) {
+      if (isset($matches[1]) && ($commandName = $matches[1])) {
         // Parameter?
         $parameter = trim($matches[3]) ?? null;
 
         $l->info(
           'Detected incoming command /{command}',
-          ['command' => $command_name, 'parameter' => $parameter]
+          ['command' => $commandName, 'parameter' => $parameter]
         );
 
         // Dispatch command event
         $this->dispatchCommandReceived(
           $event->getUpdate(),
-          $command_name,
+          $commandName,
           $parameter
         );
 
@@ -114,7 +114,7 @@ class TextSubscriber extends AbstractBotSubscriber implements EventSubscriberInt
     $parameter
   ) {
     $dispatcher = $this->getBot()
-      ->getEventDispatcher();
+      ->getDispatcher();
 
     // Dispatch command event
     $command_received_event = new CommandReceivedEvent(

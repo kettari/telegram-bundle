@@ -1,13 +1,10 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: ant
- * Date: 26.04.2017
- * Time: 13:15
- */
+declare(strict_types=1);
 
 namespace Kettari\TelegramBundle\Telegram\Event;
 
+
+use unreal4u\TelegramAPI\Abstracts\TelegramMethods;
 
 class RequestBlockedEvent extends AbstractMethodExceptionEvent
 {
@@ -16,26 +13,26 @@ class RequestBlockedEvent extends AbstractMethodExceptionEvent
   /**
    * @var string
    */
-  private $chat_id;
+  private $chatId = null;
 
   /**
    * RequestBlockedEvent constructor.
    *
-   * @param string $chat_id
-   * @param mixed $method
+   * @param TelegramMethods $method
+   * @param null|string $chatId
    * @param mixed $response
    */
-  public function __construct($chat_id, $method, $response)
+  public function __construct(TelegramMethods $method, $chatId, $response)
   {
     parent::__construct($method, $response);
-    $this->chat_id = $chat_id;
+    $this->chatId = $chatId;
   }
 
   /**
-   * @return string
+   * @return null|string
    */
   public function getChatId()
   {
-    return $this->chat_id;
+    return $this->chatId;
   }
 }

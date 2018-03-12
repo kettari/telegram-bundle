@@ -61,7 +61,7 @@ class ChatMemberSubscriber extends AbstractBotSubscriber implements EventSubscri
   public function onMembersManyJoined(JoinChatMembersManyEvent $event)
   {
     $dispatcher = $this->getBot()
-      ->getEventDispatcher();
+      ->getDispatcher();
     $chat_entity = $this->prepareChat($event->getMessage()->chat);
     $users = $event->getMessage()->new_chat_members;
 
@@ -209,7 +209,7 @@ class ChatMemberSubscriber extends AbstractBotSubscriber implements EventSubscri
       $update, $joinedUser, $chatEntity, $userEntity
     );
     $this->getBot()
-      ->getEventDispatcher()
+      ->getDispatcher()
       ->dispatch(JoinChatMemberBotEvent::NAME, $botJoinedEvent);
   }
 
@@ -313,7 +313,7 @@ class ChatMemberSubscriber extends AbstractBotSubscriber implements EventSubscri
       $update, $leftUser, $chatEntity, $userEntity
     );
     $this->getBot()
-      ->getEventDispatcher()
+      ->getDispatcher()
       ->dispatch(LeftChatMemberBotEvent::NAME, $botLeftEvent);
   }
 

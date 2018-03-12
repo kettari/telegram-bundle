@@ -1,15 +1,9 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: ant
- * Date: 25.04.2017
- * Time: 13:15
- */
+declare(strict_types=1);
 
 namespace Kettari\TelegramBundle\Telegram\Event;
 
 
-use RuntimeException;
 use unreal4u\TelegramAPI\Telegram\Types\Update;
 
 class TextReceivedEvent extends AbstractMessageEvent
@@ -23,27 +17,11 @@ class TextReceivedEvent extends AbstractMessageEvent
    */
   public function __construct(Update $update)
   {
-    if (is_null($update->message)) {
-      throw new RuntimeException(
-        'Message can\'t be null for the TextReceivedEvent.'
-      );
-    }
+    parent::__construct($update);
     if (empty($update->message->text)) {
-      throw new RuntimeException(
+      throw new \RuntimeException(
         'Text of the Message can\'t be empty for the TextReceivedEvent.'
       );
     }
-
-    $this->setMessage($update->message)
-      ->setUpdate($update);
   }
-
-  /**
-   * @return string
-   */
-  public function getText(): string
-  {
-    return $this->getMessage()->text;
-  }
-
 }

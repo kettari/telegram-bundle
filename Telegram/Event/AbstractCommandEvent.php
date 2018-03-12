@@ -1,10 +1,5 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: ant
- * Date: 25.04.2017
- * Time: 13:15
- */
+declare(strict_types=1);
 
 namespace Kettari\TelegramBundle\Telegram\Event;
 
@@ -17,59 +12,47 @@ abstract class AbstractCommandEvent extends AbstractMessageEvent
   /**
    * @var string
    */
-  private $command;
+  private $commandName = '';
 
   /**
    * @var string
    */
-  private $parameter;
+  private $parameter = '';
 
   /**
    * CommandReceivedEvent constructor.
    *
    * @param Update $update
-   * @param string $command
+   * @param string $commandName
    * @param string $parameter
    */
-  public function __construct(Update $update, $command, $parameter)
-  {
-    if (is_null($update->message)) {
-      throw new RuntimeException(
-        'Message can\'t be null for the AbstractCommandEvent.'
-      );
-    }
+  public function __construct(
+    Update $update,
+    string $commandName,
+    string $parameter
+  ) {
+    parent::__construct($update);
     if (empty($update->message->text)) {
       throw new RuntimeException(
         'Text of the Message can\'t be empty for the AbstractCommandEvent.'
       );
     }
-
-    $this->setMessage($update->message)
-      ->setUpdate($update);
-    $this->command = $command;
+    $this->commandName = $commandName;
     $this->parameter = $parameter;
   }
 
   /**
    * @return string
    */
-  public function getText()
+  public function getCommandName(): string
   {
-    return $this->getMessage()->text;
+    return $this->commandName;
   }
 
   /**
    * @return string
    */
-  public function getCommand()
-  {
-    return $this->command;
-  }
-
-  /**
-   * @return string
-   */
-  public function getParameter()
+  public function getParameter(): string
   {
     return $this->parameter;
   }

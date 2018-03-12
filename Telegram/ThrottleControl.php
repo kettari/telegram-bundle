@@ -1,19 +1,14 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: ant
- * Date: 13.03.2017
- * Time: 14:14
- */
+declare(strict_types=1);
 
 namespace Kettari\TelegramBundle\Telegram;
 
 /**
- * Class ThrottleSingleton
+ * Class ThrottleControl
  *
  * @package AmoCrm\Client
  */
-class ThrottleSingleton
+class ThrottleControl
 {
 
   /**
@@ -42,11 +37,6 @@ class ThrottleSingleton
   const COOLDOWN_SPAN = 60;
 
   /**
-   * @var null
-   */
-  private static $instance = null;
-
-  /**
    * @var array
    */
   protected $requests = [];
@@ -54,33 +44,12 @@ class ThrottleSingleton
   /**
    * @var int
    */
-  protected $idle_time = 0;
+  protected $idleTime = 0;
 
   /**
    * @var int
    */
-  protected $queue_length_peak = 0;
-
-  /**
-   * @inheritDoc
-   */
-  private function __construct()
-  {
-  }
-
-  /**
-   * Return instance of this singleton
-   *
-   * @return ThrottleSingleton
-   */
-  public static function getInstance()
-  {
-    if (is_null(self::$instance)) {
-      self::$instance = new ThrottleSingleton();
-    }
-
-    return self::$instance;
-  }
+  protected $queueLengthPeak = 0;
 
   /**
    * When API request is sent this method must be called
@@ -90,8 +59,8 @@ class ThrottleSingleton
     $this->requests[] = microtime(true);
 
     // Collect statistics
-    if (count($this->requests) > $this->queue_length_peak) {
-      $this->queue_length_peak = count($this->requests);
+    if (count($this->requests) > $this->queueLengthPeak) {
+      $this->queueLengthPeak = count($this->requests);
     }
   }
 
@@ -112,7 +81,7 @@ class ThrottleSingleton
       usleep(self::IDLE_SECONDS * 1000000);
 
       // Collect statistics
-      $this->idle_time += self::IDLE_SECONDS;
+      $this->idleTime += self::IDLE_SECONDS;
     }
 
     return true;
@@ -128,9 +97,9 @@ class ThrottleSingleton
     $this->cleanQueue();
 
     // Average vote
-    $average_exceeded = ((count($this->requests) / self::WINDOW_SPAN) >
+    $averageExceeded = ((count($this->requests) / self::WINDOW_SPAN) >
       self::REQUESTS_PER_SECOND);
-    if ($average_exceeded) {
+    if ($averageExceeded) {
       return false;
     }
 
@@ -195,15 +164,15 @@ class ThrottleSingleton
   {
     $now = microtime(true);
     $cutoff = $now - 1;
-    $last_sec_queue = $this->requests;
-    foreach ($last_sec_queue as $key => $rq) {
+    $lastSecQueue = $this->requests;
+    foreach ($lastSecQueue as $key => $rq) {
       // If request is older than 1 second, remove it from the queue
       if ($rq < $cutoff) {
-        unset($last_sec_queue[$key]);
+        unset($lastSecQueue[$key]);
       }
     }
 
-    return count($last_sec_queue);
+    return count($lastSecQueue);
   }
 
   /**
@@ -213,7 +182,7 @@ class ThrottleSingleton
    */
   public function getIdleTime()
   {
-    return $this->idle_time;
+    return $this->idleTime;
   }
 
   /**
@@ -223,7 +192,7 @@ class ThrottleSingleton
    */
   public function getQueueLengthPeak()
   {
-    return $this->queue_length_peak;
+    return $this->queueLengthPeak;
   }
 
   /**

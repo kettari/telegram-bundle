@@ -9,7 +9,7 @@ use Doctrine\ORM\Mapping as ORM;
 use Doctrine\ORM\Mapping\Index;
 
 /**
- * @ORM\Entity
+ * @ORM\Entity(repositoryClass="Kettari\TelegramBundle\Repository\RoleRepository")
  * @ORM\Table(name="role",indexes={@Index(name="permissions_anonymous_idx",columns={"anonymous"}),
  *   @Index(name="permissions_administrator_idx",columns={"administrator"})},
  *   options={"collate":"utf8mb4_general_ci", "charset":"utf8mb4"})

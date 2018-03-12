@@ -1,13 +1,10 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: ant
- * Date: 26.04.2017
- * Time: 13:15
- */
+declare(strict_types=1);
 
 namespace Kettari\TelegramBundle\Telegram\Event;
 
+
+use unreal4u\TelegramAPI\Abstracts\TelegramMethods;
 
 abstract class AbstractMethodEvent extends AbstractTelegramEvent
 {
@@ -24,13 +21,14 @@ abstract class AbstractMethodEvent extends AbstractTelegramEvent
   /**
    * RequestSentEvent constructor.
    *
-   * @param mixed $method
+   * @param TelegramMethods $method
    * @param mixed $response
    */
-  public function __construct($method, $response)
+  public function __construct(TelegramMethods $method, $response)
   {
     $this->method = $method;
     $this->response = $response;
+    // @TODO Clarify response type in the comment
   }
 
   /**

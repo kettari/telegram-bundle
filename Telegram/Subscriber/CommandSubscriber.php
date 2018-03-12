@@ -61,17 +61,17 @@ class CommandSubscriber extends AbstractBotSubscriber implements EventSubscriber
 
     if (!$this->getBot()
       ->getBus()
-      ->isCommandRegistered($event->getCommand())
+      ->isCommandRegistered($event->getCommandName())
     ) {
       $l->notice(
         'No class registered to handle /{command_name} command',
-        ['command_name' => $event->getCommand()]
+        ['command_name' => $event->getCommandName()]
       );
 
       // Unknown command
       $this->dispatchUnknownCommandReceived(
         $event->getUpdate(),
-        $event->getCommand(),
+        $event->getCommandName(),
         $event->getParameter()
       );
 
@@ -82,7 +82,7 @@ class CommandSubscriber extends AbstractBotSubscriber implements EventSubscriber
     if ($this->getBot()
       ->getBus()
       ->executeCommand(
-        $event->getCommand(),
+        $event->getCommandName(),
         $event->getParameter(),
         $event->getUpdate()
       )
@@ -90,13 +90,6 @@ class CommandSubscriber extends AbstractBotSubscriber implements EventSubscriber
       // Set flag that request is handled
       $this->getBot()
         ->setRequestHandled(true);
-
-      // Dispatch command is executed
-      $this->dispatchCommandExecuted(
-        $event->getUpdate(),
-        $event->getCommand(),
-        $event->getParameter()
-      );
     }
   }
 
@@ -113,35 +106,13 @@ class CommandSubscriber extends AbstractBotSubscriber implements EventSubscriber
     $parameter
   ) {
     $dispatcher = $this->getBot()
-      ->getEventDispatcher();
+      ->getDispatcher();
 
     // Dispatch command event
     $command_unknown_event = new CommandUnknownEvent(
       $update, $command_name, $parameter
     );
     $dispatcher->dispatch(CommandUnknownEvent::NAME, $command_unknown_event);
-  }
-
-  /**
-   * Dispatches command is executed.
-   *
-   * @param Update $update
-   * @param string $command_name
-   * @param string $parameter
-   */
-  private function dispatchCommandExecuted(
-    Update $update,
-    $command_name,
-    $parameter
-  ) {
-    $dispatcher = $this->getBot()
-      ->getEventDispatcher();
-
-    // Dispatch command event
-    $command_executed_event = new CommandExecutedEvent(
-      $update, $command_name, $parameter
-    );
-    $dispatcher->dispatch(CommandExecutedEvent::NAME, $command_executed_event);
   }
 
   /**

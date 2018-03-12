@@ -1,39 +1,24 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: ant
- * Date: 16.03.2017
- * Time: 18:11
- */
+declare(strict_types=1);
 
 namespace Kettari\TelegramBundle\Telegram;
 
-
 use Kettari\TelegramBundle\Entity\Permission;
 use Kettari\TelegramBundle\Entity\Role;
-use Kettari\TelegramBundle\Exception\InvalidCommand;
+use Kettari\TelegramBundle\Exception\InvalidCommandException;
 use Kettari\TelegramBundle\Telegram\Command\AbstractCommand;
+use Kettari\TelegramBundle\Telegram\Command\TelegramCommandInterface;
+use Kettari\TelegramBundle\Telegram\Event\CommandExecutedEvent;
 use Kettari\TelegramBundle\Telegram\Event\CommandUnauthorizedEvent;
 use Psr\Log\LoggerInterface;
+use Symfony\Bridge\Doctrine\RegistryInterface;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use unreal4u\TelegramAPI\Telegram\Types\Update;
 use unreal4u\TelegramAPI\Telegram\Types\User as TelegramUser;
 
 
-class CommandBus
+class CommandBus implements CommandBusInterface
 {
-
-  /**
-   * Bot this command bus belongs to.
-   *
-   * @var Bot
-   */
-  protected $bot;
-
-  /**
-   * @var Hooker
-   */
-  protected $hooker;
-
   /**
    * Commands classes.
    *
@@ -42,54 +27,75 @@ class CommandBus
   protected $commandsClasses = [];
 
   /**
+   * @var LoggerInterface
+   */
+  private $logger;
+
+  /**
+   * @var RegistryInterface
+   */
+  private $doctrine;
+
+  /**
+   * @var \Symfony\Component\EventDispatcher\EventDispatcherInterface
+   */
+  private $dispatcher;
+
+  /**
    * CommandBus constructor.
    *
-   * @param \Kettari\TelegramBundle\Telegram\Bot $bot
-   * @param \Kettari\TelegramBundle\Telegram\Hooker $hooker
+   * @param \Psr\Log\LoggerInterface $logger
+   * @param \Symfony\Bridge\Doctrine\RegistryInterface $doctrine
+   * @param \Symfony\Component\EventDispatcher\EventDispatcherInterface $dispatcher
    */
-  public function __construct(Bot $bot, Hooker $hooker = null)
-  {
-    $this->bot = $bot;
-    if (!is_null($hooker)) {
-      $this->hooker = $hooker;
-    } else {
-      $this->hooker = new Hooker($this);
-    }
+  public function __construct(
+    LoggerInterface $logger,
+    RegistryInterface $doctrine,
+    EventDispatcherInterface $dispatcher
+  ) {
+    $this->logger = $logger;
+    $this->doctrine = $doctrine;
+    $this->dispatcher = $dispatcher;
   }
 
   /**
-   * Registers command.
-   *
-   * @param string $commandClass
-   * @return \Kettari\TelegramBundle\Telegram\CommandBus
+   * {@inheritdoc}
    */
-  public function registerCommand($commandClass)
+  public function registerCommand(string $commandClass): CommandBusInterface
   {
+    $this->logger->debug(
+      'About to register command class "{command_class}"',
+      ['command_class' => $commandClass]
+    );
+
     if (class_exists($commandClass)) {
-      if (is_subclass_of($commandClass, AbstractCommand::class)) {
+      if ($commandClass instanceof TelegramCommandInterface) {
         $this->commandsClasses[$commandClass] = true;
       } else {
-        throw new InvalidCommand(
-          'Unable to register command: '.$commandClass.
-          ' The command should be a subclass of '.AbstractCommand::class
+        throw new InvalidCommandException(
+          'Unable to register command: "'.$commandClass.
+          '" The command should implement '.TelegramCommandInterface::class.
+          ' interface'
         );
       }
     } else {
-      throw new InvalidCommand(
+      throw new InvalidCommandException(
         'Unable to register command: '.$commandClass.' Class is not found'
       );
     }
+
+    $this->logger->debug(
+      'Command class "{command_class}" registered',
+      ['command_class' => $commandClass]
+    );
 
     return $this;
   }
 
   /**
-   * Return TRUE if command is registered.
-   *
-   * @param string $commandName
-   * @return bool
+   * {@inheritdoc}
    */
-  public function isCommandRegistered($commandName)
+  public function isCommandRegistered(string $commandName): bool
   {
     foreach ($this->commandsClasses as $commandClass => $placeholder) {
       /** @var AbstractCommand $commandClass */
@@ -102,48 +108,62 @@ class CommandBus
   }
 
   /**
-   * Executes command that is registered with CommandBus.
-   *
-   * @param $name
-   * @param string $parameter
-   * @param \unreal4u\TelegramAPI\Telegram\Types\Update $update
-   * @return bool Returns true if command was executed; false if not found or
-   *   user has insufficient permissions.
+   * {@inheritdoc}
    */
-  public function executeCommand($name, $parameter = null, Update $update)
-  {
-    /** @var LoggerInterface $l */
-    $l = $this->getBot()
-      ->getContainer()
-      ->get('logger');
+  public function executeCommand(
+    Update $update,
+    string $commandName,
+    string $parameter = ''
+  ): bool {
+    $this->logger->debug(
+      'About to execute command "{command_name}" with parameter "{parameter}" for the update ID={update_id}',
+      [
+        'command_name' => $commandName,
+        'parameter'    => $parameter,
+        'update_id'    => $update->update_id,
+      ]
+    );
 
     foreach ($this->commandsClasses as $commandClass => $placeholder) {
       /** @var AbstractCommand $commandClass */
-      if ($commandClass::getName() == $name) {
+      if ($commandClass::getName() == $commandName) {
 
         // Check permissions for current user
         if (!$this->isAuthorized($update->message->from, $commandClass)) {
-          $l->notice(
+          $this->logger->notice(
             'User is not authorized to execute /{command_name} command with the class "{class_name}"',
-            ['command_name' => $name, 'class_name' => $commandClass]
+            ['command_name' => $commandName, 'class_name' => $commandClass]
           );
 
           // Dispatch command is unauthorized
-          $this->dispatchUnauthorizedCommand($update, $name, $parameter);
+          $this->dispatchUnauthorizedCommand($update, $commandName, $parameter);
 
           return false;
         }
 
         // User is authorized, OK
-        $l->info(
-          'Executing /{command_name} command with the class "{class_name}"',
-          ['command_name' => $name, 'class_name' => $commandClass]
+        $this->logger->info(
+          'Executing /{command_name} command with the parameter "{parameter}"',
+          [
+            'command_name' => $commandName,
+            'class_name'   => $commandClass,
+            'parameter'    => $parameter,
+            'update_id'    => $update->update_id,
+          ]
         );
 
         /** @var AbstractCommand $command */
         $command = new $commandClass($this, $update);
         $command->initialize($parameter)
           ->execute();
+
+        $this->logger->debug(
+          'Command /{command_name} executed with the class "{class_name}"',
+          ['command_name' => $commandName, 'class_name' => $commandClass]
+        );
+
+        // Dispatch command is executed
+        $this->dispatchCommandExecuted($update, $command);
 
         return true;
       }
@@ -153,40 +173,26 @@ class CommandBus
   }
 
   /**
-   * Returns bot object.
-   *
-   * @return \Kettari\TelegramBundle\Telegram\Bot
+   * {@inheritdoc}
    */
-  public function getBot()
-  {
-    return $this->bot;
-  }
-
-  /**
-   * Return TRUE if telegram user is authorized to execute specified command.
-   *
-   * @param \unreal4u\TelegramAPI\Telegram\Types\User $tu
-   * @param $commandClass
-   * @return bool
-   */
-  public function isAuthorized(TelegramUser $tu, $commandClass)
-  {
-    if (is_null($tu)) {
-      return false;
-    }
-
-    $l = $this->getBot()
-      ->getContainer()
-      ->get('logger');
-
-    $d = $this->getBot()
-      ->getContainer()
-      ->get('doctrine');
+  public function isAuthorized(
+    TelegramUser $tu,
+    TelegramCommandInterface $command
+  ): bool {
+    $this->logger->debug(
+      'About to check Telegram user ID={user_id} authorization to execute command "{command_name}"',
+      ['user_id' => $tu->id, 'command_name' => $command::getName()]
+    );
 
     // Find user object
-    $user = $d->getRepository('KettariTelegramBundle:User')
-      ->findOneBy(['telegram_id' => $tu->id]);
+    $user = $this->doctrine->getRepository('KettariTelegramBundle:User')
+      ->findOneByTelegramId($tu->id);
     if (is_null($user)) {
+      $this->logger->debug(
+        'Telegram user ID={user_id} not found in the database',
+        ['user_id' => $tu->id]
+      );
+
       return false;
     }
     // Fetch roles and iterate permissions
@@ -203,8 +209,7 @@ class CommandBus
       $userPermissions = array_merge($userPermissions, $permissionsArray);
     }
 
-    /** @var AbstractCommand $commandClass */
-    $requiredPermissions = $commandClass::getRequiredPermissions();
+    $requiredPermissions = $command::getRequiredPermissions();
 
     // First check required permissions against existing permissions
     // and then check all required permissions are present
@@ -216,8 +221,8 @@ class CommandBus
       !array_diff($requiredPermissions, $applicablePermissions);
 
     // Write to the log permissions check result
-    $l->info(
-      'Authorization check: {auth_check}',
+    $this->logger->info(
+      'Command authorization check: {auth_check}',
       [
         'auth_check'             => $result ? 'OK' : 'not authorized',
         'required_permissions'   => $requiredPermissions,
@@ -238,38 +243,43 @@ class CommandBus
    */
   private function dispatchUnauthorizedCommand(
     Update $update,
-    $commandName,
-    $parameter
+    string $commandName,
+    string $parameter
   ) {
-    $dispatcher = $this->getBot()
-      ->getEventDispatcher();
-
     // Dispatch command event
     $commandUnauthorizedEvent = new CommandUnauthorizedEvent(
       $update, $commandName, $parameter
     );
-    $dispatcher->dispatch(
+    $this->dispatcher->dispatch(
       CommandUnauthorizedEvent::NAME,
       $commandUnauthorizedEvent
     );
   }
 
   /**
-   * Returns array of commands classes.
+   * Dispatches command is executed.
    *
-   * @return array
+   * @param Update $update
+   * @param \Kettari\TelegramBundle\Telegram\Command\AbstractCommand $command
    */
-  public function getCommands()
-  {
-    return $this->commandsClasses;
+  private function dispatchCommandExecuted(
+    Update $update,
+    AbstractCommand $command
+  ) {
+    // Dispatch command event
+    $commandExecutedEvent = new CommandExecutedEvent($update, $command);
+    $this->dispatcher->dispatch(
+      CommandExecutedEvent::NAME,
+      $commandExecutedEvent
+    );
   }
 
   /**
-   * @return Hooker
+   * {@inheritdoc}
    */
-  public function getHooker(): Hooker
+  public function getCommands(): array
   {
-    return $this->hooker;
+    return $this->commandsClasses;
   }
 
 }

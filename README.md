@@ -30,7 +30,7 @@ No known issues.
   * [TBD] `telegram.hook.before` -- before hook is executed.
   * [TBD] `telegram.hook.after` -- after hook is executed.
   * `telegram.message.received` -- when Message is found within the incoming Update.
-    * 90000:IdentityWatchdogSubscriber -- updates User and Chat tables for the current user;
+    * 90000:ChatSubscriber -- updates User and Chat tables for the current user;
     adds default roles and permissions when user send his/her first message to the bot.
     * 0:MessageSubscriber -- if text is not empty, dispatch further events.
     * –90000:MessageSubscriber -- checks if request was handled. If not, sends to the user a message.
@@ -55,9 +55,9 @@ No known issues.
   * `telegram.group.created` -- new group created.
     * 0:GroupsSubscriber -- handles new group creation.
   * `telegram.chat.migrated_to` -- migrated to chat ID.
-    * 0:MigrationSubscriber -- handles group migration.
+    * 0:ChatMigrationSubscriber -- handles group migration.
   * `telegram.chat.migrated_from` -- migrated from chat ID.
-    * 0:MigrationSubscriber -- handles group migration.
+    * 0:ChatMigrationSubscriber -- handles group migration.
   * [TBD] `telegram.response` -- when the bot prepared a response to the Webhook and is ready to send it.
   * `telegram.request.sent` -- request to the Telegram API was sent.
      * –90000:AuditSubscriber -- writes outbound log.

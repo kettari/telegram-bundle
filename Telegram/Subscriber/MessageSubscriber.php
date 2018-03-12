@@ -1,16 +1,12 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: ant
- * Date: 25.04.2017
- * Time: 14:19
- */
+declare(strict_types=1);
 
 namespace Kettari\TelegramBundle\Telegram\Subscriber;
 
 
 use Exception;
 use Kettari\TelegramBundle\Telegram\Bot;
+use Kettari\TelegramBundle\Telegram\Communicator;
 use Kettari\TelegramBundle\Telegram\Event\AudioReceivedEvent;
 use Kettari\TelegramBundle\Telegram\Event\ChatDeletePhotoEvent;
 use Kettari\TelegramBundle\Telegram\Event\ChatNewPhotoEvent;
@@ -35,7 +31,7 @@ use Kettari\TelegramBundle\Telegram\Event\VenueReceivedEvent;
 use Kettari\TelegramBundle\Telegram\Event\VideoNoteReceivedEvent;
 use Kettari\TelegramBundle\Telegram\Event\VideoReceivedEvent;
 use Kettari\TelegramBundle\Telegram\Event\VoiceReceivedEvent;
-use Psr\Log\LoggerInterface;
+use Kettari\TelegramBundle\Telegram\MessageTypeResolver;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use unreal4u\TelegramAPI\Telegram\Types\ReplyKeyboardRemove;
 
@@ -79,236 +75,223 @@ class MessageSubscriber extends AbstractBotSubscriber implements EventSubscriber
    */
   public function onMessageReceived(MessageReceivedEvent $event)
   {
-    /** @var LoggerInterface $l */
-    $l = $this->getBot()
-      ->getContainer()
-      ->get('logger');
+    $this->logger->debug(
+      'About to process MessageReceivedEvent for message ID={message_id} in the chat ID={chat_id}',
+      [
+        'message_id' => $event->getMessage()->message_id,
+        'chat_id'    => $event->getMessage()->chat->id,
+      ]
+    );
 
     try {
       // Detect message type
-      $message_type = $this->getBot()
-        ->whatMessageType($event->getMessage());
-      $l->info(
+      $messageType = MessageTypeResolver::getMessageType($event->getMessage());
+      $this->logger->debug(
         'Detected message type: "{type_title}"',
         [
-          'type_title' => $this->getBot()
-            ->getMessageTypeTitle($message_type),
-          'type'       => $message_type,
+          'type_title' => MessageTypeResolver::getMessageTypeTitle(
+            $messageType
+          ),
+          'type'       => $messageType,
         ]
       );
 
       // Dispatch specific message types: text, document, audio, etc.
-      $this->dispatchSpecificMessageTypes($event, $message_type);
+      $this->dispatchSpecificMessageTypes($event, $messageType);
 
     } catch (Exception $e) {
-      $l->critical(
-        'Exception while handling update with message: {error_message}',
-        ['error_message' => $e->getMessage(), 'error_object' => $e]
+      $this->logger->critical(
+        'Exception while handling update with message ID={message_id} in the chat ID={chat_id}: {error_message}',
+        [
+          'error_message' => $e->getMessage(),
+          'error_object'  => $e,
+          'message_id'    => $event->getMessage()->message_id,
+          'chat_id'       => $event->getMessage()->chat->id,
+        ]
       );
-      $this->sendVerboseReply($event, $e);
+      $this->communicator->sendMessage(
+        (string)$event->getMessage()->chat->id,
+        'На сервере произошла ошибка, пожалуйста, сообщите системному администратору.',
+        Communicator::PARSE_MODE_PLAIN
+      );
     }
+
+    $this->logger->debug(
+      'MessageReceivedEvent for message ID={message_id} in the chat ID={chat_id} processed',
+      [
+        'message_id' => $event->getMessage()->message_id,
+        'chat_id'    => $event->getMessage()->chat->id,
+      ]
+    );
   }
 
   /**
    * Dispatches specific message types.
    *
    * @param MessageReceivedEvent $event
-   * @param integer $message_type
+   * @param integer $messageType
    */
   private function dispatchSpecificMessageTypes(
     MessageReceivedEvent $event,
-    $message_type
+    integer $messageType
   ) {
-    $dispatcher = $this->getBot()
-      ->getEventDispatcher();
-
     // Dispatch text event
-    if ($message_type & Bot::MT_TEXT) {
-      $text_received_event = new TextReceivedEvent($event->getUpdate());
-      $dispatcher->dispatch(TextReceivedEvent::NAME, $text_received_event);
+    if ($messageType & MessageTypeResolver::MT_TEXT) {
+      $textReceivedEvent = new TextReceivedEvent($event->getUpdate());
+      $this->dispatcher->dispatch(TextReceivedEvent::NAME, $textReceivedEvent);
     }
     // Dispatch audio event
-    if ($message_type & Bot::MT_AUDIO) {
+    if ($messageType & MessageTypeResolver::MT_AUDIO) {
       $audio_received_event = new AudioReceivedEvent($event->getUpdate());
-      $dispatcher->dispatch(AudioReceivedEvent::NAME, $audio_received_event);
+      $this->dispatcher->dispatch(AudioReceivedEvent::NAME, $audio_received_event);
     }
     // Dispatch document event
-    if ($message_type & Bot::MT_DOCUMENT) {
+    if ($messageType & MessageTypeResolver::MT_DOCUMENT) {
       $document_received_event = new DocumentReceivedEvent($event->getUpdate());
-      $dispatcher->dispatch(
+      $this->dispatcher->dispatch(
         DocumentReceivedEvent::NAME,
         $document_received_event
       );
     }
     // Dispatch game event
-    if ($message_type & Bot::MT_GAME) {
+    if ($messageType & MessageTypeResolver::MT_GAME) {
       $game_received_event = new GameReceivedEvent($event->getUpdate());
-      $dispatcher->dispatch(GameReceivedEvent::NAME, $game_received_event);
+      $this->dispatcher->dispatch(GameReceivedEvent::NAME, $game_received_event);
     }
     // Dispatch photo event
-    if ($message_type & Bot::MT_PHOTO) {
+    if ($messageType & MessageTypeResolver::MT_PHOTO) {
       $photo_received_event = new PhotoReceivedEvent($event->getUpdate());
-      $dispatcher->dispatch(PhotoReceivedEvent::NAME, $photo_received_event);
+      $this->dispatcher->dispatch(PhotoReceivedEvent::NAME, $photo_received_event);
     }
     // Dispatch sticker event
-    if ($message_type & Bot::MT_STICKER) {
+    if ($messageType & MessageTypeResolver::MT_STICKER) {
       $sticker_received_event = new StickerReceivedEvent($event->getUpdate());
-      $dispatcher->dispatch(
+      $this->dispatcher->dispatch(
         StickerReceivedEvent::NAME,
         $sticker_received_event
       );
     }
     // Dispatch video event
-    if ($message_type & Bot::MT_VIDEO) {
+    if ($messageType & MessageTypeResolver::MT_VIDEO) {
       $video_received_event = new VideoReceivedEvent($event->getUpdate());
-      $dispatcher->dispatch(VideoReceivedEvent::NAME, $video_received_event);
+      $this->dispatcher->dispatch(VideoReceivedEvent::NAME, $video_received_event);
     }
     // Dispatch voice event
-    if ($message_type & Bot::MT_VOICE) {
+    if ($messageType & MessageTypeResolver::MT_VOICE) {
       $voice_received_event = new VoiceReceivedEvent($event->getUpdate());
-      $dispatcher->dispatch(VoiceReceivedEvent::NAME, $voice_received_event);
+      $this->dispatcher->dispatch(VoiceReceivedEvent::NAME, $voice_received_event);
     }
     // Dispatch contact event
-    if ($message_type & Bot::MT_CONTACT) {
+    if ($messageType & MessageTypeResolver::MT_CONTACT) {
       $contact_received_event = new ContactReceivedEvent($event->getUpdate());
-      $dispatcher->dispatch(
+      $this->dispatcher->dispatch(
         ContactReceivedEvent::NAME,
         $contact_received_event
       );
     }
     // Dispatch location event
-    if ($message_type & Bot::MT_LOCATION) {
+    if ($messageType & MessageTypeResolver::MT_LOCATION) {
       $location_received_event = new LocationReceivedEvent($event->getUpdate());
-      $dispatcher->dispatch(
+      $this->dispatcher->dispatch(
         LocationReceivedEvent::NAME,
         $location_received_event
       );
     }
     // Dispatch venue event
-    if ($message_type & Bot::MT_VENUE) {
+    if ($messageType & MessageTypeResolver::MT_VENUE) {
       $venue_received_event = new VenueReceivedEvent($event->getUpdate());
-      $dispatcher->dispatch(VenueReceivedEvent::NAME, $venue_received_event);
+      $this->dispatcher->dispatch(VenueReceivedEvent::NAME, $venue_received_event);
     }
 
     // Dispatch chat member joined event
     // NB: 'new_chat_member' property of the Message object deprecated since May 18, 2017
     // and should not be used (see https://core.telegram.org/bots/api-changelog#may-18-2017)
-    /*if ($message_type & Bot::MT_NEW_CHAT_MEMBER) {
+    /*if ($message_type & MessageTypeResolver::MT_NEW_CHAT_MEMBER) {
       $join_member_event = new JoinChatMemberEvent($event->getUpdate());
-      $dispatcher->dispatch(JoinChatMemberEvent::NAME, $join_member_event);
+      $this->dispatcher->dispatch(JoinChatMemberEvent::NAME, $join_member_event);
     }*/
 
     // Dispatch chat member joined event
-    if ($message_type & Bot::MT_NEW_CHAT_MEMBERS_MANY) {
+    if ($messageType & MessageTypeResolver::MT_NEW_CHAT_MEMBERS_MANY) {
       $join_members_many_event = new JoinChatMembersManyEvent(
         $event->getUpdate()
       );
-      $dispatcher->dispatch(
+      $this->dispatcher->dispatch(
         JoinChatMembersManyEvent::NAME,
         $join_members_many_event
       );
     }
     // Dispatch chat member left event
-    if ($message_type & Bot::MT_LEFT_CHAT_MEMBER) {
+    if ($messageType & MessageTypeResolver::MT_LEFT_CHAT_MEMBER) {
       $left_member_event = new LeftChatMemberEvent($event->getUpdate());
-      $dispatcher->dispatch(LeftChatMemberEvent::NAME, $left_member_event);
+      $this->dispatcher->dispatch(LeftChatMemberEvent::NAME, $left_member_event);
     }
     // Dispatch new chat title event
-    if ($message_type & Bot::MT_NEW_CHAT_TITLE) {
+    if ($messageType & MessageTypeResolver::MT_NEW_CHAT_TITLE) {
       $new_chat_title_event = new ChatNewTitleEvent($event->getUpdate());
-      $dispatcher->dispatch(ChatNewTitleEvent::NAME, $new_chat_title_event);
+      $this->dispatcher->dispatch(ChatNewTitleEvent::NAME, $new_chat_title_event);
     }
     // Dispatch new chat photo event
-    if ($message_type & Bot::MT_NEW_CHAT_PHOTO) {
+    if ($messageType & MessageTypeResolver::MT_NEW_CHAT_PHOTO) {
       $new_chat_photo_event = new ChatNewPhotoEvent($event->getUpdate());
-      $dispatcher->dispatch(ChatNewPhotoEvent::NAME, $new_chat_photo_event);
+      $this->dispatcher->dispatch(ChatNewPhotoEvent::NAME, $new_chat_photo_event);
     }
     // Dispatch chat photo deleted event
-    if ($message_type & Bot::MT_DELETE_CHAT_PHOTO) {
+    if ($messageType & MessageTypeResolver::MT_DELETE_CHAT_PHOTO) {
       $delete_chat_photo_event = new ChatDeletePhotoEvent($event->getUpdate());
-      $dispatcher->dispatch(
+      $this->dispatcher->dispatch(
         ChatDeletePhotoEvent::NAME,
         $delete_chat_photo_event
       );
     }
     // Dispatch group created event
-    if ($message_type & Bot::MT_GROUP_CHAT_CREATED) {
+    if ($messageType & MessageTypeResolver::MT_GROUP_CHAT_CREATED) {
       $group_created_event = new GroupCreatedEvent($event->getUpdate());
-      $dispatcher->dispatch(GroupCreatedEvent::NAME, $group_created_event);
+      $this->dispatcher->dispatch(GroupCreatedEvent::NAME, $group_created_event);
     }
     // Dispatch migration to chat ID event
-    if ($message_type & Bot::MT_MIGRATE_TO_CHAT_ID) {
+    if ($messageType & MessageTypeResolver::MT_MIGRATE_TO_CHAT_ID) {
       $migrate_to_chat_event = new MigrateToChatIdEvent($event->getUpdate());
-      $dispatcher->dispatch(MigrateToChatIdEvent::NAME, $migrate_to_chat_event);
+      $this->dispatcher->dispatch(MigrateToChatIdEvent::NAME, $migrate_to_chat_event);
     }
     // Dispatch migration from chat ID event
-    if ($message_type & Bot::MT_MIGRATE_FROM_CHAT_ID) {
+    if ($messageType & MessageTypeResolver::MT_MIGRATE_FROM_CHAT_ID) {
       $migrate_from_chat_event = new MigrateFromChatIdEvent(
         $event->getUpdate()
       );
-      $dispatcher->dispatch(
+      $this->dispatcher->dispatch(
         MigrateFromChatIdEvent::NAME,
         $migrate_from_chat_event
       );
     }
     // Dispatch message pinned event
-    if ($message_type & Bot::MT_PINNED_MESSAGE) {
+    if ($messageType & MessageTypeResolver::MT_PINNED_MESSAGE) {
       $message_pinned_event = new MessagePinnedEvent($event->getUpdate());
-      $dispatcher->dispatch(MessagePinnedEvent::NAME, $message_pinned_event);
+      $this->dispatcher->dispatch(MessagePinnedEvent::NAME, $message_pinned_event);
     }
     // Dispatch successful payment event
-    if ($message_type & Bot::MT_SUCCESSFUL_PAYMENT) {
+    if ($messageType & MessageTypeResolver::MT_SUCCESSFUL_PAYMENT) {
       $successful_payment_event = new PaymentSuccessfulEvent(
         $event->getUpdate()
       );
-      $dispatcher->dispatch(
+      $this->dispatcher->dispatch(
         PaymentSuccessfulEvent::NAME,
         $successful_payment_event
       );
     }
     // Dispatch invoice event
-    if ($message_type & Bot::MT_INVOICE) {
+    if ($messageType & MessageTypeResolver::MT_INVOICE) {
       $invoice_event = new PaymentInvoiceEvent($event->getUpdate());
-      $dispatcher->dispatch(PaymentInvoiceEvent::NAME, $invoice_event);
+      $this->dispatcher->dispatch(PaymentInvoiceEvent::NAME, $invoice_event);
     }
     // Dispatch video note event
-    if ($message_type & Bot::MT_VIDEO_NOTE) {
+    if ($messageType & MessageTypeResolver::MT_VIDEO_NOTE) {
       $video_note_event = new VideoNoteReceivedEvent($event->getUpdate());
-      $dispatcher->dispatch(VideoNoteReceivedEvent::NAME, $video_note_event);
+      $this->dispatcher->dispatch(VideoNoteReceivedEvent::NAME, $video_note_event);
     }
 
   }
-
-  /**
-   * Tries to send verbose message if debug environment detected.
-   *
-   * @param MessageReceivedEvent $event
-   * @param \Exception $e
-   */
-  private function sendVerboseReply(MessageReceivedEvent $event, Exception $e)
-  {
-    try {
-      $this->getBot()
-        ->sendMessage(
-          $event->getMessage()->chat->id,
-          'На сервере произошла ошибка, пожалуйста, сообщите системному администратору.'
-        );
-
-      if ('dev' == $this->getBot()
-          ->getContainer()
-          ->getParameter('kernel.environment')
-      ) {
-        $this->getBot()
-          ->sendMessage(
-            $event->getMessage()->chat->id,
-            $e->getMessage()
-          );
-      }
-    } catch (Exception $passthrough) {
-      // Do nothing
-    }
-  }
-
+ 
   /**
    * Handles situation when user sent us message and it is not handled.
    *
@@ -317,8 +300,7 @@ class MessageSubscriber extends AbstractBotSubscriber implements EventSubscriber
   public function onMessageCheckUnhandled(MessageReceivedEvent $event)
   {
     if (!$this->getBot()
-      ->isRequestHandled()
-    ) {
+      ->isRequestHandled()) {
       $l = $this->getBot()
         ->getContainer()
         ->get('logger');

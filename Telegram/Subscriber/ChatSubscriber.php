@@ -1,10 +1,5 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: ant
- * Date: 25.04.2017
- * Time: 14:19
- */
+declare(strict_types=1);
 
 namespace Kettari\TelegramBundle\Telegram\Subscriber;
 
@@ -14,7 +9,7 @@ use Kettari\TelegramBundle\Telegram\Event\MessageReceivedEvent;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use unreal4u\TelegramAPI\Telegram\Types\Chat as TelegramChat;
 
-class IdentityWatchdogSubscriber extends AbstractBotSubscriber implements EventSubscriberInterface
+class ChatSubscriber extends AbstractBotSubscriber implements EventSubscriberInterface
 {
   /**
    * Returns an array of event names this subscriber wants to listen to.
@@ -50,43 +45,37 @@ class IdentityWatchdogSubscriber extends AbstractBotSubscriber implements EventS
   {
     // Update the chat
     $this->updateChat($event->getMessage()->chat);
-
-    // Commit changes
-    $this->getDoctrine()
-      ->getManager()
-      ->flush();
   }
 
   /**
    * Returns Chat object. Optionally it is added to persist if changes detected.
    *
-   * @param TelegramChat $telegram_chat
-   * @return Chat|null
+   * @param TelegramChat $telegramChat
    */
-  private function updateChat($telegram_chat)
+  private function updateChat($telegramChat)
   {
     // Find chat object. If not found, create new
-    $chat = $this->getDoctrine()
-      ->getRepository('KettariTelegramBundle:Chat')
-      ->findOneBy(['telegram_id' => $telegram_chat->id]);
+    $chat = $this->doctrine->getRepository('KettariTelegramBundle:Chat')
+      ->findOneByTelegramId($telegramChat->id);
     if (!$chat) {
       $chat = new Chat();
-      $this->getDoctrine()
-        ->getManager()
+      $this->doctrine->getManager()
         ->persist($chat);
     }
     // Update information
-    $chat->setTelegramId($telegram_chat->id)
-      ->setFirstName($telegram_chat->first_name)
-      ->setLastName($telegram_chat->last_name)
-      ->setUsername($telegram_chat->username)
-      ->setType($telegram_chat->type)
-      ->setTitle($telegram_chat->title)
+    $chat->setTelegramId($telegramChat->id)
+      ->setFirstName($telegramChat->first_name)
+      ->setLastName($telegramChat->last_name)
+      ->setUsername($telegramChat->username)
+      ->setType($telegramChat->type)
+      ->setTitle($telegramChat->title)
       ->setAllMembersAreAdministrators(
-        $telegram_chat->all_members_are_administrators
+        $telegramChat->all_members_are_administrators
       );
 
-    return $chat;
+    // Commit changes
+    $this->doctrine->getManager()
+      ->flush();
   }
 
 }

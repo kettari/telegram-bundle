@@ -1,10 +1,4 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: ant
- * Date: 18.03.2017
- * Time: 18:01
- */
 
 namespace Kettari\TelegramBundle\Telegram;
 
@@ -16,7 +10,7 @@ use Kettari\TelegramBundle\Exception\HookException;
 use Kettari\TelegramBundle\Telegram\Command\AbstractCommand;
 use unreal4u\TelegramAPI\Telegram\Types\Update;
 
-class Hooker
+class Hooker implements HookerInterface
 {
 
   /**

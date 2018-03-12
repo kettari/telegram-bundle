@@ -9,6 +9,6 @@
 namespace Kettari\TelegramBundle\Exception;
 
 
-class InvalidCommand extends TelegramBundleException {
+class InvalidCommandException extends TelegramBundleException {
 
 }

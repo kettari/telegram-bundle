@@ -3,47 +3,25 @@ declare(strict_types=1);
 
 namespace Kettari\TelegramBundle\Telegram\Command;
 
-
-use Kettari\TelegramBundle\Telegram\CommandBus;
 use unreal4u\TelegramAPI\Abstracts\KeyboardMethods;
 use unreal4u\TelegramAPI\Telegram\Types\Message;
 use unreal4u\TelegramAPI\Telegram\Types\Update;
 
-abstract class AbstractCommand
+abstract class AbstractCommand implements TelegramCommandInterface
 {
-
-  /**
-   * Send message modes
-   */
-  const PARSE_MODE_PLAIN = '';
-  const PARSE_MODE_HTML = 'HTML';
-  const PARSE_MODE_MARKDOWN = 'Markdown';
-
-  /**
-   * Actions
-   */
-  const ACTION_TYPING = 'typing';
-  const ACTION_UPLOAD_PHOTO = 'upload_photo';
-  const ACTION_RECORD_VIDEO = 'record_video';
-  const ACTION_UPLOAD_VIDEO = 'upload_video';
-  const ACTION_RECORD_AUDIO = 'record_audio';
-  const ACTION_UPLOAD_AUDIO = 'upload_audio';
-  const ACTION_UPLOAD_DOCUMENT = 'upload_document';
-  const ACTION_FIND_LOCATION = 'find_location';
-
   /**
    * Command name.
    *
    * @var string
    */
-  static public $name = null;
+  static public $name = '';
 
   /**
    * Command description.
    *
    * @var string
    */
-  static public $description = null;
+  static public $description = '';
 
   /**
    * Array of REGEX patterns this command supports.
@@ -74,36 +52,27 @@ abstract class AbstractCommand
   static public $declaredNotifications = [];
 
   /**
-   * @var CommandBus
-   */
-  private $bus;
-
-  /**
    * @var Update
    */
-  private $update;
+  protected $update;
 
   /**
    * @var string
    */
-  private $parameter = '';
+  protected $commandParameter = '';
 
   /**
    * AbstractCommand constructor.
    *
-   * @param \Kettari\TelegramBundle\Telegram\CommandBus $bus
    * @param \unreal4u\TelegramAPI\Telegram\Types\Update $update
    */
-  public function __construct(CommandBus $bus, Update $update)
+  public function __construct(Update $update)
   {
-    $this->bus = $bus;
     $this->update = $update;
   }
 
   /**
-   * Returns name of the command.
-   *
-   * @return string
+   * {@inheritdoc}
    */
   static public function getName(): string
   {
@@ -111,9 +80,7 @@ abstract class AbstractCommand
   }
 
   /**
-   * Returns description of the command.
-   *
-   * @return string
+   * {@inheritdoc}
    */
   static public function getDescription(): string
   {
@@ -121,9 +88,7 @@ abstract class AbstractCommand
   }
 
   /**
-   * Returns supported patterns of the command.
-   *
-   * @return array
+   * {@inheritdoc}
    */
   static public function getSupportedPatterns(): array
   {
@@ -131,9 +96,7 @@ abstract class AbstractCommand
   }
 
   /**
-   * Returns visibility flag of the command.
-   *
-   * @return bool
+   * {@inheritdoc}
    */
   static public function isVisible(): bool
   {
@@ -141,9 +104,7 @@ abstract class AbstractCommand
   }
 
   /**
-   * Returns required permissions to execute the command.
-   *
-   * @return array
+   * {@inheritdoc}
    */
   static public function getRequiredPermissions(): array
   {
@@ -151,9 +112,7 @@ abstract class AbstractCommand
   }
 
   /**
-   * Returns notifications declared in the command.
-   *
-   * @return array
+   * {@inheritdoc}
    */
   static public function getDeclaredNotifications(): array
   {
@@ -161,14 +120,11 @@ abstract class AbstractCommand
   }
 
   /**
-   * Initialize command.
-   *
-   * @param string $parameter
-   * @return \Kettari\TelegramBundle\Telegram\Command\AbstractCommand
+   * {@inheritdoc}
    */
-  public function initialize($parameter)
+  public function initialize(string $commandParameter): TelegramCommandInterface
   {
-    $this->parameter = $parameter;
+    $this->commandParameter = $commandParameter;
 
     return $this;
   }
@@ -278,22 +234,6 @@ abstract class AbstractCommand
   }
 
   /**
-   * @return \unreal4u\TelegramAPI\Telegram\Types\Update
-   */
-  public function getUpdate(): Update
-  {
-    return $this->update;
-  }
-
-  /**
-   * @return \Kettari\TelegramBundle\Telegram\CommandBus
-   */
-  public function getBus(): CommandBus
-  {
-    return $this->bus;
-  }
-
-  /**
    * Use this method when you need to tell the user that something is happening
    * on the bot's side. The status is set for 5 seconds or less (when a message
    * arrives from your bot, Telegram clients clear its typing status).
@@ -324,21 +264,13 @@ abstract class AbstractCommand
 
 
   /**
-   * @return string
-   */
-  public function getParameter()
-  {
-    return $this->parameter;
-  }
-
-  /**
    * Returns text if we have some non-empty text in the message object.
    *
-   * @return null|string
+   * @return string
    */
-  public function getText()
+  protected function getText(): string
   {
-    return $this->hasText() ? $this->update->message->text : null;
+    return $this->hasText() ? $this->update->message->text : '';
   }
 
   /**
@@ -346,10 +278,17 @@ abstract class AbstractCommand
    *
    * @return bool
    */
-  public function hasText()
+  protected function hasText(): bool
   {
     return !is_null($this->update->message) &&
       !empty($this->update->message->text);
   }
 
+  /**
+   * {@inheritdoc}
+   */
+  public function getCommandParameter(): string
+  {
+    return $this->commandParameter;
+  }
 }

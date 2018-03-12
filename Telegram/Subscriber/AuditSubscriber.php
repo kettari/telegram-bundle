@@ -180,7 +180,7 @@ class AuditSubscriber extends AbstractBotSubscriber implements EventSubscriberIn
     // Format human-readable description
     $description = sprintf(
       'Executed command "%s" → "%s"',
-      $event->getCommand(),
+      $event->getCommandName(),
       $this->formatChatTitle($chat_entity)
     );
 
@@ -505,5 +505,38 @@ class AuditSubscriber extends AbstractBotSubscriber implements EventSubscriberIn
         $event->getExceptionMessage()
       );
   }
+
+
+  /**
+   * Audit transaction.
+   *
+   * @param string $type
+   * @param string $description
+   * @param Chat $chatEntity
+   * @param User $userEntity
+   * @param mixed $content
+   * @internal param mixed $telegram_data
+   */
+  private function audit(
+    $type,
+    $description = null,
+    $chatEntity = null,
+    $userEntity = null,
+    $content = null
+  ) {
+    $audit = new Audit();
+    $audit->setType($type)
+      ->setDescription($description)
+      ->setChat($chatEntity)
+      ->setUser($userEntity)
+      ->setContent($content);
+
+    $em = $this->getContainer()
+      ->get('doctrine')
+      ->getManager();
+    $em->persist($audit);
+    $em->flush();
+  }
+
 
 }

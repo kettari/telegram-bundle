@@ -14,7 +14,7 @@ use Kettari\TelegramBundle\Telegram\Event\MigrateToChatIdEvent;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
-class MigrationSubscriber extends AbstractBotSubscriber implements EventSubscriberInterface
+class ChatMigrationSubscriber extends AbstractBotSubscriber implements EventSubscriberInterface
 {
   /**
    * Returns an array of event names this subscriber wants to listen to.
