@@ -179,6 +179,7 @@ services:
     # Bot service
     kettari_telegram.bot:
         class: Kettari\TelegramBundle\Telegram\Bot
+        public: true
         arguments: [
             '@monolog.logger',
             '@event_dispatcher',
