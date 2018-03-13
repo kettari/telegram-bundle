@@ -12,9 +12,15 @@ use Doctrine\ORM\Mapping as ORM;
 class BotSetting
 {
   /**
+   * @ORM\Column(type="integer")
+   * @ORM\Id
+   * @ORM\GeneratedValue(strategy="AUTO")
+   */
+  private $id;
+
+  /**
    * @var string
    * @ORM\Column(type="string",nullable=false,unique=true)
-   * @ORM\Id
    */
   private $name = '';
 
@@ -23,6 +29,14 @@ class BotSetting
    * @ORM\Column(type="string",nullable=false)
    */
   private $value = '';
+
+  /**
+   * @return int
+   */
+  public function getId(): int
+  {
+    return $this->id;
+  }
 
   /**
    * @return string

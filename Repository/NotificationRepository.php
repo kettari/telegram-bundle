@@ -33,7 +33,7 @@ class NotificationRepository extends EntityRepository
    */
   public function findAllOrdered()
   {
-    return $this->findBy([], ['order' => 'ASC']);
+    return $this->findBy([], ['sortOrder' => 'ASC']);
   }
 
   /**

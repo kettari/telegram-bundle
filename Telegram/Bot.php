@@ -69,7 +69,10 @@ class Bot implements BotInterface
   {
     $this->logger->debug(
       'Handling update ID={update_id}',
-      ['update_id' => $update->update_id]
+      [
+        'update_id' => $update->update_id,
+        'update'    => $update,
+      ]
     );
 
     // Dispatch event when we got the Update object
@@ -88,9 +91,10 @@ class Bot implements BotInterface
 
     $this->logger->info(
       'Update ID={update_id} handled',
-      ['update_id'          => $update->update_id,
-       'is_method_deferred' => $this->communicator->isMethodDeferred(
-       ) ? 'yes' : 'no',
+      [
+        'update_id'          => $update->update_id,
+        'is_method_deferred' => $this->communicator->isMethodDeferred(
+        ) ? 'yes' : 'no',
       ]
     );
 

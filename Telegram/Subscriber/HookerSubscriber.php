@@ -5,7 +5,9 @@ namespace Kettari\TelegramBundle\Telegram\Subscriber;
 
 
 use Kettari\TelegramBundle\Entity\Hook;
+use Kettari\TelegramBundle\Telegram\Communicator;
 use Kettari\TelegramBundle\Telegram\Event\UpdateReceivedEvent;
+use Kettari\TelegramBundle\Telegram\UpdateTypeResolver;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
 class HookerSubscriber extends AbstractBotSubscriber implements EventSubscriberInterface
@@ -62,6 +64,18 @@ class HookerSubscriber extends AbstractBotSubscriber implements EventSubscriberI
       $this->bus->executeHook($hook, $event->getUpdate())
         ->deleteHook($hook);
 
+    } else {
+      /**
+       * No hooks found. Check update type. If it is UT_CALLBACK_QUERY then
+       * we have orphan request. Should answer with "Input obsolete, blah-blah"
+       */
+      if (UpdateTypeResolver::UT_CALLBACK_QUERY ==
+        UpdateTypeResolver::getUpdateType($event->getUpdate())) {
+        $this->communicator->answerCallbackQuery(
+          $event->getUpdate()->callback_query->id,
+          'Ввод данных устарел. Отправьте команду заново, пожалуйста.'
+        );
+      }
     }
 
     $this->logger->info(

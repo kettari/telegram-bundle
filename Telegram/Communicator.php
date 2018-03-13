@@ -163,10 +163,13 @@ class Communicator implements CommunicatorInterface
    * Performs actual API request.
    *
    * @param TelegramMethods $method
+   * @param bool $forceSend
    * @return \unreal4u\TelegramAPI\Abstracts\TelegramTypes|null
    */
-  private function performRequest(TelegramMethods $method)
-  {
+  private function performRequest(
+    TelegramMethods $method,
+    bool $forceSend = false
+  ) {
     // Increase internal counter
     $this->methodCalls++;
     $this->logger->debug(
@@ -179,7 +182,7 @@ class Communicator implements CommunicatorInterface
      * in response to Telegram API request.
      */
     // 1st call method can be deferred
-    if (1 == $this->methodCalls) {
+    if (!$forceSend && (1 == $this->methodCalls)) {
 
       $this->logger->debug(
         'Method "{method_class}" deferred',
@@ -491,7 +494,7 @@ class Communicator implements CommunicatorInterface
     $answerCbQuery->cache_time = $cacheTime;
 
     /** @var bool $result */
-    $result = $this->performRequest($answerCbQuery);
+    $result = $this->performRequest($answerCbQuery, true);
 
     $this->logger->debug(
       'Callback query ID={query_id} answered',

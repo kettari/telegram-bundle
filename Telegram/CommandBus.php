@@ -601,14 +601,14 @@ class CommandBus implements CommandBusInterface
    */
   public function deleteHook(Hook $hook)
   {
-    $this->doctrine->getManager()
-      ->remove($hook);
-    $this->doctrine->getManager()
-      ->flush();
-
     $this->logger->info(
       'Hook ID={hook_id} deleted',
       ['hook_id' => $hook->getId()]
     );
+
+    $this->doctrine->getManager()
+      ->remove($hook);
+    $this->doctrine->getManager()
+      ->flush();
   }
 }
