@@ -1,20 +1,16 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: ant
- * Date: 25.04.2017
- * Time: 14:19
- */
+declare(strict_types=1);
 
 namespace Kettari\TelegramBundle\Telegram\Subscriber;
 
 
 use Kettari\TelegramBundle\Telegram\Event\UserRegisteredEvent;
-use Kettari\TelegramBundle\Telegram\UserHq;
+use Kettari\TelegramBundle\Telegram\UserHelperTrait;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
 class UserRegistrationSubscriber extends AbstractBotSubscriber implements EventSubscriberInterface
 {
+  use UserHelperTrait;
 
   const NOTIFICATION_NEW_REGISTER = 'new-register';
   const NEW_REGISTER_EMOJI = "\xF0\x9F\x98\x8C";
@@ -46,26 +42,24 @@ class UserRegistrationSubscriber extends AbstractBotSubscriber implements EventS
   /**
    * Pushes notification.
    *
-   * @param \Kettari\TelegramBundle\Telegram\Event\UserRegisteredEvent $e
+   * @param \Kettari\TelegramBundle\Telegram\Event\UserRegisteredEvent $event
    */
-  public function onUserRegistered(UserRegisteredEvent $e)
+  public function onUserRegistered(UserRegisteredEvent $event)
   {
-    $this->getBot()
-      ->pushNotification(
-        self::NOTIFICATION_NEW_REGISTER,
-        sprintf(
-          '%s Новая регистрация: %s → %s',
-          self::NEW_REGISTER_EMOJI,
-          trim(
-            $e->getRegisteredUser()
-              ->getLastName().' '.$e->getRegisteredUser()
-              ->getFirstName()
-          ),
-          UserHq::formatUserName($e->getRegisteredUser())
-        )
-      );
-    $this->getBot()
-      ->bumpQueue();
+    $this->pusher->pushNotification(
+      self::NOTIFICATION_NEW_REGISTER,
+      sprintf(
+        '%s Новая регистрация: %s → %s',
+        self::NEW_REGISTER_EMOJI,
+        trim(
+          $event->getRegisteredUser()
+            ->getLastName().' '.$event->getRegisteredUser()
+            ->getFirstName()
+        ),
+        self::formatUserName($event->getRegisteredUser())
+      )
+    );
+    $this->pusher->bumpQueue();
   }
 
 

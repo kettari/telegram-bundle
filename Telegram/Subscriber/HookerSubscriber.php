@@ -1,10 +1,5 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: ant
- * Date: 25.04.2017
- * Time: 14:19
- */
+declare(strict_types=1);
 
 namespace Kettari\TelegramBundle\Telegram\Subscriber;
 
@@ -43,11 +38,11 @@ class HookerSubscriber extends AbstractBotSubscriber implements EventSubscriberI
   /**
    * Executes hooks.
    *
-   * @param UpdateReceivedEvent $e
+   * @param UpdateReceivedEvent $event
    */
-  public function onUpdateReceived(UpdateReceivedEvent $e)
+  public function onUpdateReceived(UpdateReceivedEvent $event)
   {
-    $this->executeHook($e->getUpdate());
+    $this->executeHook($event->getUpdate());
   }
 
   /**
@@ -58,19 +53,15 @@ class HookerSubscriber extends AbstractBotSubscriber implements EventSubscriberI
   private function executeHook(Update $update)
   {
     // Check for hooks and execute if any found
-    $hooker = $this->getBot()
-      ->getBus()
-      ->getHooker();
     /** @var Hook $hook */
-    if ($hook = $hooker->findHook($update)) {
+    if ($hook = $this->bus->findHook($update)) {
 
       // Set flag that request is handled
-      $this->getBot()
-        ->setRequestHandled(true);
+      /*$this->getBot()
+        ->setRequestHandled(true);*/
       // Execute & delete the hook
-      $hooker->executeHook($hook, $update)
+      $this->bus->executeHook($hook, $update)
         ->deleteHook($hook);
-
 
     }
   }

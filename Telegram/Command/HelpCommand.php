@@ -17,8 +17,7 @@ class HelpCommand extends AbstractCommand
   public function execute()
   {
     $text = 'Список команд бота: '.PHP_EOL.PHP_EOL;
-    $commands = $this->getBus()
-      ->getCommands();
+    $commands = $this->bus->getCommands();
     /** @var AbstractCommand $command */
     foreach ($commands as $command => $placeholder) {
       // Is it visible?
@@ -26,9 +25,7 @@ class HelpCommand extends AbstractCommand
         continue;
       }
       // Has user permissions?
-      if (!$this->getBus()
-        ->isAuthorized($this->getUpdate()->message->from, $command)
-      ) {
+      if (!$this->bus->isAuthorized($this->update->message->from, $command)) {
         continue;
       }
       $text .= sprintf('/%s %s', $command::$name, $command::$description).

@@ -1,10 +1,5 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: ant
- * Date: 25.04.2017
- * Time: 13:15
- */
+declare(strict_types=1);
 
 namespace Kettari\TelegramBundle\Telegram\Event;
 
@@ -24,19 +19,12 @@ class DocumentReceivedEvent extends AbstractMessageEvent
    */
   public function __construct(Update $update)
   {
-    if (is_null($update->message)) {
-      throw new RuntimeException(
-        'Message can\'t be null for the DocumentReceivedEvent.'
-      );
-    }
+    parent::__construct($update);
     if (empty($update->message->document)) {
       throw new RuntimeException(
         'Document of the Message can\'t be empty for the DocumentReceivedEvent.'
       );
     }
-
-    $this->setMessage($update->message)
-      ->setUpdate($update);
   }
 
   /**
@@ -54,9 +42,9 @@ class DocumentReceivedEvent extends AbstractMessageEvent
    *
    * @return string
    */
-  public function getCaption()
+  public function getCaption(): string
   {
-    return $this->getMessage()->caption;
+    return $this->getMessage()->caption ? $this->getMessage()->caption : '';
   }
 
 }

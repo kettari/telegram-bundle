@@ -1,17 +1,11 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: ant
- * Date: 25.04.2017
- * Time: 13:15
- */
+declare(strict_types=1);
 
 namespace Kettari\TelegramBundle\Telegram\Event;
 
 
 use RuntimeException;
 use unreal4u\TelegramAPI\Telegram\Types\Custom\PhotoSizeArray;
-
 use unreal4u\TelegramAPI\Telegram\Types\Update;
 
 class PhotoReceivedEvent extends AbstractMessageEvent
@@ -25,19 +19,12 @@ class PhotoReceivedEvent extends AbstractMessageEvent
    */
   public function __construct(Update $update)
   {
-    if (is_null($update->message)) {
-      throw new RuntimeException(
-        'Message can\'t be null for the PhotoReceivedEvent.'
-      );
-    }
+    parent::__construct($update);
     if (empty($update->message->photo)) {
       throw new RuntimeException(
         'Photo of the Message can\'t be empty for the PhotoReceivedEvent.'
       );
     }
-
-    $this->setMessage($update->message)
-      ->setUpdate($update);
   }
 
   /**
@@ -55,9 +42,9 @@ class PhotoReceivedEvent extends AbstractMessageEvent
    *
    * @return string
    */
-  public function getCaption()
+  public function getCaption(): string
   {
-    return $this->getMessage()->caption;
+    return $this->getMessage()->caption ? $this->getMessage()->caption : '';
   }
 
 }

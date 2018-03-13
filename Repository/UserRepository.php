@@ -21,7 +21,7 @@ class UserRepository extends EntityRepository
    * @return array
    * @throws \Exception
    */
-  public function findAnyone($needle)
+  public function search(string $needle)
   {
     // Prepare complex AND (OR) AND (OR) ... query
     $parts = explode(' ', $needle);

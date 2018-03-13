@@ -5,7 +5,7 @@ namespace Kettari\TelegramBundle\Telegram\Subscriber;
 
 
 use Exception;
-use Kettari\TelegramBundle\Telegram\Bot;
+
 use Kettari\TelegramBundle\Telegram\Communicator;
 use Kettari\TelegramBundle\Telegram\Event\AudioReceivedEvent;
 use Kettari\TelegramBundle\Telegram\Event\ChatDeletePhotoEvent;
@@ -33,7 +33,6 @@ use Kettari\TelegramBundle\Telegram\Event\VideoReceivedEvent;
 use Kettari\TelegramBundle\Telegram\Event\VoiceReceivedEvent;
 use Kettari\TelegramBundle\Telegram\MessageTypeResolver;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
-use unreal4u\TelegramAPI\Telegram\Types\ReplyKeyboardRemove;
 
 class MessageSubscriber extends AbstractBotSubscriber implements EventSubscriberInterface
 {
@@ -110,7 +109,7 @@ class MessageSubscriber extends AbstractBotSubscriber implements EventSubscriber
         ]
       );
       $this->communicator->sendMessage(
-        (string)$event->getMessage()->chat->id,
+        $event->getMessage()->chat->id,
         'На сервере произошла ошибка, пожалуйста, сообщите системному администратору.',
         Communicator::PARSE_MODE_PLAIN
       );
@@ -299,7 +298,7 @@ class MessageSubscriber extends AbstractBotSubscriber implements EventSubscriber
    */
   public function onMessageCheckUnhandled(MessageReceivedEvent $event)
   {
-    if (!$this->getBot()
+    /*if (!$this->getBot()
       ->isRequestHandled()) {
       $l = $this->getBot()
         ->getContainer()
@@ -315,7 +314,7 @@ class MessageSubscriber extends AbstractBotSubscriber implements EventSubscriber
           null,
           new ReplyKeyboardRemove()
         );
-    }
+    }*/
   }
 
 }

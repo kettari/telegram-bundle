@@ -1,16 +1,10 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: ant
- * Date: 27.04.2017
- * Time: 21:52
- */
+declare(strict_types=1);
 
 namespace Kettari\TelegramBundle\Telegram\Subscriber;
 
 
-
-use Kettari\TelegramBundle\Telegram\Event\CommandExecutedEvent;
+use Kettari\TelegramBundle\Telegram\Communicator;
 use Kettari\TelegramBundle\Telegram\Event\CommandReceivedEvent;
 use Kettari\TelegramBundle\Telegram\Event\CommandUnauthorizedEvent;
 use Kettari\TelegramBundle\Telegram\Event\CommandUnknownEvent;
@@ -42,8 +36,8 @@ class CommandSubscriber extends AbstractBotSubscriber implements EventSubscriber
   public static function getSubscribedEvents()
   {
     return [
-      CommandReceivedEvent::NAME => 'onCommandReceived',
-      CommandUnknownEvent::NAME => 'onCommandUnknown',
+      CommandReceivedEvent::NAME     => 'onCommandReceived',
+      CommandUnknownEvent::NAME      => 'onCommandUnknown',
       CommandUnauthorizedEvent::NAME => 'onCommandUnauthorized',
     ];
   }
@@ -55,15 +49,8 @@ class CommandSubscriber extends AbstractBotSubscriber implements EventSubscriber
    */
   public function onCommandReceived(CommandReceivedEvent $event)
   {
-    $l = $this->getBot()
-      ->getContainer()
-      ->get('logger');
-
-    if (!$this->getBot()
-      ->getBus()
-      ->isCommandRegistered($event->getCommandName())
-    ) {
-      $l->notice(
+    if (!$this->bus->isCommandRegistered($event->getCommandName())) {
+      $this->logger->notice(
         'No class registered to handle /{command_name} command',
         ['command_name' => $event->getCommandName()]
       );
@@ -79,18 +66,15 @@ class CommandSubscriber extends AbstractBotSubscriber implements EventSubscriber
     }
 
     // Execute the command
-    if ($this->getBot()
-      ->getBus()
-      ->executeCommand(
-        $event->getCommandName(),
-        $event->getParameter(),
-        $event->getUpdate()
-      )
-    ) {
+    /*if ($this->bus->executeCommand(
+      $event->getUpdate(),
+      $event->getCommandName(),
+      $event->getParameter()
+    )) {
       // Set flag that request is handled
       $this->getBot()
         ->setRequestHandled(true);
-    }
+    }*/
   }
 
   /**
@@ -105,14 +89,14 @@ class CommandSubscriber extends AbstractBotSubscriber implements EventSubscriber
     $command_name,
     $parameter
   ) {
-    $dispatcher = $this->getBot()
-      ->getDispatcher();
-
     // Dispatch command event
     $command_unknown_event = new CommandUnknownEvent(
       $update, $command_name, $parameter
     );
-    $dispatcher->dispatch(CommandUnknownEvent::NAME, $command_unknown_event);
+    $this->dispatcher->dispatch(
+      CommandUnknownEvent::NAME,
+      $command_unknown_event
+    );
   }
 
   /**
@@ -123,17 +107,16 @@ class CommandSubscriber extends AbstractBotSubscriber implements EventSubscriber
   public function onCommandUnknown(CommandUnknownEvent $event)
   {
     // Tell user command is not found
-    $this->getBot()
-      ->sendMessage(
+    $this->communicator->sendMessage(
         $event->getMessage()->chat->id,
         'Извините, такой команды я не знаю.',
-        '',
+        Communicator::PARSE_MODE_PLAIN,
         new ReplyKeyboardRemove()
       );
 
     // Set flag that request is handled
-    $this->getBot()
-      ->setRequestHandled(true);
+    /*$this->getBot()
+      ->setRequestHandled(true);*/
   }
 
   /**
@@ -144,14 +127,14 @@ class CommandSubscriber extends AbstractBotSubscriber implements EventSubscriber
   public function onCommandUnauthorized(CommandUnauthorizedEvent $event)
   {
     // Tell the user he is not authorized to execute the command
-    $this->getBot()
-      ->sendMessage(
+    $this->communicator->sendMessage(
         $event->getMessage()->chat->id,
-        'Извините, у вас недостаточно прав для доступа к этой команде.'
+        'Извините, у вас недостаточно прав для доступа к этой команде.',
+        Communicator::PARSE_MODE_PLAIN
       );
 
     // Set flag that request is handled
-    $this->getBot()
-      ->setRequestHandled(true);
+    /*$this->getBot()
+      ->setRequestHandled(true);*/
   }
 }

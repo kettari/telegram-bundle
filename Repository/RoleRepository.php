@@ -23,4 +23,25 @@ class RoleRepository extends EntityRepository
   {
     return $this->findBy(['anonymous' => true]);
   }
+
+  /**
+   * Returns array of roles for anonymous user.
+   *
+   * @param string $name
+   * @return object|null
+   */
+  public function findOneByName(string $name)
+  {
+    return $this->findOneBy(['name' => $name]);
+  }
+
+  /**
+   * Returns non-administrator and non-anonymous roles.
+   *
+   * @return array
+   */
+  public function findRegular()
+  {
+    return $this->findBy(['administrator' => false, 'anonymous' => false]);
+  }
 }

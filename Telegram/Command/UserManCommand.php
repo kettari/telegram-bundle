@@ -6,7 +6,7 @@ namespace Kettari\TelegramBundle\Telegram\Command;
 
 use Kettari\TelegramBundle\Entity\Role;
 use Kettari\TelegramBundle\Entity\User;
-use Kettari\TelegramBundle\Repository\UserRepository;
+use Kettari\TelegramBundle\Telegram\Communicator;
 use unreal4u\TelegramAPI\Telegram\Types\KeyboardButton;
 use unreal4u\TelegramAPI\Telegram\Types\ReplyKeyboardMarkup;
 use unreal4u\TelegramAPI\Telegram\Types\ReplyKeyboardRemove;
@@ -30,10 +30,9 @@ class UserManCommand extends AbstractCommand
    */
   public function execute()
   {
-    if ('private' == $this->getUpdate()->message->chat->type) {
-      $parameter = $this->getParameter();
-      if (!empty($parameter)) {
-        $this->showUserManMenu($parameter);
+    if ('private' == $this->update->message->chat->type) {
+      if (!empty($this->getCommandParameter())) {
+        $this->showUserManMenu($this->getCommandParameter());
 
         return;
       }
@@ -45,13 +44,11 @@ class UserManCommand extends AbstractCommand
       );
 
       // Create the hook to handle user's reply
-      $this->getBus()
-        ->getHooker()
-        ->createHook(
-          $this->getUpdate(),
-          get_class($this),
-          'showUserManMenu'
-        );
+      $this->bus->createHook(
+        $this->update,
+        get_class($this),
+        'showUserManMenu'
+      );
     } else {
       $this->replyWithMessage(
         'Эта команда работает только в личной переписке с ботом. В общем канале управление пользователями невозможно.'
@@ -62,15 +59,15 @@ class UserManCommand extends AbstractCommand
   /**
    * Handles /userman user credentials request.
    *
-   * @param string $inline_name
+   * @param string $inlineName
    * @throws \Exception
    */
-  public function showUserManMenu($inline_name = '')
+  public function showUserManMenu($inlineName = '')
   {
-    if (empty($inline_name)) {
-      $name = trim($this->getUpdate()->message->text);
+    if (empty($inlineName)) {
+      $name = trim($this->update->message->text);
     } else {
-      $name = $inline_name;
+      $name = $inlineName;
     }
     // Simple checks
     if (empty($name)) {
@@ -79,7 +76,7 @@ class UserManCommand extends AbstractCommand
     if (mb_strlen($name) < 3) {
       $this->replyWithMessage(
         'Запрос должен содержать минимум 3 символа.',
-        self::PARSE_MODE_PLAIN,
+        Communicator::PARSE_MODE_PLAIN,
         new ReplyKeyboardRemove()
       );
 
@@ -90,25 +87,20 @@ class UserManCommand extends AbstractCommand
     if (self::BTN_CANCEL == $name) {
       $this->replyWithMessage(
         'Команда отменена.',
-        self::PARSE_MODE_PLAIN,
+        Communicator::PARSE_MODE_PLAIN,
         new ReplyKeyboardRemove()
       );
 
       return;
     }
 
-    $d = $this->getBus()
-      ->getBot()
-      ->getContainer()
-      ->get('doctrine');
-
-    /** @var UserRepository $r */
-    $r = $d->getRepository('KettariTelegramBundle:User');
-    $users = $r->findAnyone($name);
+    $users = $this->bus->getDoctrine()
+      ->getRepository('KettariTelegramBundle:User')
+      ->search($name);
     if (0 == count($users)) {
       $this->replyWithMessage(
         'Не нашёл ни одного пользователя, удовлетворяющего этим критериями.',
-        self::PARSE_MODE_PLAIN,
+        Communicator::PARSE_MODE_PLAIN,
         new ReplyKeyboardRemove()
       );
 
@@ -119,29 +111,27 @@ class UserManCommand extends AbstractCommand
           'Нашёл нескольких пользователей (%d, если быть точным), удовлетворяющих этим критериями. Пожалуйста, уточните запрос так, чтобы был найден только один.',
           count($users)
         ),
-        self::PARSE_MODE_PLAIN,
+        Communicator::PARSE_MODE_PLAIN,
         new ReplyKeyboardRemove()
       );
 
       return;
     }
 
-    /** @var \Kettari\TelegramBundle\Entity\User $found_user */
-    $found_user = reset($users);
+    /** @var \Kettari\TelegramBundle\Entity\User $foundUser */
+    $foundUser = reset($users);
     $this->replyWithMessage(
-      $this->getUserInformation($found_user),
-      self::PARSE_MODE_HTML,
+      $this->getUserInformation($foundUser),
+      Communicator::PARSE_MODE_HTML,
       $this->getReplyKeyboardMarkup_MainMenu()
     );
 
-    $this->getBus()
-      ->getHooker()
-      ->createHook(
-        $this->getUpdate(),
-        get_class($this),
-        'handleUserMan_Menu',
-        serialize($found_user)
-      );
+    $this->bus->createHook(
+      $this->update,
+      get_class($this),
+      'handleUserMan_Menu',
+      serialize($foundUser)
+    );
   }
 
   /**
@@ -150,7 +140,7 @@ class UserManCommand extends AbstractCommand
    * @param User $user
    * @return string
    */
-  private function getUserInformation($user)
+  private function getUserInformation(User $user)
   {
     $text = sprintf(
         '<b>%s</b>',
@@ -180,27 +170,27 @@ class UserManCommand extends AbstractCommand
   private function getReplyKeyboardMarkup_MainMenu()
   {
     // Keyboard
-    $reply_markup = new ReplyKeyboardMarkup();
-    $reply_markup->one_time_keyboard = true;
-    $reply_markup->resize_keyboard = true;
+    $replyMarkup = new ReplyKeyboardMarkup();
+    $replyMarkup->one_time_keyboard = true;
+    $replyMarkup->resize_keyboard = true;
 
     // Roles
-    $roles_btn = new KeyboardButton();
-    $roles_btn->text = self::BTN_ROLES_ADD;
-    $reply_markup->keyboard[][] = $roles_btn;
-    $roles_btn = new KeyboardButton();
-    $roles_btn->text = self::BTN_ROLES_REMOVE;
-    $reply_markup->keyboard[][] = $roles_btn;
+    $rolesBtn = new KeyboardButton();
+    $rolesBtn->text = self::BTN_ROLES_ADD;
+    $replyMarkup->keyboard[][] = $rolesBtn;
+    $rolesBtn = new KeyboardButton();
+    $rolesBtn->text = self::BTN_ROLES_REMOVE;
+    $replyMarkup->keyboard[][] = $rolesBtn;
     // Block
-    $block_btn = new KeyboardButton();
-    $block_btn->text = self::BTN_BLOCK;
-    $reply_markup->keyboard[][] = $block_btn;
+    $blockBtn = new KeyboardButton();
+    $blockBtn->text = self::BTN_BLOCK;
+    $replyMarkup->keyboard[][] = $blockBtn;
     // Cancel button
-    $cancel_btn = new KeyboardButton();
-    $cancel_btn->text = self::BTN_CANCEL;
-    $reply_markup->keyboard[][] = $cancel_btn;
+    $cancelBtn = new KeyboardButton();
+    $cancelBtn->text = self::BTN_CANCEL;
+    $replyMarkup->keyboard[][] = $cancelBtn;
 
-    return $reply_markup;
+    return $replyMarkup;
   }
 
   /**
@@ -211,29 +201,29 @@ class UserManCommand extends AbstractCommand
   private function getReplyKeyboardMarkup_Cancel()
   {
     // Cancel button
-    $cancel_btn = new KeyboardButton();
-    $cancel_btn->text = self::BTN_CANCEL;
+    $cancelBtn = new KeyboardButton();
+    $cancelBtn->text = self::BTN_CANCEL;
 
     // Keyboard
-    $reply_markup = new ReplyKeyboardMarkup();
-    $reply_markup->one_time_keyboard = true;
-    $reply_markup->resize_keyboard = true;
-    $reply_markup->keyboard[][] = $cancel_btn;
+    $replyMarkup = new ReplyKeyboardMarkup();
+    $replyMarkup->one_time_keyboard = true;
+    $replyMarkup->resize_keyboard = true;
+    $replyMarkup->keyboard[][] = $cancelBtn;
 
-    return $reply_markup;
+    return $replyMarkup;
   }
 
   /**
    * Handles /userman main menu.
    *
-   * @param mixed $serialized_found_user
+   * @param mixed $serializedFoundUser
    */
-  public function handleUserMan_Menu($serialized_found_user)
+  public function handleUserMan_Menu($serializedFoundUser)
   {
-    /** @var \Kettari\TelegramBundle\Entity\User $found_user */
-    $found_user = unserialize($serialized_found_user);
+    /** @var \Kettari\TelegramBundle\Entity\User $foundUser */
+    $foundUser = unserialize($serializedFoundUser);
     // Selection
-    $selection = trim($this->getUpdate()->message->text);
+    $selection = trim($this->update->message->text);
     // Simple checks
     if (empty($selection)) {
       return;
@@ -254,18 +244,16 @@ class UserManCommand extends AbstractCommand
     if (self::BTN_ROLES_ADD == $selection) {
       $this->replyWithMessage(
         'Какую роль добавить пользователю?',
-        self::PARSE_MODE_HTML,
-        $this->getReplyKeyboardMarkup_Roles_Add($found_user)
+        Communicator::PARSE_MODE_HTML,
+        $this->getReplyKeyboardMarkup_Roles_Add($foundUser)
       );
 
-      $this->getBus()
-        ->getHooker()
-        ->createHook(
-          $this->getUpdate(),
-          get_class($this),
-          'handleUserManRoleAdd',
-          $serialized_found_user
-        );
+      $this->bus->createHook(
+        $this->update,
+        get_class($this),
+        'handleUserManRoleAdd',
+        $serializedFoundUser
+      );
 
       return;
     }
@@ -274,25 +262,23 @@ class UserManCommand extends AbstractCommand
     if (self::BTN_ROLES_REMOVE == $selection) {
       $this->replyWithMessage(
         'Какую роль убрать у пользователя?',
-        self::PARSE_MODE_HTML,
-        $this->getReplyKeyboardMarkup_Roles_Remove($found_user)
+        Communicator::PARSE_MODE_HTML,
+        $this->getReplyKeyboardMarkup_Roles_Remove($foundUser)
       );
 
-      $this->getBus()
-        ->getHooker()
-        ->createHook(
-          $this->getUpdate(),
-          get_class($this),
-          'handleUserManRoleRemove',
-          $serialized_found_user
-        );
+      $this->bus->createHook(
+        $this->update,
+        get_class($this),
+        'handleUserManRoleRemove',
+        $serializedFoundUser
+      );
 
       return;
     }
 
     // Change blocked status
     if (self::BTN_BLOCK == $selection) {
-      $this->changeBlockState($found_user);
+      $this->changeBlockState($foundUser);
 
       return;
     }
@@ -307,25 +293,21 @@ class UserManCommand extends AbstractCommand
   /**
    * Returns reply markup object for Roles -> Add
    *
-   * @param User $found_user
+   * @param User $foundUser
    * @return \unreal4u\TelegramAPI\Telegram\Types\ReplyKeyboardMarkup
    */
-  private function getReplyKeyboardMarkup_Roles_Add($found_user)
+  private function getReplyKeyboardMarkup_Roles_Add($foundUser)
   {
     // Keyboard
-    $reply_markup = new ReplyKeyboardMarkup();
-    $reply_markup->one_time_keyboard = true;
-    $reply_markup->resize_keyboard = true;
+    $replyMarkup = new ReplyKeyboardMarkup();
+    $replyMarkup->one_time_keyboard = true;
+    $replyMarkup->resize_keyboard = true;
 
-    $d = $this->getBus()
-      ->getBot()
-      ->getContainer()
-      ->get('doctrine');
-
-    /** @var User $user_to_manipulate */
+    /** @var User $userToManipulate */
     if (is_null(
-      $user_to_manipulate = $d->getRepository('KettariTelegramBundle:User')
-        ->find($found_user->getId())
+      $userToManipulate = $this->bus->getDoctrine()
+        ->getRepository('KettariTelegramBundle:User')
+        ->find($foundUser->getId())
     )) {
       $this->replyWithMessage(
         'Пользователь не найден :('
@@ -335,77 +317,68 @@ class UserManCommand extends AbstractCommand
     }
 
     /** @var \Kettari\TelegramBundle\Entity\Role $role */
-    foreach ($d->getRepository('KettariTelegramBundle:Role')
-               ->findBy(
-                 [
-                   'administrator' => false,
-                   'anonymous'     => false,
-                 ]
-               ) as $role) {
-      if ($user_to_manipulate->getRoles()
-        ->contains($role)
-      ) {
+    foreach ($this->bus->getDoctrine()
+               ->getRepository('KettariTelegramBundle:Role')
+               ->findRegular() as $role) {
+      if ($userToManipulate->getRoles()
+        ->contains($role)) {
         continue;
       }
-      $role_btn = new KeyboardButton();
-      $role_btn->text = $role->getName();
-      $reply_markup->keyboard[][] = $role_btn;
+      $roleBtn = new KeyboardButton();
+      $roleBtn->text = $role->getName();
+      $replyMarkup->keyboard[][] = $roleBtn;
     }
     // Cancel button
-    $cancel_btn = new KeyboardButton();
-    $cancel_btn->text = self::BTN_CANCEL;
-    $reply_markup->keyboard[][] = $cancel_btn;
+    $cancelBtn = new KeyboardButton();
+    $cancelBtn->text = self::BTN_CANCEL;
+    $replyMarkup->keyboard[][] = $cancelBtn;
 
-    return $reply_markup;
+    return $replyMarkup;
   }
 
   /**
    * Returns reply markup object for Roles -> Remove
    *
-   * @param User $found_user
+   * @param User $foundUser
    * @return \unreal4u\TelegramAPI\Telegram\Types\ReplyKeyboardMarkup
    */
-  private function getReplyKeyboardMarkup_Roles_Remove($found_user)
+  private function getReplyKeyboardMarkup_Roles_Remove($foundUser)
   {
     // Keyboard
-    $reply_markup = new ReplyKeyboardMarkup();
-    $reply_markup->one_time_keyboard = true;
-    $reply_markup->resize_keyboard = true;
+    $replyMarkup = new ReplyKeyboardMarkup();
+    $replyMarkup->one_time_keyboard = true;
+    $replyMarkup->resize_keyboard = true;
 
     /** @var \Kettari\TelegramBundle\Entity\Role $role */
-    foreach ($found_user->getRoles() as $role) {
+    foreach ($foundUser->getRoles() as $role) {
       // Safe check
       if ($role->getAnonymous() || $role->getAdministrator()) {
         continue;
       }
-      $role_btn = new KeyboardButton();
-      $role_btn->text = $role->getName();
-      $reply_markup->keyboard[][] = $role_btn;
+      $roleBtn = new KeyboardButton();
+      $roleBtn->text = $role->getName();
+      $replyMarkup->keyboard[][] = $roleBtn;
     }
     // Cancel button
-    $cancel_btn = new KeyboardButton();
-    $cancel_btn->text = self::BTN_CANCEL;
-    $reply_markup->keyboard[][] = $cancel_btn;
+    $cancelBtn = new KeyboardButton();
+    $cancelBtn->text = self::BTN_CANCEL;
+    $replyMarkup->keyboard[][] = $cancelBtn;
 
-    return $reply_markup;
+    return $replyMarkup;
   }
 
   /**
    * Change state of the user.
    *
-   * @param User $found_user
+   * @param User $foundUser
    */
-  public function changeBlockState($found_user)
+  public function changeBlockState(User $foundUser)
   {
-    $d = $this->getBus()
-      ->getBot()
-      ->getContainer()
-      ->get('doctrine');
-
-    /** @var User $user_to_manipulate */
+    /** @var User $userToManipulate */
     if (is_null(
-      $user_to_manipulate = $d->getRepository('KettariTelegramBundle:User')
-        ->find($found_user->getId())
+      $userToManipulate = $this->bus->getDoctrine()
+        ->getRepository('KettariTelegramBundle:User')
+        ->find($foundUser->getId())
     )) {
       $this->replyWithMessage(
         'Пользователь не найден :(',
@@ -416,16 +389,16 @@ class UserManCommand extends AbstractCommand
       return;
     }
 
-    // Change state of block
-    //$state = ;
-    $user_to_manipulate->setBlocked(!$user_to_manipulate->isBlocked());
-    $d->getManager()
+    // Change state of blocking flag
+    $userToManipulate->setBlocked(!$userToManipulate->isBlocked());
+    $this->bus->getDoctrine()
+      ->getManager()
       ->flush();
 
     $this->replyWithMessage('Статус блокровки изменён.');
     $this->replyWithMessage(
-      $this->getUserInformation($user_to_manipulate),
-      self::PARSE_MODE_HTML,
+      $this->getUserInformation($userToManipulate),
+      Communicator::PARSE_MODE_HTML,
       new ReplyKeyboardRemove()
     );
   }
@@ -433,14 +406,14 @@ class UserManCommand extends AbstractCommand
   /**
    * Handles /userman add role to the user.
    *
-   * @param mixed $serialized_found_user
+   * @param mixed $serializedFoundUser
    */
-  public function handleUserManRoleAdd($serialized_found_user)
+  public function handleUserManRoleAdd($serializedFoundUser)
   {
-    /** @var \Kettari\TelegramBundle\Entity\User $found_user */
-    $found_user = unserialize($serialized_found_user);
+    /** @var \Kettari\TelegramBundle\Entity\User $foundUser */
+    $foundUser = unserialize($serializedFoundUser);
     // Selection
-    $selection = trim($this->getUpdate()->message->text);
+    $selection = trim($this->update->message->text);
 
     // Cancel
     if (self::BTN_CANCEL == $selection) {
@@ -453,15 +426,11 @@ class UserManCommand extends AbstractCommand
       return;
     }
 
-    $d = $this->getBus()
-      ->getBot()
-      ->getContainer()
-      ->get('doctrine');
-
-    /** @var Role $role_to_add */
+    /** @var Role $roleToAdd */
     if (is_null(
-      $role_to_add = $d->getRepository('KettariTelegramBundle:Role')
-        ->findOneBy(['name' => $selection])
+      $roleToAdd = $this->bus->getDoctrine()
+        ->getRepository('KettariTelegramBundle:Role')
+        ->findOneByName($selection)
     )) {
       $this->replyWithMessage(
         'Роль не найдена в списке: '.$selection
@@ -470,10 +439,11 @@ class UserManCommand extends AbstractCommand
       return;
     }
 
-    /** @var User $user_to_manipulate */
+    /** @var User $userToManipulate */
     if (is_null(
-      $user_to_manipulate = $d->getRepository('KettariTelegramBundle:User')
-        ->find($found_user->getId())
+      $userToManipulate = $this->bus->getDoctrine()
+        ->getRepository('KettariTelegramBundle:User')
+        ->find($foundUser->getId())
     )) {
       $this->replyWithMessage(
         'Пользователь не найден :('
@@ -483,15 +453,15 @@ class UserManCommand extends AbstractCommand
     }
 
     // Add the role
-    $user_to_manipulate->addRole($role_to_add);
-    $d->getManager()
+    $userToManipulate->addRole($roleToAdd);
+    $this->bus->getDoctrine()
+      ->getManager()
       ->flush();
 
     $this->replyWithMessage('Роль добавлена.');
     $this->replyWithMessage(
-      $this->getUserInformation($user_to_manipulate),
-      self::PARSE_MODE_HTML,
-      self::PARSE_MODE_PLAIN,
+      $this->getUserInformation($userToManipulate),
+      Communicator::PARSE_MODE_HTML,
       new ReplyKeyboardRemove()
     );
   }
@@ -499,14 +469,14 @@ class UserManCommand extends AbstractCommand
   /**
    * Handles /userman remove role from the user
    *
-   * @param mixed $serialized_found_user
+   * @param mixed $serializedFoundUser
    */
-  public function handleUserManRoleRemove($serialized_found_user)
+  public function handleUserManRoleRemove($serializedFoundUser)
   {
-    /** @var \Kettari\TelegramBundle\Entity\User $found_user */
-    $found_user = unserialize($serialized_found_user);
+    /** @var \Kettari\TelegramBundle\Entity\User $foundUser */
+    $foundUser = unserialize($serializedFoundUser);
     // Selection
-    $selection = trim($this->getUpdate()->message->text);
+    $selection = trim($this->update->message->text);
 
     // Cancel
     if (self::BTN_CANCEL == $selection) {
@@ -519,15 +489,11 @@ class UserManCommand extends AbstractCommand
       return;
     }
 
-    $d = $this->getBus()
-      ->getBot()
-      ->getContainer()
-      ->get('doctrine');
-
-    /** @var Role $role_to_remove */
+    /** @var Role $roleToRemove */
     if (is_null(
-      $role_to_remove = $d->getRepository('KettariTelegramBundle:Role')
-        ->findOneBy(['name' => $selection])
+      $roleToRemove = $this->bus->getDoctrine()
+        ->getRepository('KettariTelegramBundle:Role')
+        ->findOneByName($selection)
     )) {
       $this->replyWithMessage(
         'Роль не найдена в списке: '.$selection
@@ -536,10 +502,11 @@ class UserManCommand extends AbstractCommand
       return;
     }
 
-    /** @var User $user_to_manipulate */
+    /** @var User $userToManipulate */
     if (is_null(
-      $user_to_manipulate = $d->getRepository('KettariTelegramBundle:User')
-        ->find($found_user->getId())
+      $userToManipulate = $this->bus->getDoctrine()
+        ->getRepository('KettariTelegramBundle:User')
+        ->find($foundUser->getId())
     )) {
       $this->replyWithMessage(
         'Пользователь не найден :('
@@ -550,22 +517,22 @@ class UserManCommand extends AbstractCommand
 
     // Remove notifications that are bound to the role going to be removed
     /** @var \Kettari\TelegramBundle\Entity\Notification $notification */
-    foreach ($user_to_manipulate->getNotifications() as $notification) {
-      if ($role_to_remove->getPermissions()
-        ->contains($notification->getPermission())
-      ) {
-        $user_to_manipulate->removeNotification($notification);
+    foreach ($userToManipulate->getNotifications() as $notification) {
+      if ($roleToRemove->getPermissions()
+        ->contains($notification->getPermission())) {
+        $userToManipulate->removeNotification($notification);
       }
     }
     // Remove the role
-    $user_to_manipulate->removeRole($role_to_remove);
-    $d->getManager()
+    $userToManipulate->removeRole($roleToRemove);
+    $this->bus->getDoctrine()
+      ->getManager()
       ->flush();
 
     $this->replyWithMessage('Роль убрана.');
     $this->replyWithMessage(
-      $this->getUserInformation($user_to_manipulate),
-      self::PARSE_MODE_HTML,
+      $this->getUserInformation($userToManipulate),
+      Communicator::PARSE_MODE_HTML,
       new ReplyKeyboardRemove()
     );
   }

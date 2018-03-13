@@ -18,7 +18,6 @@ use Kettari\TelegramBundle\Telegram\Event\LeftChatMemberBotEvent;
 use Kettari\TelegramBundle\Telegram\Event\LeftChatMemberEvent;
 use Kettari\TelegramBundle\Telegram\Event\TextReceivedEvent;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
-use unreal4u\TelegramAPI\Telegram\Types\Chat as TelegramChat;
 use unreal4u\TelegramAPI\Telegram\Types\Update;
 use unreal4u\TelegramAPI\Telegram\Types\User as TelegramUser;
 
@@ -60,56 +59,28 @@ class ChatMemberSubscriber extends AbstractBotSubscriber implements EventSubscri
    */
   public function onMembersManyJoined(JoinChatMembersManyEvent $event)
   {
-    $dispatcher = $this->getBot()
-      ->getDispatcher();
-    $chat_entity = $this->prepareChat($event->getMessage()->chat);
+    /** @var Chat $chatEntity */
+    $chatEntity = $this->doctrine->getRepository('KettariTelegramBundle:Chat')
+      ->findOneByTelegramId($event->getMessage()->chat->id);
     $users = $event->getMessage()->new_chat_members;
 
-    /** @var TelegramUser $joined_user */
-    foreach ($users as $joined_user) {
-      $joined_member_event = new JoinChatMemberEvent(
-        $event->getUpdate(), $joined_user, $chat_entity
+    /** @var TelegramUser $joinedUser */
+    foreach ($users as $joinedUser) {
+      $joinedMemberEvent = new JoinChatMemberEvent(
+        $event->getUpdate(), $joinedUser, $chatEntity
       );
-      $dispatcher->dispatch(JoinChatMemberEvent::NAME, $joined_member_event);
+      $this->dispatcher->dispatch(
+        JoinChatMemberEvent::NAME,
+        $joinedMemberEvent
+      );
     }
-
     // Flush changes
-    $this->getDoctrine()
-      ->getManager()
+    $this->doctrine->getManager()
       ->flush();
 
     // Tell the Bot this request is handled
-    $this->getBot()
-      ->setRequestHandled(true);
-  }
-
-  /**
-   * Returns the Chat object.
-   *
-   * @param \unreal4u\TelegramAPI\Telegram\Types\Chat $tc
-   * @return \Kettari\TelegramBundle\Entity\Chat
-   */
-  private function prepareChat(TelegramChat $tc)
-  {
-    // Find chat object. If not found, create new
-    $chat = $this->getDoctrine()
-      ->getRepository('KettariTelegramBundle:Chat')
-      ->findOneBy(['telegram_id' => $tc->id]);
-    if (!$chat) {
-      $chat = new Chat();
-      $this->getDoctrine()
-        ->getManager()
-        ->persist($chat);
-    }
-    $chat->setTelegramId($tc->id)
-      ->setType($tc->type)
-      ->setTitle($tc->title)
-      ->setUsername($tc->username)
-      ->setFirstName($tc->first_name)
-      ->setLastName($tc->last_name)
-      ->setAllMembersAreAdministrators($tc->all_members_are_administrators);
-
-    return $chat;
+    /*$this->getBot()
+      ->setRequestHandled(true);*/
   }
 
   /**
@@ -124,51 +95,38 @@ class ChatMemberSubscriber extends AbstractBotSubscriber implements EventSubscri
       $event->getJoinedUser(),
       $event->getChatEntity()
     );
-
     // Flush changes
-    $this->getDoctrine()
-      ->getManager()
+    $this->doctrine->getManager()
       ->flush();
   }
 
   /**
    * @param \unreal4u\TelegramAPI\Telegram\Types\Update $update
-   * @param \unreal4u\TelegramAPI\Telegram\Types\User $tu
+   * @param \unreal4u\TelegramAPI\Telegram\Types\User $telegramUser
    * @param Chat $chatEntity
    */
   private function processJoinedMember(
     Update $update,
-    TelegramUser $tu,
+    TelegramUser $telegramUser,
     Chat $chatEntity
   ) {
-    $em = $this->getDoctrine()
-      ->getManager();
-
     // Find user object. If not found, create new
     if (is_null(
-      $userEntity = $this->getDoctrine()
-        ->getRepository('KettariTelegramBundle:User')
-        ->findByTelegramId($tu->id)
+      $userEntity = $this->doctrine->getRepository('KettariTelegramBundle:User')
+        ->findOneByTelegramId($telegramUser->id)
     )) {
-      $userEntity = $this->getBot()
-        ->getUserHq()
-        ->createAnonymousUser($tu);
+      $userEntity = $this->userHq->createAnonymousUser($telegramUser);
     }
 
     // Find chat member object. If not found, create new
-    $chatMember = $this->getDoctrine()
-      ->getRepository(
-        'KettariTelegramBundle:ChatMember'
-      )
-      ->findOneBy(
-        [
-          'chat' => $chatEntity,
-          'user' => $userEntity,
-        ]
-      );
+    $chatMember = $this->doctrine->getRepository(
+      'KettariTelegramBundle:ChatMember'
+    )
+      ->findOneByChatAndUser($chatEntity, $userEntity);
     if (!$chatMember) {
       $chatMember = new ChatMember();
-      $em->persist($chatMember);
+      $this->doctrine->getManager()
+        ->persist($chatMember);
     }
     $chatMember->setChat($chatEntity)
       ->setUser($userEntity)
@@ -177,20 +135,32 @@ class ChatMemberSubscriber extends AbstractBotSubscriber implements EventSubscri
       ->setStatus('member');
 
     // Check if joined user is the bot itself and dispatch appropriate event if yes
-    $config = $this->getBot()
-      ->getContainer()
-      ->getParameter('kettari_telegram');
-    $selfUserId = $config['self_user_id'] ?? 0;
-    if ($selfUserId == $tu->id) {
-      $this->dispatchJoinedBotEvent($update, $tu, $chatEntity, $userEntity);
+    /** @var \Kettari\TelegramBundle\Entity\BotSetting $botSetting_UserId */
+    $botSetting_UserId = $this->doctrine->getRepository(
+      'KettariTelegramBundle:BotSetting'
+    )
+      ->findOneByName('bot_user_id');
+    if (is_null($botSetting_UserId)) {
+      throw new \LogicException(
+        'Bot user ID is not configured ("bot_user_id" settings must be present).'
+      );
+    }
+    if ($botSetting_UserId->getValue() == $telegramUser->id) {
+      $this->dispatchJoinedBotEvent(
+        $update,
+        $telegramUser,
+        $chatEntity,
+        $userEntity
+      );
     }
 
-    $this->getBot()
-      ->getLogger()
-      ->debug(
-        'JOIN: self_user_id={self_user_id}, telegram_user_id={telegram_user_id}',
-        ['self_user_id' => $selfUserId, 'telegram_user_id' => $tu->id]
-      );
+    $this->logger->debug(
+      'JOIN: self_user_id={self_user_id}, telegram_user_id={telegram_user_id}',
+      [
+        'self_user_id'     => $botSetting_UserId->getValue(),
+        'telegram_user_id' => $telegramUser->id,
+      ]
+    );
   }
 
   /**
@@ -208,9 +178,7 @@ class ChatMemberSubscriber extends AbstractBotSubscriber implements EventSubscri
     $botJoinedEvent = new JoinChatMemberBotEvent(
       $update, $joinedUser, $chatEntity, $userEntity
     );
-    $this->getBot()
-      ->getDispatcher()
-      ->dispatch(JoinChatMemberBotEvent::NAME, $botJoinedEvent);
+    $this->dispatcher->dispatch(JoinChatMemberBotEvent::NAME, $botJoinedEvent);
   }
 
   /**
@@ -220,60 +188,49 @@ class ChatMemberSubscriber extends AbstractBotSubscriber implements EventSubscri
    */
   public function onMemberLeft(LeftChatMemberEvent $event)
   {
-    $chat = $this->prepareChat($event->getMessage()->chat);
+    /** @var Chat $chat */
+    $chat = $this->doctrine->getRepository('KettariTelegramBundle:Chat')
+      ->findOneByTelegramId($event->getMessage()->chat->id);
     $this->processLeftMember(
       $event->getUpdate(),
       $event->getMessage()->left_chat_member,
       $chat
     );
-
     // Flush changes
-    $this->getDoctrine()
-      ->getManager()
+    $this->doctrine->getManager()
       ->flush();
 
     // Tell the Bot this request is handled
-    $this->getBot()
-      ->setRequestHandled(true);
+    /*$this->getBot()
+      ->setRequestHandled(true);*/
   }
 
   /**
    * @param \unreal4u\TelegramAPI\Telegram\Types\Update $update
-   * @param \unreal4u\TelegramAPI\Telegram\Types\User $tu
+   * @param \unreal4u\TelegramAPI\Telegram\Types\User $telegramUser
    * @param Chat $chatEntity
    */
   private function processLeftMember(
     Update $update,
-    TelegramUser $tu,
+    TelegramUser $telegramUser,
     Chat $chatEntity
   ) {
-    $em = $this->getDoctrine()
-      ->getManager();
-
     // Find user object. If not found, create new
-    $userEntity = $this->getDoctrine()
-      ->getRepository('KettariTelegramBundle:User')
-      ->findByTelegramId($tu->id);
+    $userEntity = $this->doctrine->getRepository('KettariTelegramBundle:User')
+      ->findOneByTelegramId($telegramUser->id);
     if (!$userEntity) {
-      $userEntity = $this->getBot()
-        ->getUserHq()
-        ->createAnonymousUser($tu);
+      $userEntity = $this->userHq->createAnonymousUser($telegramUser);
     }
 
     // Find chat member object. If not found, create new
-    $chatMember = $this->getDoctrine()
-      ->getRepository(
-        'KettariTelegramBundle:ChatMember'
-      )
-      ->findOneBy(
-        [
-          'chat' => $chatEntity,
-          'user' => $userEntity,
-        ]
-      );
+    $chatMember = $this->doctrine->getRepository(
+      'KettariTelegramBundle:ChatMember'
+    )
+      ->findOneByChatAndUser($chatEntity, $userEntity);
     if (!$chatMember) {
       $chatMember = new ChatMember();
-      $em->persist($chatMember);
+      $this->doctrine->getManager()
+        ->persist($chatMember);
     }
     $chatMember->setChat($chatEntity)
       ->setUser($userEntity)
@@ -281,20 +238,32 @@ class ChatMemberSubscriber extends AbstractBotSubscriber implements EventSubscri
       ->setStatus('left');
 
     // Check if left user is the bot itself and dispatch appropriate event if yes
-    $config = $this->getBot()
-      ->getContainer()
-      ->getParameter('kettari_telegram');
-    $selfUserId = $config['self_user_id'] ?? 0;
-    if ($selfUserId == $tu->id) {
-      $this->dispatchLeftBotEvent($update, $tu, $chatEntity, $userEntity);
+    /** @var \Kettari\TelegramBundle\Entity\BotSetting $botSetting_UserId */
+    $botSetting_UserId = $this->doctrine->getRepository(
+      'KettariTelegramBundle:BotSetting'
+    )
+      ->findOneByName('bot_user_id');
+    if (is_null($botSetting_UserId)) {
+      throw new \LogicException(
+        'Bot user ID is not configured ("bot_user_id" settings must be present).'
+      );
+    }
+    if ($botSetting_UserId->getValue() == $telegramUser->id) {
+      $this->dispatchLeftBotEvent(
+        $update,
+        $telegramUser,
+        $chatEntity,
+        $userEntity
+      );
     }
 
-    $this->getBot()
-      ->getLogger()
-      ->debug(
-        'LEFT: self_user_id={self_user_id}, telegram_user_id={telegram_user_id}',
-        ['self_user_id' => $selfUserId, 'telegram_user_id' => $tu->id]
-      );
+    $this->logger->debug(
+      'LEFT: self_user_id={self_user_id}, telegram_user_id={telegram_user_id}',
+      [
+        'self_user_id'     => $botSetting_UserId->getValue(),
+        'telegram_user_id' => $telegramUser->id,
+      ]
+    );
   }
 
   /**
@@ -312,9 +281,7 @@ class ChatMemberSubscriber extends AbstractBotSubscriber implements EventSubscri
     $botLeftEvent = new LeftChatMemberBotEvent(
       $update, $leftUser, $chatEntity, $userEntity
     );
-    $this->getBot()
-      ->getDispatcher()
-      ->dispatch(LeftChatMemberBotEvent::NAME, $botLeftEvent);
+    $this->dispatcher->dispatch(LeftChatMemberBotEvent::NAME, $botLeftEvent);
   }
 
   /**
@@ -324,12 +291,12 @@ class ChatMemberSubscriber extends AbstractBotSubscriber implements EventSubscri
    */
   public function onMemberTexted(TextReceivedEvent $event)
   {
-    $chat = $this->prepareChat($event->getMessage()->chat);
+    /** @var Chat $chat */
+    $chat = $this->doctrine->getRepository('KettariTelegramBundle:Chat')
+      ->findOneByTelegramId($event->getMessage()->chat->id);
     $this->processTextedMember($event->getMessage()->from, $chat);
-
     // Flush changes
-    $this->getDoctrine()
-      ->getManager()
+    $this->doctrine->getManager()
       ->flush();
 
     // NB: This handler SHALL NOT mark request as handled. We just update ChatMember
@@ -339,40 +306,29 @@ class ChatMemberSubscriber extends AbstractBotSubscriber implements EventSubscri
   /**
    * Creates user that sent text to the chat.
    *
-   * @param \unreal4u\TelegramAPI\Telegram\Types\User $tu
+   * @param \unreal4u\TelegramAPI\Telegram\Types\User $telegramUser
    * @param Chat $chat
    */
   private function processTextedMember(
-    TelegramUser $tu,
+    TelegramUser $telegramUser,
     Chat $chat
   ) {
-    $em = $this->getDoctrine()
-      ->getManager();
-
     // Find user object. If not found, create new
-    $userEntity = $this->getDoctrine()
-      ->getRepository('KettariTelegramBundle:User')
-      ->findByTelegramId($tu->id);
+    $userEntity = $this->doctrine->getRepository('KettariTelegramBundle:User')
+      ->findOneByTelegramId($telegramUser->id);
     if (!$userEntity) {
-      $userEntity = $this->getBot()
-        ->getUserHq()
-        ->createAnonymousUser($tu);
+      $userEntity = $this->userHq->createAnonymousUser($telegramUser);
     }
 
     // Find chat member object. If not found, create new
-    $chatMember = $this->getDoctrine()
-      ->getRepository(
-        'KettariTelegramBundle:ChatMember'
-      )
-      ->findOneBy(
-        [
-          'chat' => $chat,
-          'user' => $userEntity,
-        ]
-      );
+    $chatMember = $this->doctrine->getRepository(
+      'KettariTelegramBundle:ChatMember'
+    )
+      ->findOneByChatAndUser($chat, $userEntity);
     if (!$chatMember) {
       $chatMember = new ChatMember();
-      $em->persist($chatMember);
+      $this->doctrine->getManager()
+        ->persist($chatMember);
     }
     $chatMember->setChat($chat)
       ->setUser($userEntity)

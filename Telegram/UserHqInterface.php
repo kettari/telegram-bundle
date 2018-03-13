@@ -12,6 +12,7 @@ namespace Kettari\TelegramBundle\Telegram;
 use Doctrine\Common\Collections\Collection;
 use Kettari\TelegramBundle\Entity\User;
 use unreal4u\TelegramAPI\Telegram\Types\Update;
+use unreal4u\TelegramAPI\Telegram\Types\User as TelegramUser;
 
 interface UserHqInterface
 {
@@ -23,6 +24,14 @@ interface UserHqInterface
    * @return User
    */
   public function resolveCurrentUser(Update $update): User;
+
+  /**
+   * Creates user in the database. Assigns anonymous roles.
+   *
+   * @param \unreal4u\TelegramAPI\Telegram\Types\User $telegramUser
+   * @return \Kettari\TelegramBundle\Entity\User
+   */
+  public function createAnonymousUser(TelegramUser $telegramUser): User;
 
   /**
    * Returns true if current user is blocked.

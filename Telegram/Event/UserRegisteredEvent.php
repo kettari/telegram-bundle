@@ -1,16 +1,10 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: ant
- * Date: 25.04.2017
- * Time: 13:15
- */
+declare(strict_types=1);
 
 namespace Kettari\TelegramBundle\Telegram\Event;
 
 
 use Kettari\TelegramBundle\Entity\User;
-use RuntimeException;
 use unreal4u\TelegramAPI\Telegram\Types\Update;
 
 class UserRegisteredEvent extends AbstractMessageEvent
@@ -20,25 +14,18 @@ class UserRegisteredEvent extends AbstractMessageEvent
   /**
    * @var \Kettari\TelegramBundle\Entity\User
    */
-  private $registered_user;
+  private $registeredUser;
 
   /**
    * UserRegisteredEvent constructor.
    *
    * @param Update $update
-   * @param User $registered_user
+   * @param User $registeredUser
    */
-  public function __construct(Update $update, $registered_user)
+  public function __construct(Update $update, User $registeredUser)
   {
-    if (is_null($update->message)) {
-      throw new RuntimeException(
-        'Message can\'t be null for the UserRegisteredEvent.'
-      );
-    }
-
-    $this->setMessage($update->message)
-      ->setUpdate($update);
-    $this->registered_user = $registered_user;
+    parent::__construct($update);
+    $this->registeredUser = $registeredUser;
   }
 
   /**
@@ -46,6 +33,6 @@ class UserRegisteredEvent extends AbstractMessageEvent
    */
   public function getRegisteredUser(): User
   {
-    return $this->registered_user;
+    return $this->registeredUser;
   }
 }

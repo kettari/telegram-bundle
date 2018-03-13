@@ -4,7 +4,10 @@ declare(strict_types=1);
 namespace Kettari\TelegramBundle\Telegram;
 
 
+use Kettari\TelegramBundle\Entity\Hook;
 use Kettari\TelegramBundle\Telegram\Command\TelegramCommandInterface;
+use Symfony\Bridge\Doctrine\RegistryInterface;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use unreal4u\TelegramAPI\Telegram\Types\Update;
 use unreal4u\TelegramAPI\Telegram\Types\User as TelegramUser;
 
@@ -59,4 +62,78 @@ interface CommandBusInterface
    * @return array
    */
   public function getCommands(): array;
+
+  /**
+   * Returns Doctrine service.
+   *
+   * @return \Symfony\Bridge\Doctrine\RegistryInterface
+   */
+  public function getDoctrine(): RegistryInterface;
+
+  /**
+   * Returns event dispatcher service.
+   *
+   * @return \Symfony\Component\EventDispatcher\EventDispatcherInterface
+   */
+  public function getDispatcher(): EventDispatcherInterface;
+
+  /**
+   * Returns user's headquarters.
+   *
+   * @return \Kettari\TelegramBundle\Telegram\UserHqInterface
+   */
+  public function getUserHq(): UserHqInterface;
+
+  /**
+   * Returns Communicator service.
+   *
+   * @return \Kettari\TelegramBundle\Telegram\CommunicatorInterface
+   */
+  public function getCommunicator(): CommunicatorInterface;
+
+  /**
+   * Returns Pusher service.
+   *
+   * @return \Kettari\TelegramBundle\Telegram\PusherInterface
+   */
+  public function getPusher(): PusherInterface;
+
+  /**
+   * Creates hook.
+   *
+   * @param \unreal4u\TelegramAPI\Telegram\Types\Update $update
+   * @param string $className
+   * @param string $methodName
+   * @param string $parameters
+   */
+  public function createHook(
+    Update $update,
+    string $className,
+    string $methodName,
+    string $parameters = ''
+  );
+
+  /**
+   * Finds hook.
+   *
+   * @param \unreal4u\TelegramAPI\Telegram\Types\Update $update
+   * @return Hook|null
+   */
+  public function findHook(Update $update);
+
+  /**
+   * Executes the hook.
+   *
+   * @param \Kettari\TelegramBundle\Entity\Hook $hook
+   * @param \unreal4u\TelegramAPI\Telegram\Types\Update $update
+   * @return \Kettari\TelegramBundle\Telegram\CommandBusInterface
+   */
+  public function executeHook(Hook $hook, Update $update): CommandBusInterface;
+
+  /**
+   * Deletes the hook.
+   *
+   * @param \Kettari\TelegramBundle\Entity\Hook $hook
+   */
+  public function deleteHook(Hook $hook);
 }

@@ -48,49 +48,6 @@ class UserHq implements UserHqInterface
   }
 
   /**
-   * Formats user name.
-   *
-   * @param User $userEntity
-   * @param bool $redundantFormat Return both native and external names
-   * @return string
-   * @deprecated To be removed
-   */
-  public static function formatUserName($userEntity, $redundantFormat = false)
-  {
-    if (!is_null($userEntity)) {
-      // User set
-      $userName = trim(
-        $userEntity->getFirstName().' '.$userEntity->getLastName()
-      );
-      $externalName = trim(
-        $userEntity->getExternalFirstName().' '.
-        $userEntity->getExternalLastName()
-      );
-    } else {
-      // User not set
-      $userName = 'не указан';
-      $externalName = '';
-    }
-
-    if (!empty($externalName)) {
-
-      // Return both native and external names
-      if ($redundantFormat) {
-        $userName = sprintf(
-          '%s (%s)',
-          $userName,
-          $externalName
-        );
-      } else {
-        $userName = $externalName;
-      }
-
-    }
-
-    return $userName;
-  }
-
-  /**
    * {@inheritdoc}
    */
   public function resolveCurrentUser(Update $update): User
@@ -114,7 +71,9 @@ class UserHq implements UserHqInterface
     }
     // Can't go further without proper user resolving
     if (is_null($telegramUser)) {
-      throw new TelegramBundleException('Telegram user object not found in the update object.');
+      throw new TelegramBundleException(
+        'Telegram user object not found in the update object.'
+      );
     }
 
     $this->logger->debug(
@@ -160,24 +119,21 @@ class UserHq implements UserHqInterface
   }
 
   /**
-   * Creates user in the database. Assigns anonymous roles.
-   *
-   * @param \unreal4u\TelegramAPI\Telegram\Types\User $tu
-   * @return \Kettari\TelegramBundle\Entity\User
+   * {@inheritdoc}
    */
-  private function createAnonymousUser(TelegramUser $tu)
+  public function createAnonymousUser(TelegramUser $telegramUser): User
   {
     $this->logger->debug(
       'About to create anonymous user for TelegramID={telegram_id}',
-      ['telegram_id' => $tu->id, 'telegram_user' => $tu]
+      ['telegram_id' => $telegramUser->id, 'telegram_user' => $telegramUser]
     );
 
     // Create user entity and assign roles
     $user = new User();
-    $user->setTelegramId($tu->id)
-      ->setFirstName($tu->first_name)
-      ->setLastName($tu->last_name)
-      ->setUsername($tu->username);
+    $user->setTelegramId($telegramUser->id)
+      ->setFirstName($telegramUser->first_name)
+      ->setLastName($telegramUser->last_name)
+      ->setUsername($telegramUser->username);
     // Get roles and assign them
     $roles = $this->getAnonymousRoles();
     $this->logger->debug(
@@ -194,8 +150,8 @@ class UserHq implements UserHqInterface
     $this->logger->debug(
       'Created anonymous user for TelegramID={telegram_id}, entity ID={user_id}',
       [
-        'telegram_id'   => $tu->id,
-        'telegram_user' => $tu,
+        'telegram_id'   => $telegramUser->id,
+        'telegram_user' => $telegramUser,
         'user_id'       => $user->getId(),
       ]
     );
@@ -242,7 +198,9 @@ class UserHq implements UserHqInterface
   public function isUserBlocked(): bool
   {
     if (is_null($this->currentUser)) {
-      throw new CurrentUserNotDefinedException('Unable to tell if user is blocked. Current user not resolved.');
+      throw new CurrentUserNotDefinedException(
+        'Unable to tell if user is blocked. Current user not resolved.'
+      );
     }
 
     return $this->getCurrentUser()
@@ -263,7 +221,9 @@ class UserHq implements UserHqInterface
   public function getUserPermissions(): Collection
   {
     if (is_null($this->currentUser)) {
-      throw new CurrentUserNotDefinedException('Unable to get user permissions. Current user not resolved.');
+      throw new CurrentUserNotDefinedException(
+        'Unable to get user permissions. Current user not resolved.'
+      );
     }
 
     $permissions = new ArrayCollection();
@@ -289,7 +249,9 @@ class UserHq implements UserHqInterface
   public function getUserNotifications(): Collection
   {
     if (is_null($this->currentUser)) {
-      throw new TelegramBundleException('Unable to get user notifications. Current user not resolved.');
+      throw new TelegramBundleException(
+        'Unable to get user notifications. Current user not resolved.'
+      );
     }
 
     return $this->currentUser->getNotifications();

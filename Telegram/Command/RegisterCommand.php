@@ -4,9 +4,9 @@ declare(strict_types=1);
 namespace Kettari\TelegramBundle\Telegram\Command;
 
 
-use Doctrine\Bundle\DoctrineBundle\Registry;
-use Kettari\TelegramBundle\Entity\Role;
 use Kettari\TelegramBundle\Entity\User;
+use Kettari\TelegramBundle\Exception\TelegramBundleException;
+use Kettari\TelegramBundle\Telegram\Communicator;
 use Kettari\TelegramBundle\Telegram\Event\UserRegisteredEvent;
 use unreal4u\TelegramAPI\Telegram\Types\Contact;
 use unreal4u\TelegramAPI\Telegram\Types\KeyboardButton;
@@ -31,19 +31,17 @@ class RegisterCommand extends AbstractCommand
    */
   public function execute()
   {
-    if ('private' == $this->getUpdate()->message->chat->type) {
+    if ('private' == $this->update->message->chat->type) {
       $this->replyWithMessage(
         'Чтобы зарегистрироваться, мне нужно узнать ваш телефон.'.PHP_EOL.
         PHP_EOL.
         'Пришлите мне его, нажав кнопку «Сообщить номер телефона» и подтвердите своё согласие.',
-        self::PARSE_MODE_PLAIN,
+        Communicator::PARSE_MODE_PLAIN,
         $this->getReplyKeyboardMarkup()
       );
 
       // Register the hook so when user will send information, we will be notified.
-      $this->getBus()
-        ->getHooker()
-        ->createHook($this->getUpdate(), get_class($this), 'handleContact');
+      $this->bus->createHook($this->update, get_class($this), 'handleContact');
     } else {
       $this->replyWithMessage(
         'Эта команда работает только в личной переписке с ботом. В общем канале регистрация невозможна.'
@@ -59,22 +57,22 @@ class RegisterCommand extends AbstractCommand
   private function getReplyKeyboardMarkup()
   {
     // Phone button
-    $phone_btn = new KeyboardButton();
-    $phone_btn->request_contact = true;
-    $phone_btn->text = self::BTN_PHONE;
+    $phoneBtn = new KeyboardButton();
+    $phoneBtn->request_contact = true;
+    $phoneBtn->text = self::BTN_PHONE;
 
     // Cancel button
-    $cancel_btn = new KeyboardButton();
-    $cancel_btn->text = self::BTN_CANCEL;
+    $cancelBtn = new KeyboardButton();
+    $cancelBtn->text = self::BTN_CANCEL;
 
     // Keyboard
-    $reply_markup = new ReplyKeyboardMarkup();
-    $reply_markup->one_time_keyboard = true;
-    $reply_markup->resize_keyboard = true;
-    $reply_markup->keyboard[][] = $phone_btn;
-    $reply_markup->keyboard[][] = $cancel_btn;
+    $replyMarkup = new ReplyKeyboardMarkup();
+    $replyMarkup->one_time_keyboard = true;
+    $replyMarkup->resize_keyboard = true;
+    $replyMarkup->keyboard[][] = $phoneBtn;
+    $replyMarkup->keyboard[][] = $cancelBtn;
 
-    return $reply_markup;
+    return $replyMarkup;
   }
 
   /**
@@ -82,13 +80,13 @@ class RegisterCommand extends AbstractCommand
    */
   public function handleContact()
   {
-    $message = $this->getUpdate()->message;
+    $message = $this->update->message;
     if (!is_null($message->contact)) {
       // Check if user sent his contact
       if ($message->contact->user_id != $message->from->id) {
         $this->replyWithMessage(
           'Вы прислали не свой номер телефона! Попробуйте ещё раз /register',
-          self::PARSE_MODE_PLAIN,
+          Communicator::PARSE_MODE_PLAIN,
           new ReplyKeyboardRemove()
         );
 
@@ -106,31 +104,35 @@ class RegisterCommand extends AbstractCommand
     } elseif (self::BTN_CANCEL == $message->text) {
       $this->replyWithMessage(
         'Регистрация отменена.',
-        self::PARSE_MODE_PLAIN,
+        Communicator::PARSE_MODE_PLAIN,
         new ReplyKeyboardRemove()
       );
     } else {
 
       // If user sent us numbers, help him to understand he should send a contact,
       // not type characters.
-      $sanitized_text = $this->sanitizePhone($message->text);
-      if (mb_strlen($sanitized_text) > 7) {
+      $sanitizedText = $this->sanitizePhone(
+        $message->text ? $message->text : ''
+      );
+      if (mb_strlen($sanitizedText) > 7) {
         $this->replyWithMessage(
           'Вы прислали мне номер телефона, набранный на клавиатуре. Мне надо, чтобы вы нажали <b>специальную кнопку «Сообщить номер телефона»</b>.'.
           PHP_EOL.PHP_EOL.'Пожалуйста, попробуйте ещё раз?',
-          self::PARSE_MODE_HTML,
+          Communicator::PARSE_MODE_HTML,
           $this->getReplyKeyboardMarkup()
         );
 
         // Register the hook so when user will send information, we will be notified.
-        $this->getBus()
-          ->getHooker()
-          ->createHook($this->getUpdate(), get_class($this), 'handleContact');
+        $this->bus->createHook(
+          $this->update,
+          get_class($this),
+          'handleContact'
+        );
 
       } else {
         $this->replyWithMessage(
           'Вы прислали не телефон, а что-то, мне непонятное. Попробуйте ещё раз команду /register',
-          self::PARSE_MODE_PLAIN,
+          Communicator::PARSE_MODE_PLAIN,
           new ReplyKeyboardRemove()
         );
       }
@@ -145,48 +147,53 @@ class RegisterCommand extends AbstractCommand
    */
   protected function registerUser(Contact $contact)
   {
-    $tu = $this->getUpdate()->message->from;
-    $d = $this->getBus()
-      ->getBot()
-      ->getContainer()
-      ->get('doctrine');
-    $em = $d->getManager();
+    $telegramUser = $this->update->message->from;
 
     // Find role object
-    $roles = $d->getRepository('KettariTelegramBundle:Role')
-      ->findBy(['name' => 'registered']);
-    if (0 == count($roles)) {
-      throw new \LogicException('Roles for registered users not found');
+    /** @var \Kettari\TelegramBundle\Entity\Role $registeredRole */
+    $registeredRole = $this->bus->getDoctrine()
+      ->getRepository('KettariTelegramBundle:Role')
+      ->findOneByName('registered');
+    if (is_null($registeredRole)) {
+      throw new \LogicException('Role for registered users not found');
     }
 
     // Find user object. If not found, create new
-    $user_entity = $d->getRepository('KettariTelegramBundle:User')
-      ->findOneBy(['telegram_id' => $tu->id]);
-    if (!$user_entity) {
-      $user_entity = new User();
-      $user_entity->setTelegramId($tu->id)
-        ->setFirstName($tu->first_name)
-        ->setLastName($tu->last_name)
-        ->setUsername($tu->username);
+    /** @var User $userEntity */
+    $userEntity = $this->bus->getDoctrine()
+      ->getRepository('KettariTelegramBundle:User')
+      ->findOneByTelegramId($telegramUser->id);
+    if (!$userEntity) {
+      throw new TelegramBundleException(
+        sprintf(
+          'Unable to register user ID=%s: entity expected in the database and not found.',
+          $telegramUser->id
+        )
+      );
     }
     // Update information
-    $phone = $this->sanitizePhone($contact->phone_number);
-    $user_entity->setPhone($phone);
-    /** @var Role $single_role */
-    foreach ($roles as $single_role) {
-      $user_entity->addRole($single_role);
+    $phone = $this->sanitizePhone(
+      $contact->phone_number ? $contact->phone_number : ''
+    );
+    $userEntity->setPhone($phone);
+    if (!$userEntity->hasRole($registeredRole)) {
+      $userEntity->addRole($registeredRole);
     }
 
     // Load default notifications and assign them to the user
-    $default_notifications = $this->getDefaultNotifications($d);
-    $this->assignDefaultNotifications($d, $user_entity, $default_notifications);
+    $defaultNotifications = $this->getDefaultNotifications();
+    $this->assignDefaultNotifications($userEntity, $defaultNotifications);
 
     // Commit changes
-    $em->persist($user_entity);
-    $em->flush();
+    $this->bus->getDoctrine()
+      ->getManager()
+      ->persist($userEntity);
+    $this->bus->getDoctrine()
+      ->getManager()
+      ->flush();
 
     // Dispatch new registration event
-    $this->dispatchNewRegistration($this->getUpdate(), $user_entity);
+    $this->dispatchNewRegistration($this->update, $userEntity);
 
     return true;
   }
@@ -195,9 +202,9 @@ class RegisterCommand extends AbstractCommand
    * Sanitize phone and return pure numbers.
    *
    * @param string $phone
-   * @return mixed
+   * @return string
    */
-  protected function sanitizePhone($phone)
+  protected function sanitizePhone(string $phone): string
   {
     // Remove all chars except numbers
     $needle = preg_replace('/[^0-9]/', '', $phone);
@@ -210,19 +217,19 @@ class RegisterCommand extends AbstractCommand
       $needle = '7'.$needle;
     }
 
-    return empty($needle) ? null : $needle;
+    return $needle;
   }
 
   /**
    * Returns array with notifications for anonymous users.
    *
-   * @param \Doctrine\Bundle\DoctrineBundle\Registry $d
    * @return array
    */
-  private function getDefaultNotifications(Registry $d)
+  private function getDefaultNotifications()
   {
-    $notifications = $d->getRepository('KettariTelegramBundle:Notification')
-      ->findBy(['user_default' => true]);
+    $notifications = $this->bus->getDoctrine()
+      ->getRepository('KettariTelegramBundle:Notification')
+      ->findDefault();
     if (0 == count($notifications)) {
       // No error, just no default notifications defined
       return [];
@@ -234,25 +241,23 @@ class RegisterCommand extends AbstractCommand
   /**
    * Assigns notifications to the User.
    *
-   * @param \Doctrine\Bundle\DoctrineBundle\Registry $d
    * @param \Kettari\TelegramBundle\Entity\User $user
    * @param array $notifications
    */
   private function assignDefaultNotifications(
-    Registry $d,
     User $user,
-    $notifications
+    array $notifications
   ) {
     if (count($notifications)) {
-      $em = $d->getManager();
-
       // Load all current notifications assigned to user
-      $current_notifications = $user->getNotifications();
-      /** @var \Kettari\TelegramBundle\Entity\Notification $new_notification */
-      foreach ($notifications as $new_notification) {
-        if (!$current_notifications->contains($new_notification)) {
-          $user->addNotification($new_notification);
-          $em->persist($user);
+      $currentNotifications = $user->getNotifications();
+      /** @var \Kettari\TelegramBundle\Entity\Notification $newNotification */
+      foreach ($notifications as $newNotification) {
+        if (!$currentNotifications->contains($newNotification)) {
+          $user->addNotification($newNotification);
+          $this->bus->getDoctrine()
+            ->getManager()
+            ->persist($user);
         }
       }
     }
@@ -268,15 +273,12 @@ class RegisterCommand extends AbstractCommand
     Update $update,
     User $userEntity
   ) {
-    $dispatcher = $this->getBus()
-      ->getBot()
-      ->getEventDispatcher();
-
     // Dispatch new registration event
-    $user_registered_event = new UserRegisteredEvent(
+    $userRegisteredEvent = new UserRegisteredEvent(
       $update, $userEntity
     );
-    $dispatcher->dispatch(UserRegisteredEvent::NAME, $user_registered_event);
+    $this->bus->getDispatcher()
+      ->dispatch(UserRegisteredEvent::NAME, $userRegisteredEvent);
   }
 
 }

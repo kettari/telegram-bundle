@@ -1,10 +1,5 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: ant
- * Date: 25.04.2017
- * Time: 14:19
- */
+declare(strict_types=1);
 
 namespace Kettari\TelegramBundle\Telegram\Subscriber;
 
@@ -50,8 +45,8 @@ class GroupSubscriber extends AbstractBotSubscriber implements EventSubscriberIn
     $this->processGroupCreation($event->getUpdate());
 
     // Tell the Bot this request is handled
-    $this->getBot()
-      ->setRequestHandled(true);
+    /*$this->getBot()
+      ->setRequestHandled(true);*/
   }
 
   /**
@@ -61,31 +56,27 @@ class GroupSubscriber extends AbstractBotSubscriber implements EventSubscriberIn
    */
   private function processGroupCreation(Update $update)
   {
-    // Prepare Doctrine and EntityManager
-    $em = $this->getDoctrine()
-      ->getManager();
-
-    // Get telegram chat
-    $tc = $update->message->chat;
-
     // Find chat object. If not found, create new
-    $chat = $this->getDoctrine()
-      ->getRepository('KettariTelegramBundle:Chat')
-      ->findOneBy(['telegram_id' => $tc->id]);
+    $chat = $this->doctrine->getRepository('KettariTelegramBundle:Chat')
+      ->findOneByTelegramId($update->message->chat->id);
     if (!$chat) {
       $chat = new Chat();
-      $em->persist($chat);
+      $this->doctrine->getManager()
+        ->persist($chat);
     }
-    $chat->setTelegramId($tc->id)
-      ->setType($tc->type)
-      ->setTitle($tc->title)
-      ->setUsername($tc->username)
-      ->setFirstName($tc->first_name)
-      ->setLastName($tc->last_name)
-      ->setAllMembersAreAdministrators($tc->all_members_are_administrators);
+    $chat->setTelegramId($update->message->chat->id)
+      ->setType($update->message->chat->type)
+      ->setTitle($update->message->chat->title)
+      ->setUsername($update->message->chat->username)
+      ->setFirstName($update->message->chat->first_name)
+      ->setLastName($update->message->chat->last_name)
+      ->setAllMembersAreAdministrators(
+        $update->message->chat->all_members_are_administrators
+      );
 
     // Commit changes
-    $em->flush();
+    $this->doctrine->getManager()
+      ->flush();
   }
 
 }

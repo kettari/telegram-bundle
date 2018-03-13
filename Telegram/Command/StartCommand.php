@@ -21,11 +21,10 @@ class StartCommand extends AbstractCommand
       $this->replyWithMessage('Параметр: '.$this->getParameter());
     }*/
 
-    switch ($this->getParameter()) {
+    switch ($this->getCommandParameter()) {
       case 'register':
         // Execute /register
-        $this->getBus()
-          ->executeCommand('register', null, $this->getUpdate());
+        $this->bus->executeCommand($this->update, 'register');
 
         return;
       default:
@@ -36,8 +35,7 @@ class StartCommand extends AbstractCommand
     $this->replyWithMessage('Привет! Список команд доступен по команде /help');
 
     // Execute /help
-    $this->getBus()
-      ->executeCommand('help', null, $this->getUpdate());
+    $this->bus->executeCommand($this->update, 'help');
   }
 
 

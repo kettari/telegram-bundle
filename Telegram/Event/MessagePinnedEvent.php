@@ -1,10 +1,5 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: ant
- * Date: 25.04.2017
- * Time: 13:15
- */
+declare(strict_types=1);
 
 namespace Kettari\TelegramBundle\Telegram\Event;
 
@@ -24,19 +19,12 @@ class MessagePinnedEvent extends AbstractMessageEvent
    */
   public function __construct(Update $update)
   {
-    if (is_null($update->message)) {
-      throw new RuntimeException(
-        'Message can\'t be null for the MessagePinnedEvent.'
-      );
-    }
+    parent::__construct($update);
     if (empty($update->message->pinned_message)) {
       throw new RuntimeException(
         'Pinned message of the Message can\'t be empty for the MessagePinnedEvent.'
       );
     }
-
-    $this->setMessage($update->message)
-      ->setUpdate($update);
   }
 
   /**

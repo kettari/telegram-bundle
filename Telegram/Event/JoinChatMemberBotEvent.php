@@ -1,16 +1,13 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: ant
- * Date: 25.04.2017
- * Time: 19:03
- */
+declare(strict_types=1);
 
 namespace Kettari\TelegramBundle\Telegram\Event;
 
 
-use RuntimeException;
+use Kettari\TelegramBundle\Entity\Chat;
+use Kettari\TelegramBundle\Entity\User;
 use unreal4u\TelegramAPI\Telegram\Types\Update;
+use unreal4u\TelegramAPI\Telegram\Types\User as TelegramUser;
 
 class JoinChatMemberBotEvent extends AbstractMessageEvent
 {
@@ -19,63 +16,60 @@ class JoinChatMemberBotEvent extends AbstractMessageEvent
   /**
    * @var \unreal4u\TelegramAPI\Telegram\Types\User
    */
-  private $joined_user;
+  private $joinedUser;
 
   /**
    * @var \Kettari\TelegramBundle\Entity\Chat
    */
-  private $chat_entity;
+  private $chatEntity;
 
   /**
    * @var \Kettari\TelegramBundle\Entity\User
    */
-  private $user_entity;
+  private $userEntity;
 
   /**
    * JoinChatMemberEvent constructor.
    *
    * @param Update $update
-   * @param \unreal4u\TelegramAPI\Telegram\Types\User $joined_user
+   * @param \unreal4u\TelegramAPI\Telegram\Types\User $joinedUser
    * @param \Kettari\TelegramBundle\Entity\Chat
    * @param \Kettari\TelegramBundle\Entity\User
    */
-  public function __construct(Update $update, $joined_user, $chat_entity, $user_entity)
-  {
-    if (is_null($update->message)) {
-      throw new RuntimeException(
-        'Message can\'t be null for the JoinChatMemberBotEvent.'
-      );
-    }
-
-    $this->setMessage($update->message)
-      ->setUpdate($update);
-    $this->joined_user = $joined_user;
-    $this->chat_entity = $chat_entity;
-    $this->user_entity = $user_entity;
+  public function __construct(
+    Update $update,
+    TelegramUser $joinedUser,
+    Chat $chatEntity,
+    User $userEntity
+  ) {
+    parent::__construct($update);
+    $this->joinedUser = $joinedUser;
+    $this->chatEntity = $chatEntity;
+    $this->userEntity = $userEntity;
   }
 
   /**
    * @return \unreal4u\TelegramAPI\Telegram\Types\User
    */
-  public function getJoinedUser()
+  public function getJoinedUser(): TelegramUser
   {
-    return $this->joined_user;
+    return $this->joinedUser;
   }
 
   /**
    * @return \Kettari\TelegramBundle\Entity\Chat
    */
-  public function getChatEntity()
+  public function getChatEntity(): Chat
   {
-    return $this->chat_entity;
+    return $this->chatEntity;
   }
 
   /**
    * @return \Kettari\TelegramBundle\Entity\User
    */
-  public function getUserEntity()
+  public function getUserEntity(): User
   {
-    return $this->user_entity;
+    return $this->userEntity;
   }
 
 }

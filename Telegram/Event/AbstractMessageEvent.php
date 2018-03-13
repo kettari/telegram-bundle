@@ -21,12 +21,12 @@ abstract class AbstractMessageEvent extends AbstractUpdateEvent
    */
   public function __construct(Update $update)
   {
+    parent::__construct($update);
     if (is_null($update->message)) {
       throw new \RuntimeException(
         'Message can\'t be null for the AbstractMessageEvent.'
       );
     }
-    parent::__construct($update);
     $this->message = $update->message;
   }
 

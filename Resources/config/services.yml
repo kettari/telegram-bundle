@@ -3,14 +3,6 @@ services:
     kettari_telegram.throttle:
         class: Kettari\TelegramBundle\Telegram\ThrottleControl
 
-    # User's headquarters. Used to track 'current user'
-    kettari_telegram.user_hq:
-        class: Kettari\TelegramBundle\Telegram\UserHq
-        arguments: [
-            '@monolog.logger',
-            '@doctrine'
-        ]
-
     # Communicator. Sends API requests to the Telegram servers
     kettari_telegram.communicator:
         class: Kettari\TelegramBundle\Telegram\Communicator
@@ -21,7 +13,24 @@ services:
             '%kettari_telegram.api_token%'
         ]
 
-    # Default subscribers
+    # Pusher
+    kettari_telegram.pusher:
+        class: Kettari\TelegramBundle\Telegram\Pusher
+        arguments: [
+            '@monolog.logger',
+            '@doctrine',
+            '@kettari_telegram.communicator'
+        ]
+
+    # User's headquarters. Used to track 'current user'
+    kettari_telegram.user_hq:
+        class: Kettari\TelegramBundle\Telegram\UserHq
+        arguments: [
+            '@monolog.logger',
+            '@doctrine'
+        ]
+
+    ### Default subscribers
     # Audit subscriber
     kettari_telegram.subscriber.audit:
         class: Kettari\TelegramBundle\Telegram\Subscriber\AuditSubscriber
@@ -30,7 +39,9 @@ services:
             '@doctrine',
             '@event_dispatcher',
             '@kettari_telegram.user_hq',
-            '@kettari_telegram.communicator'
+            '@kettari_telegram.bus'
+            '@kettari_telegram.communicator',
+            '@kettari_telegram.pusher'
         ]
     # Current user subscriber
     kettari_telegram.subscriber.current_user:
@@ -40,7 +51,9 @@ services:
             '@doctrine',
             '@event_dispatcher',
             '@kettari_telegram.user_hq',
-            '@kettari_telegram.communicator'
+            '@kettari_telegram.bus'
+            '@kettari_telegram.communicator',
+            '@kettari_telegram.pusher'
         ]
     # Hooker subscriber
     kettari_telegram.subscriber.hooker:
@@ -50,7 +63,9 @@ services:
             '@doctrine',
             '@event_dispatcher',
             '@kettari_telegram.user_hq',
-            '@kettari_telegram.communicator'
+            '@kettari_telegram.bus'
+            '@kettari_telegram.communicator',
+            '@kettari_telegram.pusher'
         ]
     # Update subscriber
     kettari_telegram.subscriber.update:
@@ -60,7 +75,9 @@ services:
             '@doctrine',
             '@event_dispatcher',
             '@kettari_telegram.user_hq',
-            '@kettari_telegram.communicator'
+            '@kettari_telegram.bus'
+            '@kettari_telegram.communicator',
+            '@kettari_telegram.pusher'
         ]
     # Chat subscriber
     kettari_telegram.subscriber.chat:
@@ -70,7 +87,9 @@ services:
             '@doctrine',
             '@event_dispatcher',
             '@kettari_telegram.user_hq',
-            '@kettari_telegram.communicator'
+            '@kettari_telegram.bus'
+            '@kettari_telegram.communicator',
+            '@kettari_telegram.pusher'
         ]
     # Message subscriber
     kettari_telegram.subscriber.message:
@@ -80,7 +99,9 @@ services:
             '@doctrine',
             '@event_dispatcher',
             '@kettari_telegram.user_hq',
-            '@kettari_telegram.communicator'
+            '@kettari_telegram.bus'
+            '@kettari_telegram.communicator',
+            '@kettari_telegram.pusher'
         ]
     # Text subscriber
     kettari_telegram.subscriber.text:
@@ -90,7 +111,9 @@ services:
             '@doctrine',
             '@event_dispatcher',
             '@kettari_telegram.user_hq',
-            '@kettari_telegram.communicator'
+            '@kettari_telegram.bus'
+            '@kettari_telegram.communicator',
+            '@kettari_telegram.pusher'
         ]
     # Command subscriber
     kettari_telegram.subscriber.command:
@@ -100,7 +123,9 @@ services:
             '@doctrine',
             '@event_dispatcher',
             '@kettari_telegram.user_hq',
-            '@kettari_telegram.communicator'
+            '@kettari_telegram.bus'
+            '@kettari_telegram.communicator',
+            '@kettari_telegram.pusher'
         ]
     # Chatmember subscriber
     kettari_telegram.subscriber.chat_member:
@@ -110,7 +135,9 @@ services:
             '@doctrine',
             '@event_dispatcher',
             '@kettari_telegram.user_hq',
-            '@kettari_telegram.communicator'
+            '@kettari_telegram.bus'
+            '@kettari_telegram.communicator',
+            '@kettari_telegram.pusher'
         ]
     # Group subscriber
     kettari_telegram.subscriber.group:
@@ -120,7 +147,9 @@ services:
             '@doctrine',
             '@event_dispatcher',
             '@kettari_telegram.user_hq',
-            '@kettari_telegram.communicator'
+            '@kettari_telegram.bus'
+            '@kettari_telegram.communicator',
+            '@kettari_telegram.pusher'
         ]
     # Chat migration subscriber
     kettari_telegram.subscriber.chat_migration:
@@ -130,7 +159,9 @@ services:
             '@doctrine',
             '@event_dispatcher',
             '@kettari_telegram.user_hq',
-            '@kettari_telegram.communicator'
+            '@kettari_telegram.bus'
+            '@kettari_telegram.communicator',
+            '@kettari_telegram.pusher'
         ]
     # User registration subscriber, command /register
     kettari_telegram.subscriber.user_registration:
@@ -140,7 +171,9 @@ services:
             '@doctrine',
             '@event_dispatcher',
             '@kettari_telegram.user_hq',
-            '@kettari_telegram.communicator'
+            '@kettari_telegram.bus'
+            '@kettari_telegram.communicator',
+            '@kettari_telegram.pusher'
         ]
 
     # Bot service
@@ -149,22 +182,42 @@ services:
         arguments: [
             '@monolog.logger',
             '@event_dispatcher',
-            '@kettari_telegram.bus'
+            '@kettari_telegram.bus',
+            '@kettari_telegram.communicator'
         ]
         calls:
             - [addSubscriber, ['@kettari_telegram.subscriber.audit']]
             - [addSubscriber, ['@kettari_telegram.subscriber.current_user']]
+            - [addSubscriber, ['@kettari_telegram.subscriber.hooker']]
+            - [addSubscriber, ['@kettari_telegram.subscriber.update']]
+            - [addSubscriber, ['@kettari_telegram.subscriber.chat']]
+            - [addSubscriber, ['@kettari_telegram.subscriber.message']]
+            - [addSubscriber, ['@kettari_telegram.subscriber.text']]
+            - [addSubscriber, ['@kettari_telegram.subscriber.command']]
+            - [addSubscriber, ['@kettari_telegram.subscriber.chat_member']]
+            - [addSubscriber, ['@kettari_telegram.subscriber.group']]
+            - [addSubscriber, ['@kettari_telegram.subscriber.chat_migration']]
+            - [addSubscriber, ['@kettari_telegram.subscriber.user_registration']]
 
+    # Command bus
     kettari_telegram.bus:
         class: Kettari\TelegramBundle\Telegram\CommandBus
         arguments: [
             '@monolog.logger',
             '@doctrine',
-            '@event_dispatcher'
+            '@event_dispatcher',
+            '@kettari_telegram.user_hq',
+            '@kettari_telegram.communicator',
+            '@kettari_telegram.pusher'
         ]
+        calls:
+            - [registerCommand, ['Kettari\TelegramBundle\Telegram\Command\StartCommand']]
+            - [registerCommand, ['Kettari\TelegramBundle\Telegram\Command\SettingsCommand']]
+            - [registerCommand, ['Kettari\TelegramBundle\Telegram\Command\HelpCommand']]
+            - [registerCommand, ['Kettari\TelegramBundle\Telegram\Command\ListRolesCommand']]
+            - [registerCommand, ['Kettari\TelegramBundle\Telegram\Command\PushCommand']]
+            - [registerCommand, ['Kettari\TelegramBundle\Telegram\Command\UserManCommand']]
 
-    telegram_bot:
+    # Shortcuts
+    telegram:
         alias: kettari_telegram.bot
-
-    command_bus:
-        alias: kettari_telegram.bus

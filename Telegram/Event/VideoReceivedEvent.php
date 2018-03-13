@@ -1,16 +1,10 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: ant
- * Date: 25.04.2017
- * Time: 13:15
- */
+declare(strict_types=1);
 
 namespace Kettari\TelegramBundle\Telegram\Event;
 
 
 use RuntimeException;
-
 use unreal4u\TelegramAPI\Telegram\Types\Update;
 use unreal4u\TelegramAPI\Telegram\Types\Video;
 
@@ -25,19 +19,12 @@ class VideoReceivedEvent extends AbstractMessageEvent
    */
   public function __construct(Update $update)
   {
-    if (is_null($update->message)) {
-      throw new RuntimeException(
-        'Message can\'t be null for the VideoReceivedEvent.'
-      );
-    }
+    parent::__construct($update);
     if (empty($update->message->video)) {
       throw new RuntimeException(
         'Video of the Message can\'t be empty for the VideoReceivedEvent.'
       );
     }
-
-    $this->setMessage($update->message)
-      ->setUpdate($update);
   }
 
   /**

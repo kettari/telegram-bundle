@@ -3,8 +3,8 @@ declare(strict_types=1);
 
 namespace Kettari\TelegramBundle\Telegram\Command;
 
-
-use Doctrine\Bundle\DoctrineBundle\Registry;
+use Kettari\TelegramBundle\Telegram\Communicator;
+use Symfony\Bridge\Doctrine\RegistryInterface;
 
 class ListRolesCommand extends AbstractCommand
 {
@@ -18,19 +18,15 @@ class ListRolesCommand extends AbstractCommand
    */
   public function execute()
   {
-    if ('private' == $this->getUpdate()->message->chat->type) {
-      $d = $this->getBus()
-        ->getBot()
-        ->getContainer()
-        ->get('doctrine');
-      $roles_and_permissions = $this->getRolesAndPermissions($d);
+    if ('private' == $this->update->message->chat->type) {
+      $rolesAndPermissions = $this->getRolesAndPermissions($this->bus->getDoctrine());
 
       $text = 'Список ролей и разрешений:'.PHP_EOL.PHP_EOL;
-      if (count($roles_and_permissions)) {
-        foreach ($roles_and_permissions as $role_name => $permissions) {
-          $text .= '<b>'.$role_name.'</b>'.PHP_EOL;
-          foreach ($permissions as $permission_item) {
-            $text .= $permission_item.PHP_EOL;
+      if (count($rolesAndPermissions)) {
+        foreach ($rolesAndPermissions as $roleName => $permissions) {
+          $text .= '<b>'.$roleName.'</b>'.PHP_EOL;
+          foreach ($permissions as $permissionItem) {
+            $text .= $permissionItem.PHP_EOL;
           }
           $text .= PHP_EOL;
         }
@@ -38,7 +34,7 @@ class ListRolesCommand extends AbstractCommand
         $text .= 'Роли в системе не определены.';
       }
 
-      $this->replyWithMessage($text, self::PARSE_MODE_HTML);
+      $this->replyWithMessage($text, Communicator::PARSE_MODE_HTML);
     } else {
       $this->replyWithMessage(
         'Эта команда работает только в личной переписке с ботом. В общем канале просмотр ролей невозможен.'
@@ -50,24 +46,24 @@ class ListRolesCommand extends AbstractCommand
   /**
    * Returns array with roles and permissions defined in the database.
    *
-   * @param \Doctrine\Bundle\DoctrineBundle\Registry $d
+   * @param \Symfony\Bridge\Doctrine\RegistryInterface $doctrine
    * @return array
    */
-  private function getRolesAndPermissions(Registry $d)
+  private function getRolesAndPermissions(RegistryInterface $doctrine)
   {
     $result = [];
-    $roles = $d->getRepository('KettariTelegramBundle:Role')
+    $roles = $doctrine->getRepository('KettariTelegramBundle:Role')
       ->findAll();
-    /** @var \Kettari\TelegramBundle\Entity\Role $role_item */
-    foreach ($roles as $role_item) {
-      $permissions = $role_item->getPermissions();
+    /** @var \Kettari\TelegramBundle\Entity\Role $roleItem */
+    foreach ($roles as $roleItem) {
+      $permissions = $roleItem->getPermissions();
       $perms = [];
-      /** @var \Kettari\TelegramBundle\Entity\Permission $permission_item */
-      foreach ($permissions as $permission_item) {
-        $perms[] = $permission_item->getName();
+      /** @var \Kettari\TelegramBundle\Entity\Permission $permissionItem */
+      foreach ($permissions as $permissionItem) {
+        $perms[] = $permissionItem->getName();
       }
       asort($perms);
-      $result[$role_item->getName()] = $perms;
+      $result[$roleItem->getName()] = $perms;
     }
     ksort($result);
 

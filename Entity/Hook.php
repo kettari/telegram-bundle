@@ -6,7 +6,7 @@ namespace Kettari\TelegramBundle\Entity;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
- * @ORM\Entity
+ * @ORM\Entity(repositoryClass="Kettari\TelegramBundle\Repository\HookRepository")
  * @ORM\Table(name="hook",
  *   options={"collate":"utf8mb4_general_ci", "charset":"utf8mb4"})
  */

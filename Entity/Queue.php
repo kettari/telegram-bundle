@@ -8,7 +8,7 @@ use Doctrine\ORM\Mapping\Index;
 
 
 /**
- * @ORM\Entity
+ * @ORM\Entity(repositoryClass="Kettari\TelegramBundle\Repository\QueueRepository")
  * @ORM\Table(name="queue",indexes={@Index(name="status_idx",columns={"status"}),
  *   @Index(name="created_idx",columns={"created"})},
  *   options={"collate":"utf8mb4_general_ci", "charset":"utf8mb4"})

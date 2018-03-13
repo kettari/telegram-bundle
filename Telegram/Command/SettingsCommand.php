@@ -13,35 +13,31 @@ use unreal4u\TelegramAPI\Telegram\Types\ReplyKeyboardRemove;
 class SettingsCommand extends AbstractCommand
 {
 
+  const BTN_NOTIFICATION = 'Уведомления';
+  const BTN_CANCEL = 'Ничего не менять';
+  const MARK_V = "\xE2\x9C\x85";
+  const MARK_X = "\xE2\x9D\x8C";
   static public $name = 'settings';
   static public $description = 'Настройки бота';
   static public $requiredPermissions = ['execute command settings'];
-
-  const BTN_NOTIFICATION = 'Уведомления';
-  const BTN_CANCEL = 'Ничего не менять';
-
-  const MARK_V = "\xE2\x9C\x85";
-  const MARK_X = "\xE2\x9D\x8C";
 
   /**
    * Executes command.
    */
   public function execute()
   {
-    if ('private' == $this->getUpdate()->message->chat->type) {
+    if ('private' == $this->update->message->chat->type) {
       $this->replyWithMessage(
         'Какие настройки бота вы хотите изменить?',
         '',
         $this->getReplyKeyboardMarkup_MainMenu()
       );
 
-      $this->getBus()
-        ->getHooker()
-        ->createHook(
-          $this->getUpdate(),
-          get_class($this),
-          'handleSettingsMainMenu'
-        );
+      $this->bus->createHook(
+        $this->update,
+        get_class($this),
+        'handleSettingsMainMenu'
+      );
     } else {
       $this->replyWithMessage(
         'Эта команда работает только в личной переписке с ботом. В общем канале управление настройками невозможно.'
@@ -57,21 +53,21 @@ class SettingsCommand extends AbstractCommand
   private function getReplyKeyboardMarkup_MainMenu()
   {
     // Notification button
-    $notification_btn = new KeyboardButton();
-    $notification_btn->text = self::BTN_NOTIFICATION;
+    $notificationBtn = new KeyboardButton();
+    $notificationBtn->text = self::BTN_NOTIFICATION;
 
     // Cancel button
-    $cancel_btn = new KeyboardButton();
-    $cancel_btn->text = self::BTN_CANCEL;
+    $cancelBtn = new KeyboardButton();
+    $cancelBtn->text = self::BTN_CANCEL;
 
     // Keyboard
-    $reply_markup = new ReplyKeyboardMarkup();
-    $reply_markup->one_time_keyboard = true;
-    $reply_markup->resize_keyboard = true;
-    $reply_markup->keyboard[][] = $notification_btn;
-    $reply_markup->keyboard[][] = $cancel_btn;
+    $replyMarkup = new ReplyKeyboardMarkup();
+    $replyMarkup->one_time_keyboard = true;
+    $replyMarkup->resize_keyboard = true;
+    $replyMarkup->keyboard[][] = $notificationBtn;
+    $replyMarkup->keyboard[][] = $cancelBtn;
 
-    return $reply_markup;
+    return $replyMarkup;
   }
 
   /**
@@ -79,7 +75,7 @@ class SettingsCommand extends AbstractCommand
    */
   public function handleSettingsMainMenu()
   {
-    $message = $this->getUpdate()->message;
+    $message = $this->update->message;
     if (is_null($message)) {
       return;
     }
@@ -91,13 +87,11 @@ class SettingsCommand extends AbstractCommand
           '',
           $this->getReplyKeyboardMarkup_Notifications()
         );
-        $this->getBus()
-          ->getHooker()
-          ->createHook(
-            $this->getUpdate(),
-            get_class($this),
-            'handleSettingsNotificationOption'
-          );
+        $this->bus->createHook(
+          $this->update,
+          get_class($this),
+          'handleSettingsNotificationOption'
+        );
         break;
       case self::BTN_CANCEL:
         $this->replyWithMessage(
@@ -124,48 +118,39 @@ class SettingsCommand extends AbstractCommand
   private function getReplyKeyboardMarkup_Notifications()
   {
     // Load user's permissions and notifications
-    $user_permissions = $this->getBus()
-      ->getBot()
-      ->getUserHq()
+    $userPermissions = $this->bus->getUserHq()
       ->getUserPermissions();
-    $user_notifications = $this->getBus()
-      ->getBot()
-      ->getUserHq()
+    $userNotifications = $this->bus->getUserHq()
       ->getUserNotifications();
-
-    $d = $this->getBus()
-      ->getBot()
-      ->getContainer()
-      ->get('doctrine');
 
     // Load notifications
     /** @var \Kettari\TelegramBundle\Entity\Notification $notifications */
-    $notifications = $d->getRepository('KettariTelegramBundle:Notification')
-      ->findBy([], ['sort_order' => 'ASC']);
+    $notifications = $this->bus->getDoctrine()
+      ->getRepository('KettariTelegramBundle:Notification')
+      ->findAllOrdered();
     // Check if user has required for each notification permission
-    $inline_keyboard = new Markup();
-    /** @var \Kettari\TelegramBundle\Entity\Notification $notification_item */
-    foreach ($notifications as $notification_item) {
+    $inlineKeyboard = new Markup();
+    /** @var \Kettari\TelegramBundle\Entity\Notification $notificationItem */
+    foreach ($notifications as $notificationItem) {
       $row = [];
-      if ($user_permissions->contains($notification_item->getPermission())) {
+      if ($userPermissions->contains($notificationItem->getPermission())) {
 
         // Does user have this notification enabled?
-        $mark = ($user_notifications->contains(
-          $notification_item
+        $mark = ($userNotifications->contains(
+          $notificationItem
         )) ? self::MARK_V : self::MARK_X;
 
-        $inline_keyboard_button = new Button();
-        $inline_keyboard_button->text = $mark.' '.
-          $notification_item->getTitle();
-        $inline_keyboard_button->callback_data = $notification_item->getName();
-        $row[] = $inline_keyboard_button;
+        $inlineKeyboardButton = new Button();
+        $inlineKeyboardButton->text = $mark.' '.$notificationItem->getTitle();
+        $inlineKeyboardButton->callback_data = $notificationItem->getName();
+        $row[] = $inlineKeyboardButton;
       }
       if (count($row)) {
-        $inline_keyboard->inline_keyboard[] = $row;
+        $inlineKeyboard->inline_keyboard[] = $row;
       }
     }
 
-    return $inline_keyboard;
+    return $inlineKeyboard;
   }
 
   /**
@@ -173,62 +158,54 @@ class SettingsCommand extends AbstractCommand
    */
   public function handleSettingsNotificationOption()
   {
-    $cq = $this->getUpdate()->callback_query;
-    if (is_null($cq) && !is_null($this->getUpdate()->message)) {
+    $cq = $this->update->callback_query;
+    if (is_null($cq) && !is_null($this->update->message)) {
       $this->replyWithMessage('Команда отменена.');
+
       return;
     }
     if (is_null($cq) || is_null($cq->message)) {
       return;
     }
 
-    $hq = $this->getBus()
-      ->getBot()
-      ->getUserHq();
-
     // Load user's permissions and notifications
     /** @var \Kettari\TelegramBundle\Entity\User $user */
-    $user = $hq->getCurrentUser();
-    if (is_null($user)) {
-      return;
-    }
-    $user_permissions = $hq->getUserPermissions();
-    $user_notifications = $hq->getUserNotifications();
+    $user = $this->bus->getUserHq()
+      ->getCurrentUser();
+    $userPermissions = $this->bus->getUserHq()
+      ->getUserPermissions();
+    $userNotifications = $this->bus->getUserHq()
+      ->getUserNotifications();
 
     // Load notification
     /** @var \Kettari\TelegramBundle\Entity\Notification $notification */
-    $notification = $this->getBus()
-      ->getBot()
-      ->getContainer()
-      ->get('doctrine')
+    $notification = $this->bus->getDoctrine()
       ->getRepository('KettariTelegramBundle:Notification')
-      ->findOneBy(['name' => $cq->data]);
+      ->findOneByName($cq->data);
     if (is_null($notification)) {
       return;
     }
     // Check user permission
-    if (!$user_permissions->contains($notification->getPermission())) {
+    if (!$userPermissions->contains($notification->getPermission())) {
       return;
     }
 
     // Enable notification or disable it
-    if ($user_notifications->contains($notification)) {
+    if ($userNotifications->contains($notification)) {
       $user->removeNotification($notification);
     } else {
       $user->addNotification($notification);
     }
     // Save changes
-    $em = $this->getBus()
-      ->getBot()
-      ->getContainer()
-      ->get('doctrine')
-      ->getManager();
-    $em->persist($user);
-    $em->flush();
+    $this->bus->getDoctrine()
+      ->getManager()
+      ->persist($user);
+    $this->bus->getDoctrine()
+      ->getManager()
+      ->flush();
 
     // Update keyboard
-    $this->getBus()
-      ->getBot()
+    $this->bus->getCommunicator()
       ->editMessageReplyMarkup(
         $cq->message->chat->id,
         $cq->message->message_id,
@@ -236,14 +213,11 @@ class SettingsCommand extends AbstractCommand
         $this->getReplyKeyboardMarkup_Notifications()
       );
     // Answer callback
-    $this->getBus()
-      ->getBot()
+    $this->bus->getCommunicator()
       ->answerCallbackQuery($cq->id, 'Настройки уведомлений изменены.');
     // Register this hook again
-    $this->getBus()
-      ->getHooker()
-      ->createHook(
-        $this->getUpdate(),
+    $this->bus->createHook(
+        $this->update,
         get_class($this),
         'handleSettingsNotificationOption'
       );

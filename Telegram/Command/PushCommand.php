@@ -21,15 +21,13 @@ class PushCommand extends AbstractCommand
    */
   public function execute()
   {
-    if ('private' == $this->getUpdate()->message->chat->type) {
+    if ('private' == $this->update->message->chat->type) {
       $this->replyWithMessage('Отправьте мне текст для рассылки, пожалуйста.');
-      $this->getBus()
-        ->getHooker()
-        ->createHook(
-          $this->getUpdate(),
-          get_class($this),
-          'handlePushText'
-        );
+      $this->bus->createHook(
+        $this->update,
+        get_class($this),
+        'handlePushText'
+      );
     } else {
       $this->replyWithMessage(
         'Эта команда работает только в личной переписке с ботом. В общем канале создание рассылки невозможно.'
@@ -42,12 +40,12 @@ class PushCommand extends AbstractCommand
    */
   public function handlePushText()
   {
-    $message = $this->getUpdate()->message;
+    $message = $this->update->message;
     if (is_null($message)) {
       return;
     }
 
-    $push_text = $this->getUpdate()->message->text;
+    $push_text = $this->update->message->text;
     if (empty($push_text)) {
       $this->replyWithMessage(
         'Вы отправили мне пустое сообщение. Начните заново /push'
@@ -70,14 +68,12 @@ class PushCommand extends AbstractCommand
       $this->getReplyKeyboardMarkup_Channels()
     );
 
-    $this->getBus()
-      ->getHooker()
-      ->createHook(
-        $this->getUpdate(),
-        get_class($this),
-        'handlePushChannel',
-        $push_text
-      );
+    $this->bus->createHook(
+      $this->update,
+      get_class($this),
+      'handlePushChannel',
+      $push_text
+    );
   }
 
   /**
@@ -88,45 +84,42 @@ class PushCommand extends AbstractCommand
   private function getReplyKeyboardMarkup_Channels()
   {
     // Keyboard
-    $reply_markup = new ReplyKeyboardMarkup();
-    $reply_markup->one_time_keyboard = true;
-    $reply_markup->resize_keyboard = true;
+    $replyMarkup = new ReplyKeyboardMarkup();
+    $replyMarkup->one_time_keyboard = true;
+    $replyMarkup->resize_keyboard = true;
 
-    $d = $this->getBus()
-      ->getBot()
-      ->getContainer()
-      ->get('doctrine');
-    $notifications = $d->getRepository('KettariTelegramBundle:Notification')
-      ->findBy([], ['order' => 'ASC']);
-    /** @var \Kettari\TelegramBundle\Entity\Notification $notification_item */
-    foreach ($notifications as $notification_item) {
-      $notification_btn = new KeyboardButton();
-      $notification_btn->text = $notification_item->getTitle();
-      $reply_markup->keyboard[][] = $notification_btn;
+    $notifications = $this->bus->getDoctrine()
+      ->getRepository('KettariTelegramBundle:Notification')
+      ->findAllOrdered();
+    /** @var \Kettari\TelegramBundle\Entity\Notification $notificationItem */
+    foreach ($notifications as $notificationItem) {
+      $notificationBtn = new KeyboardButton();
+      $notificationBtn->text = $notificationItem->getTitle();
+      $replyMarkup->keyboard[][] = $notificationBtn;
     }
 
     // Cancel button
-    $cancel_btn = new KeyboardButton();
-    $cancel_btn->text = self::BTN_CANCEL;
+    $cancelBtn = new KeyboardButton();
+    $cancelBtn->text = self::BTN_CANCEL;
 
-    $reply_markup->keyboard[][] = $cancel_btn;
+    $replyMarkup->keyboard[][] = $cancelBtn;
 
-    return $reply_markup;
+    return $replyMarkup;
   }
 
   /**
    * Handles /push channel selection.
    *
-   * @param string $push_text
+   * @param string $pushText
    */
-  public function handlePushChannel($push_text)
+  public function handlePushChannel(string $pushText)
   {
-    $message = $this->getUpdate()->message;
+    $message = $this->update->message;
     if (is_null($message)) {
       return;
     }
 
-    if (empty($push_text)) {
+    if (empty($pushText)) {
       $this->replyWithMessage(
         'Текст для рассылки потерялся. Начните заново /push'
       );
@@ -134,14 +127,14 @@ class PushCommand extends AbstractCommand
       return;
     }
 
-    $channel_name = $this->getUpdate()->message->text;
-    if (empty($channel_name)) {
+    $channelName = $this->update->message->text;
+    if (empty($channelName)) {
       $this->replyWithMessage(
         'Название канала рассылки пустое. Начните заново /push'
       );
 
       return;
-    } elseif (self::BTN_CANCEL == $channel_name) {
+    } elseif (self::BTN_CANCEL == $channelName) {
       $this->replyWithMessage(
         'Рассылка отменена.'
       );
@@ -149,34 +142,29 @@ class PushCommand extends AbstractCommand
       return;
     }
 
-    $d = $this->getBus()
-      ->getBot()
-      ->getContainer()
-      ->get('doctrine');
-    $notifications = $d->getRepository('KettariTelegramBundle:Notification')
+    $notifications = $this->bus->getDoctrine()
+      ->getRepository('KettariTelegramBundle:Notification')
       ->findAll();
-    $channel_selected = null;
-    /** @var \Kettari\TelegramBundle\Entity\Notification $notification_item */
-    foreach ($notifications as $notification_item) {
-      if ($channel_name == $notification_item->getTitle()) {
-        $channel_selected = $notification_item;
+    $channelSelected = null;
+    /** @var \Kettari\TelegramBundle\Entity\Notification $notificationItem */
+    foreach ($notifications as $notificationItem) {
+      if ($channelName == $notificationItem->getTitle()) {
+        $channelSelected = $notificationItem;
         break;
       }
     }
-    if (is_null($channel_selected)) {
+    if (is_null($channelSelected)) {
       $this->replyWithMessage(
         'Некорректное название канала рассылки. Выберите из списка ещё раз.',
         '',
         $this->getReplyKeyboardMarkup_Channels()
       );
-      $this->getBus()
-        ->getHooker()
-        ->createHook(
-          $this->getUpdate(),
-          get_class($this),
-          'handlePushChannel',
-          $push_text
-        );
+      $this->bus->createHook(
+        $this->update,
+        get_class($this),
+        'handlePushChannel',
+        $pushText
+      );
 
       return;
     }
@@ -186,30 +174,28 @@ class PushCommand extends AbstractCommand
         'Подтвердите корректность указанной ниже информации.'.PHP_EOL.PHP_EOL.
         '<b>Канал:</b> %s (%s)'.PHP_EOL.'<b>Длина:</b> %d символов'.PHP_EOL.
         '<b>Текст:</b>',
-        $channel_name,
-        $channel_selected->getName(),
-        mb_strlen($push_text)
+        $channelName,
+        $channelSelected->getName(),
+        mb_strlen($pushText)
       ),
       'HTML'
     );
     $this->replyWithMessage(
-      $push_text,
+      $pushText,
       'HTML'
     );
     $this->replyWithMessage(
       'Если всё правильно, напишите мне ЗАГЛАВНЫМИ БУКВАМИ текст «рассылку подтверждаю». Любой другой текст отменяет рассылку.'
     );
 
-    $this->getBus()
-      ->getHooker()
-      ->createHook(
-        $this->getUpdate(),
+    $this->bus->createHook(
+        $this->update,
         get_class($this),
         'handlePushFinalize',
         serialize(
           [
-            'push_text'    => $push_text,
-            'notification' => $channel_selected->getName(),
+            'push_text'    => $pushText,
+            'notification' => $channelSelected->getName(),
           ]
         )
       );
@@ -218,14 +204,13 @@ class PushCommand extends AbstractCommand
   /**
    * Handles /push final confirmation and sends push.
    *
-   * @param string $push_info
+   * @param string $pushInfo
    */
-  public function handlePushFinalize($push_info)
+  public function handlePushFinalize($pushInfo)
   {
-    $push_info = unserialize($push_info);
-    if (!isset($push_info['push_text']) || empty($push_info['push_text']) ||
-      !isset($push_info['notification']) || empty($push_info['notification'])
-    ) {
+    $pushInfo = unserialize($pushInfo);
+    if (!isset($pushInfo['push_text']) || empty($pushInfo['push_text']) ||
+      !isset($pushInfo['notification']) || empty($pushInfo['notification'])) {
       $this->replyWithMessage(
         'Что-то пошло не так. Начните заново /push'
       );
@@ -233,8 +218,8 @@ class PushCommand extends AbstractCommand
       return;
     }
 
-    $confirmation_text = $this->getUpdate()->message->text;
-    if ("РАССЫЛКУ ПОДТВЕРЖДАЮ" != $confirmation_text) {
+    $confirmationText = $this->update->message->text;
+    if ("РАССЫЛКУ ПОДТВЕРЖДАЮ" != $confirmationText) {
       $this->replyWithMessage(
         'Рассылка не подтверждена и отменена.'
       );
@@ -243,23 +228,21 @@ class PushCommand extends AbstractCommand
     }
 
     // Push the message
-    $this->getBus()
-      ->getBot()
+    $this->bus->getPusher()
       ->pushNotification(
-        $push_info['notification'],
-        $push_info['push_text'],
+        $pushInfo['notification'],
+        $pushInfo['push_text'],
         'HTML'
       );
-    $this->getBus()
-      ->getBot()
+    $this->bus->getPusher()
       ->bumpQueue();
 
     // Report job done
     $this->replyWithMessage(
       sprintf(
         'Рассылка в канал «%s» подтверждена и выслана (%d символов).',
-        $push_info['notification'],
-        mb_strlen($push_info['push_text'])
+        $pushInfo['notification'],
+        mb_strlen($pushInfo['push_text'])
       ),
       null,
       new ReplyKeyboardRemove()

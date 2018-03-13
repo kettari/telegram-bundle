@@ -1,13 +1,7 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: ant
- * Date: 25.04.2017
- * Time: 13:15
- */
+declare(strict_types=1);
 
 namespace Kettari\TelegramBundle\Telegram\Event;
-
 
 use RuntimeException;
 use unreal4u\TelegramAPI\Telegram\Types\Audio;
@@ -24,19 +18,12 @@ class AudioReceivedEvent extends AbstractMessageEvent
    */
   public function __construct(Update $update)
   {
-    if (is_null($update->message)) {
-      throw new RuntimeException(
-        'Message can\'t be null for the AudioReceivedEvent.'
-      );
-    }
+    parent::__construct($update);
     if (empty($update->message->audio)) {
       throw new RuntimeException(
         'Audio of the Message can\'t be empty for the AudioReceivedEvent.'
       );
     }
-
-    $this->setMessage($update->message)
-      ->setUpdate($update);
   }
 
   /**

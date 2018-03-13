@@ -3,37 +3,17 @@ declare(strict_types=1);
 
 namespace Kettari\TelegramBundle\Telegram\Subscriber;
 
-use Exception;
-use Kettari\TelegramBundle\Telegram\Bot;
-use Kettari\TelegramBundle\Telegram\Event\AudioReceivedEvent;
-use Kettari\TelegramBundle\Telegram\Event\ChatDeletePhotoEvent;
-use Kettari\TelegramBundle\Telegram\Event\ChatNewPhotoEvent;
-use Kettari\TelegramBundle\Telegram\Event\ChatNewTitleEvent;
-use Kettari\TelegramBundle\Telegram\Event\ContactReceivedEvent;
-use Kettari\TelegramBundle\Telegram\Event\DocumentReceivedEvent;
-use Kettari\TelegramBundle\Telegram\Event\GameReceivedEvent;
-use Kettari\TelegramBundle\Telegram\Event\GroupCreatedEvent;
-use Kettari\TelegramBundle\Telegram\Event\JoinChatMembersManyEvent;
-use Kettari\TelegramBundle\Telegram\Event\LeftChatMemberEvent;
-use Kettari\TelegramBundle\Telegram\Event\LocationReceivedEvent;
-use Kettari\TelegramBundle\Telegram\Event\MessagePinnedEvent;
+
 use Kettari\TelegramBundle\Telegram\Event\MessageReceivedEvent;
-use Kettari\TelegramBundle\Telegram\Event\MigrateFromChatIdEvent;
-use Kettari\TelegramBundle\Telegram\Event\MigrateToChatIdEvent;
-use Kettari\TelegramBundle\Telegram\Event\PaymentInvoiceEvent;
-use Kettari\TelegramBundle\Telegram\Event\PaymentSuccessfulEvent;
-use Kettari\TelegramBundle\Telegram\Event\PhotoReceivedEvent;
-use Kettari\TelegramBundle\Telegram\Event\StickerReceivedEvent;
-use Kettari\TelegramBundle\Telegram\Event\TextReceivedEvent;
+
+
 use Kettari\TelegramBundle\Telegram\Event\UpdateReceivedEvent;
-use Kettari\TelegramBundle\Telegram\Event\VenueReceivedEvent;
-use Kettari\TelegramBundle\Telegram\Event\VideoNoteReceivedEvent;
-use Kettari\TelegramBundle\Telegram\Event\VideoReceivedEvent;
-use Kettari\TelegramBundle\Telegram\Event\VoiceReceivedEvent;
+
+
 use Kettari\TelegramBundle\Telegram\UpdateTypeResolver;
-use Psr\Log\LoggerInterface;
+
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
-use unreal4u\TelegramAPI\Telegram\Types\ReplyKeyboardRemove;
+
 
 class UpdateSubscriber extends AbstractBotSubscriber implements EventSubscriberInterface
 {

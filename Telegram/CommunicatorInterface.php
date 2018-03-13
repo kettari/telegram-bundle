@@ -4,6 +4,7 @@ namespace Kettari\TelegramBundle\Telegram;
 
 
 use unreal4u\TelegramAPI\Abstracts\KeyboardMethods;
+use unreal4u\TelegramAPI\Abstracts\TelegramMethods;
 use unreal4u\TelegramAPI\Telegram\Types\Custom\InputFile;
 use unreal4u\TelegramAPI\Telegram\Types\Message;
 
@@ -46,7 +47,7 @@ interface CommunicatorInterface
    * Use this method to send photos. On success, the sent Message is
    * returned.
    *
-   * @param string $chatId Unique identifier for the target chat or username
+   * @param int $chatId Unique identifier for the target chat or username
    *   of the target channel (in the format @channelusername)
    * @param string|\unreal4u\TelegramAPI\Telegram\Types\Custom\InputFile $inputFile Photo
    *   to send. Pass a file_id as String to send a photo that exists on the
@@ -136,7 +137,7 @@ interface CommunicatorInterface
    * keyboards. The answer will be displayed to the user as a notification at
    * the top of the chat screen or as an alert. On success, True is returned.
    *
-   * @param int $callbackQueryId Unique identifier for the query to be
+   * @param string $callbackQueryId Unique identifier for the query to be
    *   answered
    * @param string $text Text of the notification. If not specified, nothing
    *   will be shown to the user, 0-200 characters
@@ -155,7 +156,7 @@ interface CommunicatorInterface
    * @return bool
    */
   public function answerCallbackQuery(
-    int $callbackQueryId,
+    string $callbackQueryId,
     $text = null,
     $showAlert = false,
     $url = null,
@@ -186,4 +187,18 @@ interface CommunicatorInterface
    *   general files, find_location for location data.
    */
   public function sendAction(int $chatId, string $action);
+
+  /**
+   * Returns true if communicator has unsent method.
+   *
+   * @return bool
+   */
+  public function isMethodDeferred(): bool;
+
+  /**
+   * Returns unsent Telegram method or null.
+   *
+   * @return TelegramMethods|null
+   */
+  public function getDeferredMethod();
 }

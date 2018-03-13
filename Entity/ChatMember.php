@@ -9,7 +9,7 @@ use Doctrine\ORM\Mapping as ORM;
 use Doctrine\ORM\Mapping\Index;
 
 /**
- * @ORM\Entity
+ * @ORM\Entity(repositoryClass="Kettari\TelegramBundle\Repository\ChatMemberRepository")
  * @ORM\Table(name="chat_member",indexes={@Index(name="chat_user_idx", columns={"chat_id","user_id"})},
  *   options={"collate":"utf8mb4_general_ci", "charset":"utf8mb4"})
  */

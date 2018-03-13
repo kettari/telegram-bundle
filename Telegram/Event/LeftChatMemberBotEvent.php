@@ -1,16 +1,12 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: ant
- * Date: 25.04.2017
- * Time: 19:03
- */
+declare(strict_types=1);
 
 namespace Kettari\TelegramBundle\Telegram\Event;
 
-
-use RuntimeException;
+use Kettari\TelegramBundle\Entity\Chat;
+use Kettari\TelegramBundle\Entity\User;
 use unreal4u\TelegramAPI\Telegram\Types\Update;
+use unreal4u\TelegramAPI\Telegram\Types\User as TelegramUser;
 
 class LeftChatMemberBotEvent extends AbstractMessageEvent
 {
@@ -19,63 +15,61 @@ class LeftChatMemberBotEvent extends AbstractMessageEvent
   /**
    * @var \unreal4u\TelegramAPI\Telegram\Types\User
    */
-  private $left_user;
+  private $leftUser;
 
   /**
    * @var \Kettari\TelegramBundle\Entity\Chat
    */
-  private $chat_entity;
+  private $chatEntity;
 
   /**
    * @var \Kettari\TelegramBundle\Entity\User
    */
-  private $user_entity;
+  private $userEntity;
 
   /**
    * JoinChatMemberEvent constructor.
    *
    * @param Update $update
-   * @param \unreal4u\TelegramAPI\Telegram\Types\User $left_user
+   * @param \unreal4u\TelegramAPI\Telegram\Types\User $leftUser
    * @param \Kettari\TelegramBundle\Entity\Chat
    * @param \Kettari\TelegramBundle\Entity\User
    */
-  public function __construct(Update $update, $left_user, $chat_entity, $user_entity)
-  {
-    if (is_null($update->message)) {
-      throw new RuntimeException(
-        'Message can\'t be null for the LeftChatMemberBotEvent.'
-      );
-    }
+  public function __construct(
+    Update $update,
+    TelegramUser $leftUser,
+    Chat $chatEntity,
+    User $userEntity
+  ) {
+    parent::__construct($update);
 
-    $this->setMessage($update->message)
-      ->setUpdate($update);
-    $this->left_user = $left_user;
-    $this->chat_entity = $chat_entity;
-    $this->user_entity = $user_entity;
+    $this->leftUser = $leftUser;
+    $this->chatEntity = $chatEntity;
+    $this->userEntity = $userEntity;
   }
 
   /**
    * @return \unreal4u\TelegramAPI\Telegram\Types\User
    */
-  public function getLeftUser()
+  public function getLeftUser(): TelegramUser
   {
-    return $this->left_user;
+    return $this->leftUser;
   }
 
   /**
    * @return \Kettari\TelegramBundle\Entity\Chat
    */
-  public function getChatEntity()
+  public function getChatEntity(): Chat
   {
-    return $this->chat_entity;
+    return $this->chatEntity;
   }
 
   /**
    * @return \Kettari\TelegramBundle\Entity\User
    */
-  public function getUserEntity()
+  public function getUserEntity(): User
   {
-    return $this->user_entity;
+    return $this->userEntity;
   }
 
 }

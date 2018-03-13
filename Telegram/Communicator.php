@@ -94,6 +94,11 @@ class Communicator implements CommunicatorInterface
     $this->dispatcher = $eventDispatcher;
     $this->throttleControl = $throttleControl;
     $this->botApiToken = $botApiToken;
+
+    $this->logger->debug(
+      'Communicator instantiated with bot token "{bot_token_api}"',
+      ['bot_token_api' => $botApiToken]
+    );
   }
 
   /**
@@ -145,7 +150,7 @@ class Communicator implements CommunicatorInterface
   /**
    * Performs actual API request.
    *
-   * @param \unreal4u\TelegramAPI\Abstracts\TelegramMethods $method
+   * @param TelegramMethods $method
    * @return \unreal4u\TelegramAPI\Abstracts\TelegramTypes|null
    */
   private function performRequest(TelegramMethods $method)
@@ -156,7 +161,7 @@ class Communicator implements CommunicatorInterface
      */
     if (!$this->methodDeferred) {
       $this->logger->debug(
-        'Method {method_class} deferred',
+        'Method "{method_class}" deferred',
         ['method_class' => get_class($method)]
       );
 
@@ -166,7 +171,7 @@ class Communicator implements CommunicatorInterface
       return null;
     } else {
       $this->logger->debug(
-        'Pushing deferred method {method_class}',
+        'Pushing deferred method "{method_class}"',
         ['method_class' => get_class($method)]
       );
 
@@ -175,7 +180,7 @@ class Communicator implements CommunicatorInterface
     }
 
     $this->logger->debug(
-      'About to perform request for the method {method_class}',
+      'About to perform request for the method "{method_class}"',
       ['method_class' => get_class($method)]
     );
 
@@ -218,7 +223,7 @@ class Communicator implements CommunicatorInterface
     }
 
     $this->logger->debug(
-      'Request for the method {method_class} performed',
+      'Request for the method "{method_class}" performed',
       ['method_class' => get_class($method)]
     );
 
@@ -238,7 +243,7 @@ class Communicator implements CommunicatorInterface
   /**
    * Dispatches throttle exception: that is when we flooded Telegram servers :(
    *
-   * @param \unreal4u\TelegramAPI\Abstracts\TelegramMethods $method
+   * @param TelegramMethods $method
    */
   private function dispatchThrottleException(TelegramMethods $method)
   {
@@ -253,7 +258,7 @@ class Communicator implements CommunicatorInterface
    * Dispatches bot is blocked exception: bot is blocked by the user
    * or kicked out of the chat.
    *
-   * @param \unreal4u\TelegramAPI\Abstracts\TelegramMethods $method
+   * @param TelegramMethods $method
    * @param ClientException $exception
    */
   private function dispatchBlockedException(
@@ -436,7 +441,7 @@ class Communicator implements CommunicatorInterface
    * {@inheritdoc}
    */
   public function answerCallbackQuery(
-    int $callbackQueryId,
+    string $callbackQueryId,
     $text = null,
     $showAlert = false,
     $url = null,
@@ -498,4 +503,19 @@ class Communicator implements CommunicatorInterface
     );
   }
 
+  /**
+   * {@inheritdoc}
+   */
+  public function isMethodDeferred(): bool
+  {
+    return $this->methodDeferred;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getDeferredMethod()
+  {
+    return $this->deferredMethod;
+  }
 }

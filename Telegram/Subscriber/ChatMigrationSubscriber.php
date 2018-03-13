@@ -11,7 +11,6 @@ namespace Kettari\TelegramBundle\Telegram\Subscriber;
 
 use Kettari\TelegramBundle\Telegram\Event\MigrateFromChatIdEvent;
 use Kettari\TelegramBundle\Telegram\Event\MigrateToChatIdEvent;
-use Psr\Log\LoggerInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
 class ChatMigrationSubscriber extends AbstractBotSubscriber implements EventSubscriberInterface
@@ -38,7 +37,7 @@ class ChatMigrationSubscriber extends AbstractBotSubscriber implements EventSubs
   public static function getSubscribedEvents()
   {
     return [
-      MigrateToChatIdEvent::NAME => 'onMigrateToChatId',
+      MigrateToChatIdEvent::NAME   => 'onMigrateToChatId',
       MigrateFromChatIdEvent::NAME => 'onMigrateFromChatId',
     ];
   }
@@ -50,38 +49,28 @@ class ChatMigrationSubscriber extends AbstractBotSubscriber implements EventSubs
    */
   public function onMigrateToChatId(MigrateToChatIdEvent $event)
   {
-    /** @var LoggerInterface $l */
-    $l = $this->getBot()
-      ->getContainer()
-      ->get('logger');
-
-    // Prepare Doctrine and EntityManager
-    $em = $this->getDoctrine()
-      ->getManager();
-
     // Get telegram chat ids
-    $chat_from_id = $event->getMessage()->chat->id;
-    $chat_to_id = $event->getMessage()->migrate_to_chat_id;
+    $chatFromId = $event->getMessage()->chat->id;
+    $chatToId = $event->getMessage()->migrate_to_chat_id;
 
     // Find chat object
-    $chat = $this->getDoctrine()
-      ->getRepository('KettariTelegramBundle:Chat')
-      ->findOneBy(['telegram_id' => $chat_from_id]);
+    $chat = $this->doctrine->getRepository('KettariTelegramBundle:Chat')
+      ->findOneByTelegramId($chatFromId);
     if (!$chat) {
       // Unknown chat for now. Nothing to do
       return;
     }
-    $chat->setTelegramId($chat_to_id);
-
+    $chat->setTelegramId($chatToId);
     // Commit changes
-    $em->flush();
+    $this->doctrine->getManager()
+      ->flush();
 
     // Tell the Bot this request is handled
-    $this->getBot()
-      ->setRequestHandled(true);
-    $l->notice(
+    /*$this->getBot()
+      ->setRequestHandled(true);*/
+    $this->logger->notice(
       'Migrated to chat with id "{chat_id}"',
-      ['chat_id' => $chat_to_id]
+      ['chat_id' => $chatToId]
     );
   }
 
@@ -92,43 +81,32 @@ class ChatMigrationSubscriber extends AbstractBotSubscriber implements EventSubs
    */
   public function onMigrateFromChatId(MigrateFromChatIdEvent $event)
   {
-    /** @var LoggerInterface $l */
-    $l = $this->getBot()
-      ->getContainer()
-      ->get('logger');
-
-    // Prepare Doctrine and EntityManager
-    $em = $this->getDoctrine()
-      ->getManager();
-
-    // Get telegram chat
-    $tc = $event->getMessage()->chat;
-
     // Find chat object
     /** @var \Kettari\TelegramBundle\Entity\Chat $chat */
-    $chat = $this->getDoctrine()
-      ->getRepository('KettariTelegramBundle:Chat')
-      ->findOneBy(['telegram_id' => $tc->id]);
+    $chat = $this->doctrine->getRepository('KettariTelegramBundle:Chat')
+      ->findOneByTelegramId($event->getMessage()->chat->id);
     if (!$chat) {
       // Unknown chat for now. Nothing to do
       return;
     }
-    $chat->setType($tc->type)
-      ->setTitle($tc->title)
-      ->setUsername($tc->username)
-      ->setFirstName($tc->first_name)
-      ->setLastName($tc->last_name)
-      ->setAllMembersAreAdministrators($tc->all_members_are_administrators);
-
+    $chat->setType($event->getMessage()->chat->type)
+      ->setTitle($event->getMessage()->chat->title)
+      ->setUsername($event->getMessage()->chat->username)
+      ->setFirstName($event->getMessage()->chat->first_name)
+      ->setLastName($event->getMessage()->chat->last_name)
+      ->setAllMembersAreAdministrators(
+        $event->getMessage()->chat->all_members_are_administrators
+      );
     // Commit changes
-    $em->flush();
+    $this->doctrine->getManager()
+      ->flush();
 
     // Tell the Bot this request is handled
-    $this->getBot()
-      ->setRequestHandled(true);
-    $l->notice(
+    /*$this->getBot()
+      ->setRequestHandled(true);*/
+    $this->logger->notice(
       'Migrated from chat with id "{chat_id}"',
-      ['chat_id' => $tc->id]
+      ['chat_id' => $event->getMessage()->chat->id]
     );
   }
 }

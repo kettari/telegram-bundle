@@ -11,7 +11,6 @@ namespace Kettari\TelegramBundle\Telegram\Subscriber;
 
 use Kettari\TelegramBundle\Telegram\Event\CommandReceivedEvent;
 use Kettari\TelegramBundle\Telegram\Event\TextReceivedEvent;
-use Psr\Log\LoggerInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use unreal4u\TelegramAPI\Telegram\Types\Update;
 
@@ -64,10 +63,6 @@ class TextSubscriber extends AbstractBotSubscriber implements EventSubscriberInt
    */
   private function parseCommand(TextReceivedEvent $event)
   {
-    /** @var LoggerInterface $l */
-    $l = $this->getBot()
-      ->getLogger();
-
     // Parse command "/start@BotName params"
     if (preg_match(
       '/^\/([a-z_]+)@?([a-z_]*)\s*(.*)$/i',
@@ -77,9 +72,9 @@ class TextSubscriber extends AbstractBotSubscriber implements EventSubscriberInt
 
       if (isset($matches[1]) && ($commandName = $matches[1])) {
         // Parameter?
-        $parameter = trim($matches[3]) ?? null;
+        $parameter = trim($matches[3]) ?? '';
 
-        $l->info(
+        $this->logger->info(
           'Detected incoming command /{command}',
           ['command' => $commandName, 'parameter' => $parameter]
         );
@@ -96,7 +91,7 @@ class TextSubscriber extends AbstractBotSubscriber implements EventSubscriberInt
     }
 
     // Add some logging
-    $l->info('No commands detected within the update');
+    $this->logger->info('No commands detected within the update');
 
     return false;
   }
@@ -105,22 +100,22 @@ class TextSubscriber extends AbstractBotSubscriber implements EventSubscriberInt
    * Dispatches command is received.
    *
    * @param Update $update
-   * @param string $command_name
+   * @param string $commandName
    * @param string $parameter
    */
   private function dispatchCommandReceived(
     Update $update,
-    $command_name,
-    $parameter
+    string $commandName,
+    string $parameter
   ) {
-    $dispatcher = $this->getBot()
-      ->getDispatcher();
-
     // Dispatch command event
     $command_received_event = new CommandReceivedEvent(
-      $update, $command_name, $parameter
+      $update, $commandName, $parameter
     );
-    $dispatcher->dispatch(CommandReceivedEvent::NAME, $command_received_event);
+    $this->dispatcher->dispatch(
+      CommandReceivedEvent::NAME,
+      $command_received_event
+    );
   }
 
 }
