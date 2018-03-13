@@ -104,7 +104,7 @@ interface CommunicatorInterface
     $messageId = null,
     $inlineMessageId = null,
     string $text,
-    $parseMode = null,
+    $parseMode = '',
     $replyMarkup = null,
     $disableWebPagePreview = false
   );

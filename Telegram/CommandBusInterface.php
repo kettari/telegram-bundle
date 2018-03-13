@@ -5,7 +5,6 @@ namespace Kettari\TelegramBundle\Telegram;
 
 
 use Kettari\TelegramBundle\Entity\Hook;
-use Kettari\TelegramBundle\Telegram\Command\TelegramCommandInterface;
 use Symfony\Bridge\Doctrine\RegistryInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use unreal4u\TelegramAPI\Telegram\Types\Update;
@@ -47,14 +46,11 @@ interface CommandBusInterface
   /**
    * Return true if telegram user is authorized to execute specified command.
    *
-   * @param \unreal4u\TelegramAPI\Telegram\Types\User $tu
-   * @param \Kettari\TelegramBundle\Telegram\Command\TelegramCommandInterface $command
+   * @param \unreal4u\TelegramAPI\Telegram\Types\User $telegramUser
+   * @param \Kettari\TelegramBundle\Telegram\Command\AbstractCommand $command
    * @return bool
    */
-  public function isAuthorized(
-    TelegramUser $tu,
-    TelegramCommandInterface $command
-  ): bool;
+  public function isAuthorized(TelegramUser $telegramUser, $command): bool;
 
   /**
    * Returns array of commands classes.

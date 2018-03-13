@@ -151,32 +151,36 @@ class Communicator implements CommunicatorInterface
    * Performs actual API request.
    *
    * @param TelegramMethods $method
+   * @param bool $forceSend
    * @return \unreal4u\TelegramAPI\Abstracts\TelegramTypes|null
    */
-  private function performRequest(TelegramMethods $method)
+  private function performRequest(TelegramMethods $method, bool $forceSend = false)
   {
     /**
      * Check if we could make deferred request: that is return Telegram method
      * in response to Telegram API request.
      */
-    if (!$this->methodDeferred) {
-      $this->logger->debug(
-        'Method "{method_class}" deferred',
-        ['method_class' => get_class($method)]
-      );
+    if (!$forceSend) {
+      if (!$this->methodDeferred) {
+        $this->logger->debug(
+          'Method "{method_class}" deferred',
+          ['method_class' => get_class($method)]
+        );
 
-      $this->methodDeferred = true;
-      $this->deferredMethod = $method;
+        $this->methodDeferred = true;
+        $this->deferredMethod = $method;
 
-      return null;
-    } else {
-      $this->logger->debug(
-        'Pushing deferred method "{method_class}"',
-        ['method_class' => get_class($method)]
-      );
+        return null;
+      } else {
+        $this->logger->debug(
+          'Pushing deferred method "{method_class}"',
+          ['method_class' => get_class($method)]
+        );
 
-      // Push deferred method
-      $this->performRequest($this->deferredMethod);
+        // Push deferred method
+        $this->performRequest($this->deferredMethod, true);
+        $this->methodDeferred = false;
+      }
     }
 
     $this->logger->debug(
@@ -362,7 +366,7 @@ class Communicator implements CommunicatorInterface
     $messageId = null,
     $inlineMessageId = null,
     string $text,
-    $parseMode = null,
+    $parseMode = self::PARSE_MODE_PLAIN,
     $replyMarkup = null,
     $disableWebPagePreview = false
   ) {

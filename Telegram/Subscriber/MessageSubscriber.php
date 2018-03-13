@@ -132,7 +132,7 @@ class MessageSubscriber extends AbstractBotSubscriber implements EventSubscriber
    */
   private function dispatchSpecificMessageTypes(
     MessageReceivedEvent $event,
-    integer $messageType
+    int $messageType
   ) {
     // Dispatch text event
     if ($messageType & MessageTypeResolver::MT_TEXT) {

@@ -66,6 +66,11 @@ class CommandSubscriber extends AbstractBotSubscriber implements EventSubscriber
     }
 
     // Execute the command
+    $this->bus->executeCommand(
+      $event->getUpdate(),
+      $event->getCommandName(),
+      $event->getParameter()
+    );
     /*if ($this->bus->executeCommand(
       $event->getUpdate(),
       $event->getCommandName(),

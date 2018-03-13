@@ -97,7 +97,7 @@ class CommandBus implements CommandBusInterface
     );
 
     if (class_exists($commandClass)) {
-      if ($commandClass instanceof TelegramCommandInterface) {
+      if (is_subclass_of($commandClass, TelegramCommandInterface::class)) {
         $this->commandsClasses[$commandClass] = true;
       } else {
         throw new InvalidCommandException(
@@ -203,22 +203,20 @@ class CommandBus implements CommandBusInterface
   /**
    * {@inheritdoc}
    */
-  public function isAuthorized(
-    TelegramUser $tu,
-    TelegramCommandInterface $command
-  ): bool {
+  public function isAuthorized(TelegramUser $telegramUser, $command): bool
+  {
     $this->logger->debug(
       'About to check Telegram user ID={user_id} authorization to execute command "{command_name}"',
-      ['user_id' => $tu->id, 'command_name' => $command::getName()]
+      ['user_id' => $telegramUser->id, 'command_name' => $command::getName()]
     );
 
     // Find user object
     $user = $this->doctrine->getRepository('KettariTelegramBundle:User')
-      ->findOneByTelegramId($tu->id);
+      ->findOneByTelegramId($telegramUser->id);
     if (is_null($user)) {
       $this->logger->debug(
         'Telegram user ID={user_id} not found in the database',
-        ['user_id' => $tu->id]
+        ['user_id' => $telegramUser->id]
       );
 
       return false;

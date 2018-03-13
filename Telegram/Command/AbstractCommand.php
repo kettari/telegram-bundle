@@ -175,7 +175,7 @@ abstract class AbstractCommand implements TelegramCommandInterface
    */
   protected function replyWithMessage(
     string $text,
-    $parseMode = null,
+    $parseMode = Communicator::PARSE_MODE_PLAIN,
     $replyMarkup = null,
     $disableWebPagePreview = false,
     $disableNotification = false,

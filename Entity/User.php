@@ -9,7 +9,7 @@ use Doctrine\ORM\Mapping as ORM;
 
 /**
  * @ORM\Entity(repositoryClass="Kettari\TelegramBundle\Repository\UserRepository")
- * @ORM\Table(name="user",indexes={)},
+ * @ORM\Table(name="user",
  *   options={"collate":"utf8mb4_general_ci", "charset":"utf8mb4"})
  */
 class User

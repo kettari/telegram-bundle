@@ -14,6 +14,7 @@ class BotSetting
   /**
    * @var string
    * @ORM\Column(type="string",nullable=false,unique=true)
+   * @ORM\Id
    */
   private $name = '';
 
