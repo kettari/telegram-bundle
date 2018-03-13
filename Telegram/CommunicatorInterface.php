@@ -11,6 +11,12 @@ use unreal4u\TelegramAPI\Telegram\Types\Message;
 interface CommunicatorInterface
 {
   /**
+   * @param string $apiToken
+   * @return \Kettari\TelegramBundle\Telegram\Communicator
+   */
+  public function setApiToken(string $apiToken): CommunicatorInterface;
+
+  /**
    * Use this method to send text messages. On success, the sent Message is
    * returned.
    *

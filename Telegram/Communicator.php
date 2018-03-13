@@ -64,7 +64,7 @@ class Communicator implements CommunicatorInterface
   /**
    * @var string
    */
-  private $botApiToken;
+  private $apiToken;
 
   /**
    * @var bool
@@ -96,11 +96,21 @@ class Communicator implements CommunicatorInterface
     $this->logger = $logger;
     $this->dispatcher = $eventDispatcher;
     $this->throttleControl = $throttleControl;
+  }
 
-    /*$this->logger->debug(
-      'Communicator instantiated with bot token "{bot_token_api}"',
-      ['bot_token_api' => $botApiToken]
-    );*/
+  /**
+   * @param string $apiToken
+   * @return \Kettari\TelegramBundle\Telegram\Communicator
+   */
+  public function setApiToken(string $apiToken): CommunicatorInterface
+  {
+    $this->apiToken = $apiToken;
+    $this->logger->debug(
+      'Communicator initialized with bot token "{bot_token_api}"',
+      ['bot_token_api' => $this->apiToken]
+    );
+
+    return $this;
   }
 
   /**
@@ -159,8 +169,10 @@ class Communicator implements CommunicatorInterface
   {
     // Increase internal counter
     $this->methodCalls++;
-    $this->logger->debug('Preparing to perform request, call number {method_calls}',
-      ['method_calls' => $this->methodCalls]);
+    $this->logger->debug(
+      'Preparing to perform request, call number {method_calls}',
+      ['method_calls' => $this->methodCalls]
+    );
 
     /**
      * Check if we could make deferred request: that is return Telegram method
@@ -202,7 +214,7 @@ class Communicator implements CommunicatorInterface
 
         // Perform request to the Telegram API
         $tgLog = new TgLog(
-          $this->botApiToken, $this->logger, $this->getClient()
+          $this->apiToken, $this->logger, $this->getClient()
         );
         $this->throttleControl->requestSent();
         $response = $tgLog->performApiRequest($method);
