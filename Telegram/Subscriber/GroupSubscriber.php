@@ -42,11 +42,20 @@ class GroupSubscriber extends AbstractBotSubscriber implements EventSubscriberIn
    */
   public function onGroupCreated(GroupCreatedEvent $event)
   {
+    $this->logger->debug(
+      'Processing GroupSubscriber::GroupCreatedEvent for the message ID={message_id}',
+      ['message_id' => $event->getMessage()->message_id]
+    );
+
     $this->processGroupCreation($event->getUpdate());
 
     // Tell the Bot this request is handled
     /*$this->getBot()
       ->setRequestHandled(true);*/
+    $this->logger->info(
+      'GroupSubscriber::GroupCreatedEvent for the message ID={message_id} processed',
+      ['message_id' => $event->getMessage()->message_id]
+    );
   }
 
   /**
@@ -56,6 +65,11 @@ class GroupSubscriber extends AbstractBotSubscriber implements EventSubscriberIn
    */
   private function processGroupCreation(Update $update)
   {
+    $this->logger->debug(
+      'Checking entity for the chat ID={chat_id}',
+      ['chat_id' => $update->message->chat->id]
+    );
+
     // Find chat object. If not found, create new
     $chat = $this->doctrine->getRepository('KettariTelegramBundle:Chat')
       ->findOneByTelegramId($update->message->chat->id);
@@ -63,6 +77,11 @@ class GroupSubscriber extends AbstractBotSubscriber implements EventSubscriberIn
       $chat = new Chat();
       $this->doctrine->getManager()
         ->persist($chat);
+
+      $this->logger->debug(
+        'Created entity for the chat ID={chat_id}',
+        ['chat_id' => $update->message->chat->id]
+      );
     }
     $chat->setTelegramId($update->message->chat->id)
       ->setType($update->message->chat->type)
@@ -77,6 +96,11 @@ class GroupSubscriber extends AbstractBotSubscriber implements EventSubscriberIn
     // Commit changes
     $this->doctrine->getManager()
       ->flush();
+
+    $this->logger->info(
+      'Entity for the chat ID={chat_id} checked, ID={entity_id}',
+      ['chat_id' => $update->message->chat->id, 'entity_id' => $chat->getId()]
+    );
   }
 
 }

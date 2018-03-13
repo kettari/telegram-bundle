@@ -65,7 +65,7 @@ class Audit
    *
    * @return integer
    */
-  public function getId()
+  public function getId(): int
   {
     return $this->id;
   }
@@ -75,7 +75,7 @@ class Audit
    *
    * @return \DateTime
    */
-  public function getCreated()
+  public function getCreated(): \DateTime
   {
     return $this->created;
   }
@@ -97,7 +97,7 @@ class Audit
    *
    * @return Audit
    */
-  public function setType($updateType)
+  public function setType($updateType): Audit
   {
     $this->type = $updateType;
 
@@ -121,7 +121,7 @@ class Audit
    *
    * @return Audit
    */
-  public function setContent($content)
+  public function setContent($content): Audit
   {
     $this->content = $content;
 
@@ -145,7 +145,7 @@ class Audit
    *
    * @return Audit
    */
-  public function setDescription($description)
+  public function setDescription($description): Audit
   {
     $this->description = $description;
 
@@ -169,7 +169,7 @@ class Audit
    *
    * @return Audit
    */
-  public function setChat(Chat $chat = null)
+  public function setChat(Chat $chat = null): Audit
   {
     $this->chat = $chat;
 
@@ -193,7 +193,7 @@ class Audit
    *
    * @return Audit
    */
-  public function setUser(User $user = null)
+  public function setUser(User $user = null): Audit
   {
     $this->user = $user;
 

@@ -43,8 +43,18 @@ class ChatSubscriber extends AbstractBotSubscriber implements EventSubscriberInt
    */
   public function onMessageReceived(MessageReceivedEvent $event)
   {
+    $this->logger->debug(
+      'Processing ChatSubscriber::MessageReceivedEvent for the message ID={message_id}',
+      ['message_id' => $event->getMessage()->message_id]
+    );
+
     // Update the chat
     $this->updateChat($event->getMessage()->chat);
+
+    $this->logger->info(
+      'ChatSubscriber::MessageReceivedEvent for the message ID={message_id} processed',
+      ['message_id' => $event->getMessage()->message_id]
+    );
   }
 
   /**
@@ -54,6 +64,11 @@ class ChatSubscriber extends AbstractBotSubscriber implements EventSubscriberInt
    */
   private function updateChat($telegramChat)
   {
+    $this->logger->debug(
+      'Updating chat ID={chat_id}',
+      ['chat_id' => $telegramChat->id]
+    );
+
     // Find chat object. If not found, create new
     $chat = $this->doctrine->getRepository('KettariTelegramBundle:Chat')
       ->findOneByTelegramId($telegramChat->id);
@@ -61,6 +76,11 @@ class ChatSubscriber extends AbstractBotSubscriber implements EventSubscriberInt
       $chat = new Chat();
       $this->doctrine->getManager()
         ->persist($chat);
+
+      $this->logger->debug(
+        'Created new entity for the chat ID={chat_id}',
+        ['chat_id' => $telegramChat->id]
+      );
     }
     // Update information
     $chat->setTelegramId($telegramChat->id)
@@ -76,6 +96,11 @@ class ChatSubscriber extends AbstractBotSubscriber implements EventSubscriberInt
     // Commit changes
     $this->doctrine->getManager()
       ->flush();
+
+    $this->logger->info(
+      'Chat ID={chat_id} updated, entity ID={entity_id}',
+      ['chat_id' => $telegramChat->id, 'entity_id' => $chat->getId()]
+    );
   }
 
 }

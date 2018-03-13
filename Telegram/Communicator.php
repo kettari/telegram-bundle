@@ -74,7 +74,12 @@ class Communicator implements CommunicatorInterface
   /**
    * @var TelegramMethods
    */
-  private $deferredMethod;
+  private $deferredTelegramMethod;
+
+  /**
+   * @var int
+   */
+  private $methodCalls = 0;
 
   /**
    * Communicator constructor.
@@ -82,23 +87,20 @@ class Communicator implements CommunicatorInterface
    * @param \Psr\Log\LoggerInterface $logger
    * @param \Symfony\Component\EventDispatcher\EventDispatcherInterface $eventDispatcher
    * @param \Kettari\TelegramBundle\Telegram\ThrottleControl $throttleControl
-   * @param string $botApiToken
    */
   public function __construct(
     LoggerInterface $logger,
     EventDispatcherInterface $eventDispatcher,
-    ThrottleControl $throttleControl,
-    string $botApiToken
+    ThrottleControl $throttleControl
   ) {
     $this->logger = $logger;
     $this->dispatcher = $eventDispatcher;
     $this->throttleControl = $throttleControl;
-    $this->botApiToken = $botApiToken;
 
-    $this->logger->debug(
+    /*$this->logger->debug(
       'Communicator instantiated with bot token "{bot_token_api}"',
       ['bot_token_api' => $botApiToken]
-    );
+    );*/
   }
 
   /**
@@ -151,40 +153,46 @@ class Communicator implements CommunicatorInterface
    * Performs actual API request.
    *
    * @param TelegramMethods $method
-   * @param bool $forceSend
    * @return \unreal4u\TelegramAPI\Abstracts\TelegramTypes|null
    */
-  private function performRequest(TelegramMethods $method, bool $forceSend = false)
+  private function performRequest(TelegramMethods $method)
   {
+    // Increase internal counter
+    $this->methodCalls++;
+    $this->logger->debug('Preparing to perform request, call number {method_calls}',
+      ['method_calls' => $this->methodCalls]);
+
     /**
      * Check if we could make deferred request: that is return Telegram method
      * in response to Telegram API request.
      */
-    if (!$forceSend) {
-      if (!$this->methodDeferred) {
-        $this->logger->debug(
-          'Method "{method_class}" deferred',
-          ['method_class' => get_class($method)]
-        );
+    // 1st call method can be deferred
+    if (1 == $this->methodCalls) {
 
-        $this->methodDeferred = true;
-        $this->deferredMethod = $method;
+      $this->logger->debug(
+        'Method "{method_class}" deferred',
+        ['method_class' => get_class($method)]
+      );
 
-        return null;
-      } else {
-        $this->logger->debug(
-          'Pushing deferred method "{method_class}"',
-          ['method_class' => get_class($method)]
-        );
+      $this->methodDeferred = true;
+      $this->deferredTelegramMethod = $method;
 
-        // Push deferred method
-        $this->performRequest($this->deferredMethod, true);
-        $this->methodDeferred = false;
-      }
+      return null;
+    } elseif ($this->methodDeferred) {
+      // 2nd and subsequent calls can't be deferred and must be pushed immediately
+      $this->logger->debug(
+        'Pushing deferred method "{method_class}"',
+        ['method_class' => get_class($method)]
+      );
+
+      // Push deferred method
+      $this->methodDeferred = false;
+      $this->performRequest($this->deferredTelegramMethod);
+      $this->deferredTelegramMethod = null;
     }
 
     $this->logger->debug(
-      'About to perform request for the method "{method_class}"',
+      'Performing request for the method "{method_class}"',
       ['method_class' => get_class($method)]
     );
 
@@ -328,7 +336,7 @@ class Communicator implements CommunicatorInterface
     $replyToMessageId = null
   ) {
     $this->logger->debug(
-      'About to send photo to chat ID={chat_id}',
+      'Sending photo to chat ID={chat_id}',
       [
         'chat_id'              => $chatId,
         'caption'              => $caption,
@@ -371,7 +379,7 @@ class Communicator implements CommunicatorInterface
     $disableWebPagePreview = false
   ) {
     $this->logger->debug(
-      'About to edit message ID={message_id} text in the chat ID={chat_id}',
+      'Editing message ID={message_id} text in the chat ID={chat_id}',
       [
         'message_id'               => $messageId,
         'chat_id'                  => $chatId,
@@ -414,7 +422,7 @@ class Communicator implements CommunicatorInterface
     $replyMarkup = null
   ) {
     $this->logger->debug(
-      'About to edit message ID={message_id} reply markup in the chat ID={chat_id}',
+      'Editing message ID={message_id} reply markup in the chat ID={chat_id}',
       [
         'message_id'        => $messageId,
         'chat_id'           => $chatId,
@@ -452,7 +460,7 @@ class Communicator implements CommunicatorInterface
     $cacheTime = 0
   ) {
     $this->logger->debug(
-      'About to answer callback query ID={query_id}',
+      'Answering callback query ID={query_id}',
       [
         'query_id'   => $callbackQueryId,
         'text'       => $text,
@@ -489,7 +497,7 @@ class Communicator implements CommunicatorInterface
     string $action = self::ACTION_TYPING
   ) {
     $this->logger->debug(
-      'About to send "{action_type}" action the chat ID={chat_id}',
+      'Sending "{action_type}" action the chat ID={chat_id}',
       ['chat_id' => $chatId, 'action_type' => $action,]
     );
 
@@ -518,8 +526,8 @@ class Communicator implements CommunicatorInterface
   /**
    * {@inheritdoc}
    */
-  public function getDeferredMethod()
+  public function getDeferredTelegramMethod()
   {
-    return $this->deferredMethod;
+    return $this->deferredTelegramMethod;
   }
 }

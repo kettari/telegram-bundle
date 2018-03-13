@@ -200,5 +200,5 @@ interface CommunicatorInterface
    *
    * @return TelegramMethods|null
    */
-  public function getDeferredMethod();
+  public function getDeferredTelegramMethod();
 }

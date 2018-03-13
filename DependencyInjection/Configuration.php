@@ -24,7 +24,6 @@ class Configuration implements ConfigurationInterface {
           ->scalarNode('api_token')->end()
           ->scalarNode('certificate_file')->end()
           ->scalarNode('url')->end()
-          ->scalarNode('self_user_id')->end()
         ->end() // twitter
       ->end();
     // @formatter:on

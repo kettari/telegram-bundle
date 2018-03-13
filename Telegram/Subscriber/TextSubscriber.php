@@ -1,10 +1,5 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: ant
- * Date: 25.04.2017
- * Time: 14:19
- */
+declare(strict_types=1);
 
 namespace Kettari\TelegramBundle\Telegram\Subscriber;
 
@@ -49,10 +44,26 @@ class TextSubscriber extends AbstractBotSubscriber implements EventSubscriberInt
    */
   public function onTextReceived(TextReceivedEvent $event)
   {
+    $this->logger->debug(
+      'Processing TextSubscriber::TextReceivedEvent for message ID={message_id} in the chat ID={chat_id}',
+      [
+        'message_id' => $event->getMessage()->message_id,
+        'chat_id'    => $event->getMessage()->chat->id,
+      ]
+    );
+
     /** @noinspection PhpStatementHasEmptyBodyInspection */
     if (!$this->parseCommand($event)) {
       // Not a command. Well, do nothing
     }
+
+    $this->logger->info(
+      'TextSubscriber::TextReceivedEvent for message ID={message_id} in the chat ID={chat_id} processed',
+      [
+        'message_id' => $event->getMessage()->message_id,
+        'chat_id'    => $event->getMessage()->chat->id,
+      ]
+    );
   }
 
   /**

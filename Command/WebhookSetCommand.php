@@ -4,8 +4,11 @@ declare(strict_types=1);
 namespace Kettari\TelegramBundle\Command;
 
 
+use Kettari\TelegramBundle\Entity\BotSetting;
+use unreal4u\TelegramAPI\Telegram\Methods\GetMe;
 use unreal4u\TelegramAPI\Telegram\Methods\SetWebhook;
 use unreal4u\TelegramAPI\Telegram\Types\Custom\InputFile;
+use unreal4u\TelegramAPI\Telegram\Types\User;
 use unreal4u\TelegramAPI\TgLog;
 
 class WebhookSetCommand extends AbstractCommand
@@ -27,6 +30,17 @@ class WebhookSetCommand extends AbstractCommand
    * Execute actual code of the command.
    */
   protected function executeCommand()
+  {
+    // Set webhook
+    $this->setWebhook();
+    // Fill self user ID
+    $this->requestMe();
+  }
+
+  /**
+   * Sets webhook.
+   */
+  private function setWebhook()
   {
     $setWebhook = new SetWebhook();
     $setWebhook->url = str_replace(
@@ -57,6 +71,47 @@ class WebhookSetCommand extends AbstractCommand
     $tgLog->performApiRequest($setWebhook);
 
     $this->io->success('Webhook set');
+  }
+
+  /**
+   * Executed getMe method.
+   */
+  private function requestMe()
+  {
+    $getMe = new GetMe();
+    // Create API object and execute method
+    $tgLog = new TgLog(
+      $this->config['api_token'],
+      $this->getContainer()
+        ->get('logger')
+    );
+    $user = $tgLog->performApiRequest($getMe);
+
+    if ($user instanceof User) {
+      /** @var \Doctrine\Bundle\DoctrineBundle\Registry $d */
+      $d = $this->getContainer()
+        ->get('doctrine');
+      if (is_null(
+        $setting = $d->getRepository('KettariTelegramBundle:BotSetting')
+          ->findOneByName('bot_user_id')
+      )) {
+        $setting = new BotSetting();
+        $d->getManager()
+          ->persist($setting);
+      }
+
+      // Assign self bot ID
+      $setting->setName('bot_user_id')
+        ->setValue((string)$user->id);
+
+      $d->getManager()
+        ->flush();
+
+      $this->io->success(sprintf('Self bot user ID=%d saved', $user->id));
+
+    } else {
+      $this->io->error('GetMe method returned not a user object');
+    }
   }
 
 

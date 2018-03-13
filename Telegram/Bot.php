@@ -68,7 +68,7 @@ class Bot implements BotInterface
   public function handle(Update $update)
   {
     $this->logger->debug(
-      'About to handle update ID={update_id}',
+      'Handling update ID={update_id}',
       ['update_id' => $update->update_id]
     );
 
@@ -86,7 +86,7 @@ class Bot implements BotInterface
     }
     $this->dispatcher->dispatch(TerminateEvent::NAME, $terminateEvent);
 
-    $this->logger->debug(
+    $this->logger->info(
       'Update ID={update_id} handled',
       ['update_id'          => $update->update_id,
        'is_method_deferred' => $this->communicator->isMethodDeferred(
@@ -95,6 +95,6 @@ class Bot implements BotInterface
     );
 
     return $this->communicator->isMethodDeferred(
-    ) ? $this->communicator->getDeferredMethod() : null;
+    ) ? $this->communicator->getDeferredTelegramMethod() : null;
   }
 }

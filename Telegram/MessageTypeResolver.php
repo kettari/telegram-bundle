@@ -8,7 +8,6 @@ use unreal4u\TelegramAPI\Telegram\Types\Message;
 class MessageTypeResolver
 {
   // Event types
-  const MT_UNKNOWN = -1;
   const MT_NOTHING = 0;
   const MT_TEXT = 1;
   const MT_AUDIO = 2;
@@ -44,7 +43,6 @@ class MessageTypeResolver
    * @var array
    */
   private static $mtCaptions = [
-    self::MT_UNKNOWN                 => 'MT_UNKNOWN',
     self::MT_TEXT                    => 'MT_TEXT',
     self::MT_AUDIO                   => 'MT_AUDIO',
     self::MT_DOCUMENT                => 'MT_DOCUMENT',
@@ -184,6 +182,6 @@ class MessageTypeResolver
     return (count($types) > 0) ? implode(
       ', ',
       $types
-    ) : self::$mtCaptions[self::MT_UNKNOWN];
+    ) : 'MT_UNKNOWN';
   }
 }

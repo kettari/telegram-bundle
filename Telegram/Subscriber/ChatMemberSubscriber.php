@@ -1,10 +1,5 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: ant
- * Date: 25.04.2017
- * Time: 14:19
- */
+declare(strict_types=1);
 
 namespace Kettari\TelegramBundle\Telegram\Subscriber;
 
@@ -59,6 +54,11 @@ class ChatMemberSubscriber extends AbstractBotSubscriber implements EventSubscri
    */
   public function onMembersManyJoined(JoinChatMembersManyEvent $event)
   {
+    $this->logger->debug(
+      'Processing ChatMemberSubscriber::JoinChatMembersManyEvent for the message ID={message_id}',
+      ['message_id' => $event->getMessage()->message_id]
+    );
+
     /** @var Chat $chatEntity */
     $chatEntity = $this->doctrine->getRepository('KettariTelegramBundle:Chat')
       ->findOneByTelegramId($event->getMessage()->chat->id);
@@ -81,6 +81,11 @@ class ChatMemberSubscriber extends AbstractBotSubscriber implements EventSubscri
     // Tell the Bot this request is handled
     /*$this->getBot()
       ->setRequestHandled(true);*/
+
+    $this->logger->info(
+      'ChatMemberSubscriber::JoinChatMembersManyEvent for the message ID={message_id} processed',
+      ['message_id' => $event->getMessage()->message_id]
+    );
   }
 
   /**
@@ -90,6 +95,11 @@ class ChatMemberSubscriber extends AbstractBotSubscriber implements EventSubscri
    */
   public function onMemberJoined(JoinChatMemberEvent $event)
   {
+    $this->logger->debug(
+      'Processing ChatMemberSubscriber::JoinChatMemberEvent for the message ID={message_id}',
+      ['message_id' => $event->getMessage()->message_id]
+    );
+
     $this->processJoinedMember(
       $event->getUpdate(),
       $event->getJoinedUser(),
@@ -98,6 +108,11 @@ class ChatMemberSubscriber extends AbstractBotSubscriber implements EventSubscri
     // Flush changes
     $this->doctrine->getManager()
       ->flush();
+
+    $this->logger->info(
+      'ChatMemberSubscriber::JoinChatMemberEvent for the message ID={message_id} processed',
+      ['message_id' => $event->getMessage()->message_id]
+    );
   }
 
   /**
@@ -110,6 +125,14 @@ class ChatMemberSubscriber extends AbstractBotSubscriber implements EventSubscri
     TelegramUser $telegramUser,
     Chat $chatEntity
   ) {
+    $this->logger->debug(
+      'Processing joined member user ID={user_id} for the message ID={message_id}',
+      [
+        'user_id'    => $telegramUser->id,
+        'message_id' => $update->message->message_id,
+      ]
+    );
+
     // Find user object. If not found, create new
     if (is_null(
       $userEntity = $this->doctrine->getRepository('KettariTelegramBundle:User')
@@ -161,6 +184,13 @@ class ChatMemberSubscriber extends AbstractBotSubscriber implements EventSubscri
         'telegram_user_id' => $telegramUser->id,
       ]
     );
+    $this->logger->info(
+      'Joined member user ID={user_id} for the message ID={message_id} processed',
+      [
+        'user_id'    => $telegramUser->id,
+        'message_id' => $update->message->message_id,
+      ]
+    );
   }
 
   /**
@@ -188,6 +218,11 @@ class ChatMemberSubscriber extends AbstractBotSubscriber implements EventSubscri
    */
   public function onMemberLeft(LeftChatMemberEvent $event)
   {
+    $this->logger->debug(
+      'Processing ChatMemberSubscriber::LeftChatMemberEvent for the message ID={message_id}',
+      ['message_id' => $event->getMessage()->message_id]
+    );
+
     /** @var Chat $chat */
     $chat = $this->doctrine->getRepository('KettariTelegramBundle:Chat')
       ->findOneByTelegramId($event->getMessage()->chat->id);
@@ -203,6 +238,11 @@ class ChatMemberSubscriber extends AbstractBotSubscriber implements EventSubscri
     // Tell the Bot this request is handled
     /*$this->getBot()
       ->setRequestHandled(true);*/
+
+    $this->logger->info(
+      'ChatMemberSubscriber::LeftChatMemberEvent for the message ID={message_id} processed',
+      ['message_id' => $event->getMessage()->message_id]
+    );
   }
 
   /**
@@ -215,6 +255,14 @@ class ChatMemberSubscriber extends AbstractBotSubscriber implements EventSubscri
     TelegramUser $telegramUser,
     Chat $chatEntity
   ) {
+    $this->logger->debug(
+      'Processing left member user ID={user_id} for the message ID={message_id}',
+      [
+        'user_id'    => $telegramUser->id,
+        'message_id' => $update->message->message_id,
+      ]
+    );
+
     // Find user object. If not found, create new
     $userEntity = $this->doctrine->getRepository('KettariTelegramBundle:User')
       ->findOneByTelegramId($telegramUser->id);
@@ -264,6 +312,13 @@ class ChatMemberSubscriber extends AbstractBotSubscriber implements EventSubscri
         'telegram_user_id' => $telegramUser->id,
       ]
     );
+    $this->logger->info(
+      'Left member user ID={user_id} for the message ID={message_id} processed',
+      [
+        'user_id'    => $telegramUser->id,
+        'message_id' => $update->message->message_id,
+      ]
+    );
   }
 
   /**
@@ -291,6 +346,11 @@ class ChatMemberSubscriber extends AbstractBotSubscriber implements EventSubscri
    */
   public function onMemberTexted(TextReceivedEvent $event)
   {
+    $this->logger->debug(
+      'Processing ChatMemberSubscriber::TextReceivedEvent for the message ID={message_id}',
+      ['message_id' => $event->getMessage()->message_id,]
+    );
+
     /** @var Chat $chat */
     $chat = $this->doctrine->getRepository('KettariTelegramBundle:Chat')
       ->findOneByTelegramId($event->getMessage()->chat->id);
@@ -301,6 +361,11 @@ class ChatMemberSubscriber extends AbstractBotSubscriber implements EventSubscri
 
     // NB: This handler SHALL NOT mark request as handled. We just update ChatMember
     // silently
+
+    $this->logger->info(
+      'ChatMemberSubscriber::TextReceivedEvent for the message ID={message_id} processed',
+      ['message_id' => $event->getMessage()->message_id,]
+    );
   }
 
   /**

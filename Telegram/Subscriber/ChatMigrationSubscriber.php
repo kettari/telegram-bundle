@@ -49,6 +49,11 @@ class ChatMigrationSubscriber extends AbstractBotSubscriber implements EventSubs
    */
   public function onMigrateToChatId(MigrateToChatIdEvent $event)
   {
+    $this->logger->debug(
+      'Processing ChatMigrationSubscriber::MigrateToChatIdEvent for the message ID={message_id}',
+      ['message_id' => $event->getMessage()->message_id]
+    );
+
     // Get telegram chat ids
     $chatFromId = $event->getMessage()->chat->id;
     $chatToId = $event->getMessage()->migrate_to_chat_id;
@@ -72,6 +77,10 @@ class ChatMigrationSubscriber extends AbstractBotSubscriber implements EventSubs
       'Migrated to chat with id "{chat_id}"',
       ['chat_id' => $chatToId]
     );
+    $this->logger->info(
+      'ChatMigrationSubscriber::MigrateToChatIdEvent for the message ID={message_id} processed',
+      ['message_id' => $event->getMessage()->message_id]
+    );
   }
 
   /**
@@ -81,6 +90,11 @@ class ChatMigrationSubscriber extends AbstractBotSubscriber implements EventSubs
    */
   public function onMigrateFromChatId(MigrateFromChatIdEvent $event)
   {
+    $this->logger->debug(
+      'Processing ChatMigrationSubscriber::MigrateFromChatIdEvent for the message ID={message_id}',
+      ['message_id' => $event->getMessage()->message_id]
+    );
+
     // Find chat object
     /** @var \Kettari\TelegramBundle\Entity\Chat $chat */
     $chat = $this->doctrine->getRepository('KettariTelegramBundle:Chat')
@@ -107,6 +121,10 @@ class ChatMigrationSubscriber extends AbstractBotSubscriber implements EventSubs
     $this->logger->notice(
       'Migrated from chat with id "{chat_id}"',
       ['chat_id' => $event->getMessage()->chat->id]
+    );
+    $this->logger->info(
+      'ChatMigrationSubscriber::MigrateFromChatIdEvent for the message ID={message_id} processed',
+      ['message_id' => $event->getMessage()->message_id]
     );
   }
 }

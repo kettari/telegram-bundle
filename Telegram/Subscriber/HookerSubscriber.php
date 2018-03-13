@@ -7,7 +7,6 @@ namespace Kettari\TelegramBundle\Telegram\Subscriber;
 use Kettari\TelegramBundle\Entity\Hook;
 use Kettari\TelegramBundle\Telegram\Event\UpdateReceivedEvent;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
-use unreal4u\TelegramAPI\Telegram\Types\Update;
 
 class HookerSubscriber extends AbstractBotSubscriber implements EventSubscriberInterface
 {
@@ -42,28 +41,33 @@ class HookerSubscriber extends AbstractBotSubscriber implements EventSubscriberI
    */
   public function onUpdateReceived(UpdateReceivedEvent $event)
   {
-    $this->executeHook($event->getUpdate());
-  }
+    $this->logger->debug(
+      'Processing HookerSubscriber::UpdateReceivedEvent for the update ID={update_id}',
+      ['update_id' => $event->getUpdate()->update_id]
+    );
 
-  /**
-   * Finds the hook and executes it.
-   *
-   * @param Update $update
-   */
-  private function executeHook(Update $update)
-  {
     // Check for hooks and execute if any found
     /** @var Hook $hook */
-    if ($hook = $this->bus->findHook($update)) {
+    if ($hook = $this->bus->findHook($event->getUpdate())) {
+
+      $this->logger->debug(
+        'Found hook ID={hook_id}',
+        ['hook_id' => $hook->getId()]
+      );
 
       // Set flag that request is handled
       /*$this->getBot()
         ->setRequestHandled(true);*/
       // Execute & delete the hook
-      $this->bus->executeHook($hook, $update)
+      $this->bus->executeHook($hook, $event->getUpdate())
         ->deleteHook($hook);
 
     }
+
+    $this->logger->info(
+      'HookerSubscriber::UpdateReceivedEvent for the update ID={update_id} processed',
+      ['update_id' => $event->getUpdate()->update_id]
+    );
   }
 
 }

@@ -42,10 +42,15 @@ class CurrentUserSubscriber extends AbstractBotSubscriber implements EventSubscr
    */
   public function onUpdateReceived(UpdateReceivedEvent $event)
   {
+    $this->logger->debug(
+      'Processing CurrentUserSubscriber::UpdateReceivedEvent for the update ID={update_id}',
+      ['update_id' => $event->getUpdate()->update_id]
+    );
+
     // Resolve current user
     $this->userHq->resolveCurrentUser($event->getUpdate());
     if ($this->userHq->isUserBlocked()) {
-      $this->logger->notice('Current user is blocked from out side');
+      $this->logger->notice('Current user is blocked from our side');
 
       // Current user is blocked, stop event propagation >:E
       $event->stopPropagation();
@@ -59,6 +64,11 @@ class CurrentUserSubscriber extends AbstractBotSubscriber implements EventSubscr
       }
 
     }
+
+    $this->logger->info(
+      'CurrentUserSubscriber::UpdateReceivedEvent for the update ID={update_id} processed',
+      ['update_id' => $event->getUpdate()->update_id]
+    );
   }
 
 

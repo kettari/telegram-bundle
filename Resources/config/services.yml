@@ -10,7 +10,6 @@ services:
             - '@monolog.logger'
             - '@event_dispatcher'
             - '@kettari_telegram.throttle'
-            - 'kettari_telegram.api_token'
 
     # Pusher
     kettari_telegram.pusher:

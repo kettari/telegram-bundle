@@ -49,6 +49,14 @@ class CommandSubscriber extends AbstractBotSubscriber implements EventSubscriber
    */
   public function onCommandReceived(CommandReceivedEvent $event)
   {
+    $this->logger->debug(
+      'Processing CommandSubscriber::CommandReceivedEvent for the message ID={message_id}, command "{command_name}"',
+      [
+        'message_id'   => $event->getMessage()->message_id,
+        'command_name' => $event->getCommandName(),
+      ]
+    );
+
     if (!$this->bus->isCommandRegistered($event->getCommandName())) {
       $this->logger->notice(
         'No class registered to handle /{command_name} command',
@@ -80,6 +88,13 @@ class CommandSubscriber extends AbstractBotSubscriber implements EventSubscriber
       $this->getBot()
         ->setRequestHandled(true);
     }*/
+    $this->logger->info(
+      'CommandSubscriber::CommandReceivedEvent for the message ID={message_id}, command "{command_name}" processed',
+      [
+        'message_id'   => $event->getMessage()->message_id,
+        'command_name' => $event->getCommandName(),
+      ]
+    );
   }
 
   /**
@@ -111,17 +126,32 @@ class CommandSubscriber extends AbstractBotSubscriber implements EventSubscriber
    */
   public function onCommandUnknown(CommandUnknownEvent $event)
   {
+    $this->logger->debug(
+      'Processing CommandSubscriber::CommandUnknownEvent for the message ID={message_id}, command "{command_name}"',
+      [
+        'message_id'   => $event->getMessage()->message_id,
+        'command_name' => $event->getCommandName(),
+      ]
+    );
+
     // Tell user command is not found
     $this->communicator->sendMessage(
-        $event->getMessage()->chat->id,
-        'Извините, такой команды я не знаю.',
-        Communicator::PARSE_MODE_PLAIN,
-        new ReplyKeyboardRemove()
-      );
+      $event->getMessage()->chat->id,
+      'Извините, такой команды я не знаю.',
+      Communicator::PARSE_MODE_PLAIN,
+      new ReplyKeyboardRemove()
+    );
 
     // Set flag that request is handled
     /*$this->getBot()
       ->setRequestHandled(true);*/
+    $this->logger->info(
+      'CommandSubscriber::CommandUnknownEvent for the message ID={message_id}, command "{command_name}" processed',
+      [
+        'message_id'   => $event->getMessage()->message_id,
+        'command_name' => $event->getCommandName(),
+      ]
+    );
   }
 
   /**
@@ -131,15 +161,30 @@ class CommandSubscriber extends AbstractBotSubscriber implements EventSubscriber
    */
   public function onCommandUnauthorized(CommandUnauthorizedEvent $event)
   {
+    $this->logger->debug(
+      'Processing CommandSubscriber::CommandUnauthorizedEvent for the message ID={message_id}, command "{command_name}"',
+      [
+        'message_id'   => $event->getMessage()->message_id,
+        'command_name' => $event->getCommandName(),
+      ]
+    );
+
     // Tell the user he is not authorized to execute the command
     $this->communicator->sendMessage(
-        $event->getMessage()->chat->id,
-        'Извините, у вас недостаточно прав для доступа к этой команде.',
-        Communicator::PARSE_MODE_PLAIN
-      );
+      $event->getMessage()->chat->id,
+      'Извините, у вас недостаточно прав для доступа к этой команде.',
+      Communicator::PARSE_MODE_PLAIN
+    );
 
     // Set flag that request is handled
     /*$this->getBot()
       ->setRequestHandled(true);*/
+    $this->logger->info(
+      'CommandSubscriber::CommandUnauthorizedEvent for the message ID={message_id}, command "{command_name}" processed',
+      [
+        'message_id'   => $event->getMessage()->message_id,
+        'command_name' => $event->getCommandName(),
+      ]
+    );
   }
 }

@@ -54,7 +54,7 @@ class UserHq implements UserHqInterface
   {
     $updateType = UpdateTypeResolver::getUpdateType($update);
     $this->logger->debug(
-      'About to resolve current user for the update type {update_type}',
+      'Resolving current user for the update type "{update_type}"',
       ['update_type' => $updateType]
     );
 
@@ -110,8 +110,8 @@ class UserHq implements UserHqInterface
       $this->currentUser = $this->createAnonymousUser($telegramUser);
     }
 
-    $this->logger->debug(
-      'Telegram user successfully resolved to entity ID={user_id}',
+    $this->logger->info(
+      'Telegram user successfully resolved to the user entity ID={user_id}',
       ['user_id' => $this->currentUser->getId(), 'user' => $this->currentUser]
     );
 
@@ -124,7 +124,7 @@ class UserHq implements UserHqInterface
   public function createAnonymousUser(TelegramUser $telegramUser): User
   {
     $this->logger->debug(
-      'About to create anonymous user for TelegramID={telegram_id}',
+      'Creating anonymous user for TelegramID={telegram_id}',
       ['telegram_id' => $telegramUser->id, 'telegram_user' => $telegramUser]
     );
 
@@ -147,7 +147,7 @@ class UserHq implements UserHqInterface
     $em->persist($user);
     $em->flush();
 
-    $this->logger->debug(
+    $this->logger->info(
       'Created anonymous user for TelegramID={telegram_id}, entity ID={user_id}',
       [
         'telegram_id'   => $telegramUser->id,

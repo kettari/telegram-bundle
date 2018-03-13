@@ -75,7 +75,7 @@ class MessageSubscriber extends AbstractBotSubscriber implements EventSubscriber
   public function onMessageReceived(MessageReceivedEvent $event)
   {
     $this->logger->debug(
-      'About to process MessageReceivedEvent for message ID={message_id} in the chat ID={chat_id}',
+      'Processing MessageSubscriber::MessageReceivedEvent for message ID={message_id} in the chat ID={chat_id}',
       [
         'message_id' => $event->getMessage()->message_id,
         'chat_id'    => $event->getMessage()->chat->id,
@@ -115,8 +115,8 @@ class MessageSubscriber extends AbstractBotSubscriber implements EventSubscriber
       );
     }
 
-    $this->logger->debug(
-      'MessageReceivedEvent for message ID={message_id} in the chat ID={chat_id} processed',
+    $this->logger->info(
+      'MessageSubscriber::MessageReceivedEvent for message ID={message_id} in the chat ID={chat_id} processed',
       [
         'message_id' => $event->getMessage()->message_id,
         'chat_id'    => $event->getMessage()->chat->id,

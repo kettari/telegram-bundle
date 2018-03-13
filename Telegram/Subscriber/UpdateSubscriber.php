@@ -5,13 +5,8 @@ namespace Kettari\TelegramBundle\Telegram\Subscriber;
 
 
 use Kettari\TelegramBundle\Telegram\Event\MessageReceivedEvent;
-
-
 use Kettari\TelegramBundle\Telegram\Event\UpdateReceivedEvent;
-
-
 use Kettari\TelegramBundle\Telegram\UpdateTypeResolver;
-
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
 
@@ -52,9 +47,13 @@ class UpdateSubscriber extends AbstractBotSubscriber implements EventSubscriberI
   {
     // Get update type
     $updateType = UpdateTypeResolver::getUpdateType($event->getUpdate());
-    $this->logger->info(
-      'Handling update of type "{type}"',
-      ['type' => $updateType, 'update' => $event->getUpdate()]
+    $this->logger->debug(
+      'Handling update of the type "{type}" for update ID={update_id}',
+      [
+        'type'      => $updateType,
+        'update_id' => $event->getUpdate()->update_id,
+        'update'    => $event->getUpdate(),
+      ]
     );
 
     // Check type of the update and dispatch more specific events
@@ -67,5 +66,14 @@ class UpdateSubscriber extends AbstractBotSubscriber implements EventSubscriberI
         );
         break;
     }
+
+    $this->logger->info(
+      'Update of the type "{type}" handled for update ID={update_id}',
+      [
+        'type'      => $updateType,
+        'update_id' => $event->getUpdate()->update_id,
+        'update'    => $event->getUpdate(),
+      ]
+    );
   }
 }

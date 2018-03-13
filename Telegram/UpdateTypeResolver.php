@@ -10,13 +10,13 @@ use unreal4u\TelegramAPI\Telegram\Types\Update;
 class UpdateTypeResolver
 {
   // Update types
-  const UT_MESSAGE = 'message';
-  const UT_EDITED_MESSAGE = 'edited_message';
-  const UT_CHANNEL_POST = 'channel_post';
-  const UT_EDITED_CHANNEL_POST = 'edited_channel_post';
-  const UT_INLINE_QUERY = 'inline_query';
-  const UT_CHOSEN_INLINE_RESULT = 'chosen_inline_result';
-  const UT_CALLBACK_QUERY = 'callback_query';
+  const UT_MESSAGE = 'UT_MESSAGE';
+  const UT_EDITED_MESSAGE = 'UT_EDITED_MESSAGE';
+  const UT_CHANNEL_POST = 'UT_CHANNEL_POST';
+  const UT_EDITED_CHANNEL_POST = 'UT_EDITED_CHANNEL_POST';
+  const UT_INLINE_QUERY = 'UT_INLINE_QUERY';
+  const UT_CHOSEN_INLINE_RESULT = 'UT_CHOSEN_INLINE_RESULT';
+  const UT_CALLBACK_QUERY = 'UT_CALLBACK_QUERY';
 
   /**
    * Returns type of the update.

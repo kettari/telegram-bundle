@@ -3,11 +3,9 @@ declare(strict_types=1);
 
 namespace Kettari\TelegramBundle\Telegram;
 
-use Kettari\TelegramBundle\Entity\Chat;
 use Kettari\TelegramBundle\Entity\Hook;
 use Kettari\TelegramBundle\Entity\Permission;
 use Kettari\TelegramBundle\Entity\Role;
-use Kettari\TelegramBundle\Entity\User;
 use Kettari\TelegramBundle\Exception\HookException;
 use Kettari\TelegramBundle\Exception\InvalidCommandException;
 use Kettari\TelegramBundle\Telegram\Command\AbstractCommand;
@@ -92,7 +90,7 @@ class CommandBus implements CommandBusInterface
   public function registerCommand(string $commandClass): CommandBusInterface
   {
     $this->logger->debug(
-      'About to register command class "{command_class}"',
+      'Registering command class "{command_class}"',
       ['command_class' => $commandClass]
     );
 
@@ -112,7 +110,7 @@ class CommandBus implements CommandBusInterface
       );
     }
 
-    $this->logger->debug(
+    $this->logger->info(
       'Command class "{command_class}" registered',
       ['command_class' => $commandClass]
     );
@@ -201,12 +199,16 @@ class CommandBus implements CommandBusInterface
   }
 
   /**
-   * {@inheritdoc}
+   * Return true if telegram user is authorized to execute specified command.
+   *
+   * @param \unreal4u\TelegramAPI\Telegram\Types\User $telegramUser
+   * @param \Kettari\TelegramBundle\Telegram\Command\AbstractCommand $command
+   * @return bool
    */
   public function isAuthorized(TelegramUser $telegramUser, $command): bool
   {
     $this->logger->debug(
-      'About to check Telegram user ID={user_id} authorization to execute command "{command_name}"',
+      'Checking Telegram user ID={user_id} authorization to execute command "{command_name}"',
       ['user_id' => $telegramUser->id, 'command_name' => $command::getName()]
     );
 
@@ -248,7 +250,7 @@ class CommandBus implements CommandBusInterface
 
     // Write to the log permissions check result
     $this->logger->info(
-      'Command authorization check: {auth_check}',
+      'Command authorization check result: {auth_check}',
       [
         'auth_check'             => $result ? 'OK' : 'not authorized',
         'required_permissions'   => $requiredPermissions,
@@ -357,6 +359,15 @@ class CommandBus implements CommandBusInterface
     string $methodName,
     string $parameters = ''
   ) {
+    $this->logger->debug(
+      'Creating hook for the update ID={update_id} with class name "{class_name}"::"{method_name}"',
+      [
+        'update_id'   => $update->update_id,
+        'class_name'  => $className,
+        'method_name' => $methodName,
+      ]
+    );
+
     if (is_null($telegramMessage = $this->getMessageFromUpdate($update))) {
       throw new HookException('Unable to create hook: Message is NULL');
     }
@@ -365,33 +376,22 @@ class CommandBus implements CommandBusInterface
     }
 
     // Find chat object. If not found, create new
+    /** @var \Kettari\TelegramBundle\Entity\Chat $chat */
     $chat = $this->doctrine->getRepository('KettariTelegramBundle:Chat')
       ->findOneByTelegramId($telegramMessage->chat->id);
     if (!$chat) {
-      $chat = new Chat();
-      $chat->setTelegramId($telegramMessage->chat->id)
-        ->setType($telegramMessage->chat->type)
-        ->setTitle($telegramMessage->chat->title)
-        ->setUsername($telegramMessage->chat->username)
-        ->setFirstName($telegramMessage->chat->first_name)
-        ->setLastName($telegramMessage->chat->last_name)
-        ->setAllMembersAreAdministrators(
-          $telegramMessage->chat->all_members_are_administrators
-        );
-      $this->doctrine->getManager()
-        ->persist($chat);
+      throw new \LogicException(
+        'Chat entity expected to exist and not found while creating the hook.'
+      );
     }
     // Find user object. If not found, create new
+    /** @var \Kettari\TelegramBundle\Entity\User $user */
     $user = $this->doctrine->getRepository('KettariTelegramBundle:User')
       ->findOneByTelegramId($telegramUser->id);
     if (!$user) {
-      $user = new User();
-      $user->setTelegramId($telegramUser->id)
-        ->setFirstName($telegramUser->first_name)
-        ->setLastName($telegramUser->last_name)
-        ->setUsername($telegramUser->username);
-      $this->doctrine->getManager()
-        ->persist($user);
+      throw new \LogicException(
+        'User entity expected to exist and not found while creating the hook.'
+      );
     }
 
     // Finally, create hook with all things together
@@ -406,6 +406,18 @@ class CommandBus implements CommandBusInterface
       ->persist($hook);
     $this->doctrine->getManager()
       ->flush();
+
+    $this->logger->info(
+      'Hook ID={hook_id} created for the update ID={update_id} with class name "{class_name}"::"{method_name}"',
+      [
+        'hook_id'     => $hook->getId(),
+        'update_id'   => $update->update_id,
+        'class_name'  => $className,
+        'method_name' => $methodName,
+        'chat_id'     => $chat->getId(),
+        'user_id'     => $user->getId(),
+      ]
+    );
   }
 
   /**
@@ -448,12 +460,21 @@ class CommandBus implements CommandBusInterface
    */
   public function findHook(Update $update)
   {
+    $this->logger->debug(
+      'Searching hook for the update ID={update_id}',
+      ['update_id' => $update->update_id]
+    );
+
     // Try to find Message object
     if (is_null($telegramMessage = $this->getMessageFromUpdate($update))) {
+      $this->logger->debug('No message within the update');
+
       return null;
     }
     // Try to find User object
     if (is_null($telegramUser = $this->getUserFromUpdate($update))) {
+      $this->logger->debug('No user within the update');
+
       return null;
     }
 
@@ -461,6 +482,11 @@ class CommandBus implements CommandBusInterface
     $chat = $this->doctrine->getRepository('KettariTelegramBundle:Chat')
       ->findOneByTelegramId($telegramMessage->chat->id);
     if (!$chat) {
+      $this->logger->debug(
+        'Chat entity not found for the chat ID={chat_id}',
+        ['chat_id' => $telegramMessage->chat->id]
+      );
+
       return null;
     }
 
@@ -468,6 +494,11 @@ class CommandBus implements CommandBusInterface
     $user = $this->doctrine->getRepository('KettariTelegramBundle:User')
       ->findOneByTelegramId($telegramUser->id);
     if (!$user) {
+      $this->logger->debug(
+        'User entity not found for the user ID={user_id}',
+        ['user_id' => $telegramUser->id]
+      );
+
       return null;
     }
 
@@ -475,11 +506,23 @@ class CommandBus implements CommandBusInterface
     $activeHooks = $this->doctrine->getRepository('KettariTelegramBundle:Hook')
       ->findActive($chat->getId(), $user->getId());
     if (count($activeHooks) == 1) {
+      /** @var Hook $hook */
+      $hook = reset($activeHooks);
+      $this->logger->info(
+        'Found hook ID={hook_id} for the update ID={update_id}: chat entity ID={chat_id}, user entity ID={user_id}',
+        [
+          'hook_id'   => $hook->getId(),
+          'update_id' => $update->update_id,
+          'chat_id'   => $chat->getId(),
+          'user_id'   => $user->getId(),
+        ]
+      );
+
       // One hook is OK, return it
-      return reset($activeHooks);
+      return $hook;
     } elseif (count($activeHooks) > 1) {
       $this->logger->warning(
-        'Multiple hooks found for user={user_id} and chat_id={chat_id}',
+        'Multiple hooks found for user ID={user_id} and chat ID={chat_id}',
         [
           'user_id' => $telegramUser->id,
           'chat_id' => $telegramMessage->chat->id,
@@ -496,6 +539,15 @@ class CommandBus implements CommandBusInterface
         ->flush();
     }
 
+    $this->logger->info(
+      'No hooks found for the update ID={update_id}: chat entity ID={chat_id}, user entity ID={user_id}',
+      [
+        'update_id' => $update->update_id,
+        'chat_id'   => $chat->getId(),
+        'user_id'   => $user->getId(),
+      ]
+    );
+
     return null;
   }
 
@@ -504,25 +556,42 @@ class CommandBus implements CommandBusInterface
    */
   public function executeHook(Hook $hook, Update $update): CommandBusInterface
   {
+    $this->logger->debug(
+      'Executing hook ID={hook_id} for the update ID={update_id}',
+      ['hook_id' => $hook->getId(), 'update_id' => $update->update_id]
+    );
+
     if (class_exists($hook->getClassName())) {
       if (method_exists($hook->getClassName(), $hook->getMethodName())) {
         $commandName = $hook->getClassName();
         $methodName = $hook->getMethodName();
+
+        $this->logger->debug(
+          'Hook command name "{command_name}", method name "{method_name}"',
+          ['command_name' => $commandName, 'method_name' => $methodName]
+        );
 
         /** @var AbstractCommand $command */
         $command = new $commandName($this, $update);
         $command->$methodName($hook->getParameters());
       } else {
         throw new HookException(
-          'Unable to execute the hook. Method not exists "'.
-          $hook->getMethodName().'"" for the class: '.$hook->getClassName()
+          'Unable to execute the hook ID='.$hook->getId().
+          '. Method not exists "'.$hook->getMethodName().'"" for the class: '.
+          $hook->getClassName()
         );
       }
     } else {
       throw new HookException(
-        'Unable to execute the hook. Class not exists: '.$hook->getClassName()
+        'Unable to execute the hook ID='.$hook->getId().'. Class not exists: '.
+        $hook->getClassName()
       );
     }
+
+    $this->logger->info(
+      'Hook ID={hook_id} for the update ID={update_id} executed',
+      ['hook_id' => $hook->getId(), 'update_id' => $update->update_id]
+    );
 
     return $this;
   }
@@ -536,5 +605,10 @@ class CommandBus implements CommandBusInterface
       ->remove($hook);
     $this->doctrine->getManager()
       ->flush();
+
+    $this->logger->info(
+      'Hook ID={hook_id} deleted',
+      ['hook_id' => $hook->getId()]
+    );
   }
 }
