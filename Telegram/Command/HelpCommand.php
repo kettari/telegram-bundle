@@ -8,7 +8,7 @@ class HelpCommand extends AbstractCommand
 {
 
   static public $name = 'help';
-  static public $description = 'Показать список команд бота';
+  static public $description = 'command.help.description';
   static public $requiredPermissions = ['execute command help'];
 
   /**
@@ -16,23 +16,27 @@ class HelpCommand extends AbstractCommand
    */
   public function execute()
   {
-    $text = 'Список команд бота: '.PHP_EOL.PHP_EOL;
+    $text = $this->trans->trans('command.help.list_of_commands').PHP_EOL.
+      PHP_EOL;
     $commands = $this->bus->getCommands();
     /** @var AbstractCommand $command */
     foreach ($commands as $command => $placeholder) {
-      // Is it visible?
+      // Is command visible?
       if (!$command::isVisible()) {
         continue;
       }
       // Has user permissions?
       if (!$this->bus->isAuthorized($this->update->message->from, $command)) {
+        // No, user has no permissions
         continue;
       }
-      $text .= sprintf('/%s %s', $command::$name, $command::$description).
-        PHP_EOL;
+      $text .= sprintf(
+          '/%s %s',
+          $command::$name,
+          $this->trans->trans($command::$description)
+        ).PHP_EOL;
     }
     $this->replyWithMessage($text);
   }
-
 
 }

@@ -29,6 +29,7 @@ services:
     # Command bus
     kettari_telegram.bus:
         class: Kettari\TelegramBundle\Telegram\CommandBus
+        public: true
         arguments:
             - '@monolog.logger'
             - '@doctrine'
@@ -36,14 +37,16 @@ services:
             - '@kettari_telegram.user_hq'
             - '@kettari_telegram.communicator'
             - '@kettari_telegram.pusher'
+            - '@translator'
         calls:
             - [registerCommand, ['Kettari\TelegramBundle\Telegram\Command\StartCommand']]
             - [registerCommand, ['Kettari\TelegramBundle\Telegram\Command\SettingsCommand']]
             - [registerCommand, ['Kettari\TelegramBundle\Telegram\Command\HelpCommand']]
-            - [registerCommand, ['Kettari\TelegramBundle\Telegram\Command\ListRolesCommand']]
-            - [registerCommand, ['Kettari\TelegramBundle\Telegram\Command\PushCommand']]
-            - [registerCommand, ['Kettari\TelegramBundle\Telegram\Command\UserManCommand']]
-            - [registerCommand, ['Kettari\TelegramBundle\Telegram\Command\RegisterCommand']]
+            # These standard commands commented out so if you need them, added manually
+            #- [registerCommand, ['Kettari\TelegramBundle\Telegram\Command\ListRolesCommand']]
+            #- [registerCommand, ['Kettari\TelegramBundle\Telegram\Command\PushCommand']]
+            #- [registerCommand, ['Kettari\TelegramBundle\Telegram\Command\UserManCommand']]
+            #- [registerCommand, ['Kettari\TelegramBundle\Telegram\Command\RegisterCommand']]
 
     ### Default subscribers
     # Audit subscriber
@@ -216,3 +219,6 @@ services:
     # Shortcuts
     telegram:
         alias: kettari_telegram.bot
+
+    command_bus:
+        alias: kettari_telegram.bus

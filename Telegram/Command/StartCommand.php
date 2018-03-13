@@ -8,7 +8,7 @@ class StartCommand extends AbstractCommand
 {
 
   static public $name = 'start';
-  static public $description = 'Начать разговор с ботом';
+  static public $description = 'command.start.description';
   static public $visible = false;
   static public $requiredPermissions = ['execute command start'];
 
@@ -17,14 +17,13 @@ class StartCommand extends AbstractCommand
    */
   public function execute()
   {
-    /*if (!empty($this->getParameter())) {
-      $this->replyWithMessage('Параметр: '.$this->getParameter());
-    }*/
-
+    // Support deep linking like http://t.me/blah_bot?start=commandParameter
     switch ($this->getCommandParameter()) {
       case 'register':
         // Execute /register
-        $this->bus->executeCommand($this->update, 'register');
+        if ($this->bus->isCommandRegistered('register')) {
+          $this->bus->executeCommand($this->update, 'register');
+        }
 
         return;
       default:
@@ -32,10 +31,14 @@ class StartCommand extends AbstractCommand
     }
 
     // Standard welcome message
-    $this->replyWithMessage('Привет! Список команд доступен по команде /help');
+    if ($this->bus->isCommandRegistered('help')) {
 
-    // Execute /help
-    $this->bus->executeCommand($this->update, 'help');
+      $this->replyWithMessage(
+        $this->trans->trans('command.start.welcome')
+      );
+      $this->bus->executeCommand($this->update, 'help');
+
+    }
   }
 
 

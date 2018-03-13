@@ -1,0 +1,295 @@
+<?xml version="1.0"?>
+<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
+    <file source-language="en" datatype="plaintext" original="file.ext">
+        <body>
+            <!-- General strings -->
+            <trans-unit id="general.account_blocked">
+                <source>general.account_blocked</source>
+                <target>Извините, ваш аккаунт заблокирован.</target>
+            </trans-unit>
+
+            <!-- Commands general strings -->
+            <trans-unit id="command.private_only">
+                <source>command.private_only</source>
+                <target>Эта команда работает только в личной переписке с ботом.</target>
+            </trans-unit>
+            <trans-unit id="command.cancelled">
+                <source>command.cancelled</source>
+                <target>Команда отменена.</target>
+            </trans-unit>
+            <trans-unit id="command.input_obsolete">
+                <source>command.input_obsolete</source>
+                <target>Ввод данных устарел. Отправьте команду заново, пожалуйста.</target>
+            </trans-unit>
+            <trans-unit id="command.unknown">
+                <source>command.unknown</source>
+                <target>Извините, такой команды я не знаю.</target>
+            </trans-unit>
+            <trans-unit id="command.forbidden">
+                <source>command.forbidden</source>
+                <target>Извините, у вас недостаточно прав для доступа к этой команде.</target>
+            </trans-unit>
+
+            <!-- General UI elements -->
+            <trans-unit id="command.button.cancel">
+                <source>command.button.cancel</source>
+                <target>Отмена</target>
+            </trans-unit>
+            <trans-unit id="command.option.yes">
+                <source>command.option.yes</source>
+                <target>Да</target>
+            </trans-unit>
+            <trans-unit id="command.option.no">
+                <source>command.option.no</source>
+                <target>Нет</target>
+            </trans-unit>
+
+            <!-- Commands descriptions -->
+            <trans-unit id="command.start.description">
+                <source>command.start.description</source>
+                <target>Начать разговор с ботом</target>
+            </trans-unit>
+            <trans-unit id="command.help.description">
+                <source>command.help.description</source>
+                <target>Показать список команд бота</target>
+            </trans-unit>
+            <trans-unit id="command.listroles.description">
+                <source>command.listroles.description</source>
+                <target>Показать список ролей и разрешений</target>
+            </trans-unit>
+            <trans-unit id="command.push.description">
+                <source>command.push.description</source>
+                <target>Отправить широковещательное уведомление</target>
+            </trans-unit>
+            <trans-unit id="command.register.description">
+                <source>command.register.description</source>
+                <target>Зарегистрироваться у бота</target>
+            </trans-unit>
+            <trans-unit id="command.settings.description">
+                <source>command.settings.description</source>
+                <target>Настройки бота</target>
+            </trans-unit>
+            <trans-unit id="command.userman.description">
+                <source>command.userman.description</source>
+                <target>Управление ролями пользователей</target>
+            </trans-unit>
+
+            <!-- /start command -->
+            <trans-unit id="command.start.welcome">
+                <source>command.start.welcome</source>
+                <target>Привет! Список команд доступен по команде /help</target>
+            </trans-unit>
+
+            <!-- /help command -->
+            <trans-unit id="command.help.list_of_commands">
+                <source>command.help.list_of_commands</source>
+                <target>Список команд бота:</target>
+            </trans-unit>
+
+            <!-- /listroles command -->
+            <trans-unit id="command.listroles.list_of_roles">
+                <source>command.listroles.list_of_roles</source>
+                <target>Список ролей и разрешений:</target>
+            </trans-unit>
+            <trans-unit id="command.listroles.roles_undefined">
+                <source>command.listroles.roles_undefined</source>
+                <target>Роли в системе не определены.</target>
+            </trans-unit>
+
+            <!-- /push command -->
+            <trans-unit id="command.push.send_text">
+                <source>command.push.send_text</source>
+                <target>Отправьте мне текст для рассылки, пожалуйста.</target>
+            </trans-unit>
+            <trans-unit id="command.push.empty_text">
+                <source>command.push.empty_text</source>
+                <target>Вы отправили мне пустое сообщение. Начните заново /push</target>
+            </trans-unit>
+            <trans-unit id="command.push.text_too_long">
+                <source>command.push.text_too_long</source>
+                <target>Текст длиннее предельно допустимой длины в 4096 символов: %text_length% символов. Начните заново
+                    /push
+                </target>
+            </trans-unit>
+            <trans-unit id="command.push.choose_channel">
+                <source>command.push.choose_channel</source>
+                <target>В какой канал высылаем сообщение?</target>
+            </trans-unit>
+            <trans-unit id="command.push.text_lost">
+                <source>command.push.text_lost</source>
+                <target>Текст для рассылки потерялся. Начните заново /push</target>
+            </trans-unit>
+            <trans-unit id="command.push.channel_name_empty">
+                <source>command.push.channel_name_empty</source>
+                <target>Название канала рассылки пустое. Начните заново /push</target>
+            </trans-unit>
+            <trans-unit id="command.push.channel_name_invalid">
+                <source>command.push.channel_name_invalid</source>
+                <target>Некорректное название канала рассылки. Выберите из списка ещё раз.</target>
+            </trans-unit>
+            <trans-unit id="command.push.cancelled">
+                <source>command.push.cancelled</source>
+                <target>Рассылка отменена.</target>
+            </trans-unit>
+            <trans-unit id="command.push.confirmation_message">
+                <source>command.push.confirmation_message</source>
+                <target>Подтвердите корректность указанной ниже информации.
+
+&lt;b&gt;Канал:&lt;/b&gt; %channel_caption% (%channel_name%)
+&lt;b&gt;Длина:&lt;/b&gt; %text_length% символов
+&lt;b&gt;Текст:&lt;/b&gt;</target>
+            </trans-unit>
+            <trans-unit id="command.push.confirmation_instructions">
+                <source>command.push.confirmation_instructions</source>
+                <target>Если всё правильно, напишите мне ЗАГЛАВНЫМИ БУКВАМИ текст «рассылку подтверждаю». Любой другой текст отменяет рассылку.</target>
+            </trans-unit>
+            <trans-unit id="command.push.something_went_wrong">
+                <source>command.push.something_went_wrong</source>
+                <target>Что-то пошло не так. Начните заново /push</target>
+            </trans-unit>
+            <trans-unit id="command.push.confirmation">
+                <source>command.push.confirmation</source>
+                <target>РАССЫЛКУ ПОДТВЕРЖДАЮ</target>
+            </trans-unit>
+            <trans-unit id="command.push.notification_sent">
+                <source>command.push.notification_sent</source>
+                <target>Рассылка в канал «%channel_caption%» подтверждена и выслана (%text_length% символов).</target>
+            </trans-unit>
+
+            <!-- /register command -->
+            <trans-unit id="command.register.send_phone">
+                <source>command.register.send_phone</source>
+                <target>Сообщить номер телефона</target>
+            </trans-unit>
+            <trans-unit id="command.register.send_instruction">
+                <source>command.register.send_instruction</source>
+                <target>Чтобы зарегистрироваться, мне нужно узнать ваш телефон.
+
+Пришлите мне его, нажав кнопку «Сообщить номер телефона» и подтвердите своё согласие.</target>
+            </trans-unit>
+            <trans-unit id="command.register.not_your_phone">
+                <source>command.register.not_your_phone</source>
+                <target>Вы прислали не свой номер телефона! Попробуйте ещё раз /register</target>
+            </trans-unit>
+            <trans-unit id="command.register.success">
+                <source>command.register.success</source>
+                <target>Вы зарегистрированы с номером телефона %phone_number%.
+
+Теперь у вас есть доступ к командам для зарегистрированных пользователей, проверьте их список по команде /help'</target>
+            </trans-unit>
+            <trans-unit id="command.register.not_contact">
+                <source>command.register.not_contact</source>
+                <target>Вы прислали мне номер телефона, набранный на клавиатуре. Мне надо, чтобы вы нажали &lt;b&gt;специальную кнопку «Сообщить номер телефона»&lt;/b&gt;.
+
+Пожалуйста, попробуйте ещё раз?</target>
+            </trans-unit>
+            <trans-unit id="command.register.invalid_number">
+                <source>command.register.invalid_number</source>
+                <target>Вы прислали не телефон, а что-то, мне непонятное. Попробуйте ещё раз команду /register</target>
+            </trans-unit>
+
+            <!-- /settings command -->
+            <trans-unit id="command.settings.notifications">
+                <source>command.settings.notifications</source>
+                <target>Уведомления</target>
+            </trans-unit>
+            <trans-unit id="command.settings.choose_section">
+                <source>command.settings.choose_section</source>
+                <target>Какие настройки бота вы хотите изменить?</target>
+            </trans-unit>
+            <trans-unit id="command.settings.select_notifications">
+                <source>command.settings.select_notifications</source>
+                <target>Отметьте уведомления, которые хотите получать:</target>
+            </trans-unit>
+            <trans-unit id="command.settings.invalid_option">
+                <source>command.settings.invalid_option</source>
+                <target>Вы прислали непонятный мне вариант меню. Попробуйте ещё раз /settings</target>
+            </trans-unit>
+            <trans-unit id="command.settings.notifications_settings_saved">
+                <source>command.settings.notifications_settings_saved</source>
+                <target>Настройки уведомлений изменены.</target>
+            </trans-unit>
+            <trans-unit id="command.settings.notification.self_update">
+                <source>command.settings.notification.self_update</source>
+                <target>Что нового в боте</target>
+            </trans-unit>
+            <trans-unit id="command.settings.notification.new_registration">
+                <source>command.settings.notification.new_registration</source>
+                <target>Новые регистрации</target>
+            </trans-unit>
+
+            <!-- /userman command -->
+            <trans-unit id="command.userman.add_roles">
+                <source>command.userman.add_roles</source>
+                <target>Добавить роли</target>
+            </trans-unit>
+            <trans-unit id="command.userman.remove_roles">
+                <source>command.userman.remove_roles</source>
+                <target>Убрать роли</target>
+            </trans-unit>
+            <trans-unit id="command.userman.flip_blocking">
+                <source>command.userman.flip_blocking</source>
+                <target>Изменить блокировку</target>
+            </trans-unit>
+            <trans-unit id="command.userman.specify_search_string">
+                <source>command.userman.specify_search_string</source>
+                <target>Укажите часть ФИО, никнейма либо номер телефона:</target>
+            </trans-unit>
+            <trans-unit id="command.userman.request_min_count_length">
+                <source>command.userman.request_min_count_length</source>
+                <target>Запрос должен содержать минимум 3 символа.</target>
+            </trans-unit>
+            <trans-unit id="command.userman.no_users_found">
+                <source>command.userman.no_users_found</source>
+                <target>Не нашёл ни одного пользователя, удовлетворяющего этим критериями.</target>
+            </trans-unit>
+            <trans-unit id="command.userman.multiple_users_found">
+                <source>command.userman.multiple_users_found</source>
+                <target>Нашёл нескольких пользователей (%users_count%, если быть точным), удовлетворяющих этим критериями. Пожалуйста, уточните запрос так, чтобы был найден только один.</target>
+            </trans-unit>
+            <trans-unit id="command.userman.user_info">
+                <source>command.userman.user_info</source>
+                <target>&lt;b&gt;%full_name%&lt;/b&gt;
+В миру: %full_external_name%
+Никнейм: @%username%
+Телефон: %phone_number%
+Telegram ID: %telegram_id%
+Заблокирован: %blocking_status%
+
+&lt;b&gt;Роли:&lt;/b&gt;</target>
+            </trans-unit>
+            <trans-unit id="command.userman.select_role_to_add">
+                <source>command.userman.select_role_to_add</source>
+                <target>Какую роль добавить пользователю?</target>
+            </trans-unit>
+            <trans-unit id="command.userman.select_role_to_remove">
+                <source>command.userman.select_role_to_remove</source>
+                <target>Какую роль убрать у пользователя?</target>
+            </trans-unit>
+            <trans-unit id="command.userman.invalid_option">
+                <source>command.userman.invalid_option</source>
+                <target>Команда непонятна. Попробуйте еще раз /userman</target>
+            </trans-unit>
+            <trans-unit id="command.userman.user_not_found">
+                <source>command.userman.user_not_found</source>
+                <target>Пользователь не найден :(</target>
+            </trans-unit>
+            <trans-unit id="command.userman.blocking_status_changed">
+                <source>command.userman.blocking_status_changed</source>
+                <target>Статус блокровки изменён.</target>
+            </trans-unit>
+            <trans-unit id="command.userman.role_not_found">
+                <source>command.userman.role_not_found</source>
+                <target>Роль не найдена в списке: %role_name%</target>
+            </trans-unit>
+            <trans-unit id="command.userman.role_added">
+                <source>command.userman.role_added</source>
+                <target>Роль добавлена.</target>
+            </trans-unit>
+            <trans-unit id="command.userman.role_removed">
+                <source>command.userman.role_removed</source>
+                <target>Роль убрана.</target>
+            </trans-unit>
+        </body>
+    </file>
+</xliff>

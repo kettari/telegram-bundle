@@ -15,6 +15,7 @@ use Kettari\TelegramBundle\Telegram\Event\CommandUnauthorizedEvent;
 use Psr\Log\LoggerInterface;
 use Symfony\Bridge\Doctrine\RegistryInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
+use Symfony\Component\Translation\TranslatorInterface;
 use unreal4u\TelegramAPI\Telegram\Types\Update;
 use unreal4u\TelegramAPI\Telegram\Types\User as TelegramUser;
 
@@ -59,6 +60,11 @@ class CommandBus implements CommandBusInterface
   private $pusher;
 
   /**
+   * @var TranslatorInterface
+   */
+  private $translator;
+
+  /**
    * CommandBus constructor.
    *
    * @param \Psr\Log\LoggerInterface $logger
@@ -67,6 +73,7 @@ class CommandBus implements CommandBusInterface
    * @param UserHqInterface $userHq
    * @param \Kettari\TelegramBundle\Telegram\CommunicatorInterface $communicator
    * @param \Kettari\TelegramBundle\Telegram\PusherInterface $pusher
+   * @param TranslatorInterface $translator
    */
   public function __construct(
     LoggerInterface $logger,
@@ -74,7 +81,8 @@ class CommandBus implements CommandBusInterface
     EventDispatcherInterface $dispatcher,
     UserHqInterface $userHq,
     CommunicatorInterface $communicator,
-    PusherInterface $pusher
+    PusherInterface $pusher,
+    TranslatorInterface $translator
   ) {
     $this->logger = $logger;
     $this->doctrine = $doctrine;
@@ -82,6 +90,7 @@ class CommandBus implements CommandBusInterface
     $this->userHq = $userHq;
     $this->communicator = $communicator;
     $this->pusher = $pusher;
+    $this->translator = $translator;
   }
 
   /**
@@ -179,7 +188,7 @@ class CommandBus implements CommandBusInterface
         );
 
         /** @var AbstractCommand $command */
-        $command = new $commandClass($this, $update);
+        $command = new $commandClass($this, $update, $this->translator);
         $command->initialize($parameter)
           ->execute();
 
@@ -348,6 +357,14 @@ class CommandBus implements CommandBusInterface
   public function getPusher(): PusherInterface
   {
     return $this->pusher;
+  }
+
+  /**
+   * @inheritdoc
+   */
+  public function getTrans(): TranslatorInterface
+  {
+    return $this->translator;
   }
 
   /**
@@ -572,7 +589,7 @@ class CommandBus implements CommandBusInterface
         );
 
         /** @var AbstractCommand $command */
-        $command = new $commandName($this, $update);
+        $command = new $commandName($this, $update, $this->translator);
         $command->$methodName($hook->getParameters());
       } else {
         throw new HookException(

@@ -58,7 +58,7 @@ class CurrentUserSubscriber extends AbstractBotSubscriber implements EventSubscr
       if (!is_null($event->getUpdate()->message)) {
         $this->communicator->sendMessage(
             $event->getUpdate()->message->chat->id,
-            'Извините, ваш аккаунт заблокирован.',
+            $this->bus->getTrans()->trans('general.account_blocked'),
             Communicator::PARSE_MODE_PLAIN
           );
       }

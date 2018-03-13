@@ -25,19 +25,19 @@ class Chat
   /**
    * @ORM\Column(type="bigint",unique=true)
    */
-  private $telegramId;
+  private $telegramId = 0;
 
   /**
    * @ORM\Column(type="string",length=255)
    *
    */
-  private $type;
+  private $type = '';
 
   /**
    * @ORM\Column(type="string",length=255)
    *
    */
-  private $title;
+  private $title = '';
 
   /**
    * @ORM\Column(type="string",length=255,nullable=true)
@@ -61,7 +61,7 @@ class Chat
    * @ORM\Column(type="boolean")
    *
    */
-  private $allMembersAreAdministrators;
+  private $allMembersAreAdministrators = false;
 
   /**
    * ~~INVERSE SIDE~~
@@ -71,11 +71,19 @@ class Chat
   private $chatMembers;
 
   /**
+   * Constructor
+   */
+  public function __construct()
+  {
+    $this->chatMembers = new ArrayCollection();
+  }
+
+  /**
    * Get id
    *
    * @return integer
    */
-  public function getId()
+  public function getId(): int
   {
     return $this->id;
   }
@@ -85,7 +93,7 @@ class Chat
    *
    * @return string
    */
-  public function getType()
+  public function getType(): string
   {
     return $this->type;
   }
@@ -109,7 +117,7 @@ class Chat
    *
    * @return string
    */
-  public function getTitle()
+  public function getTitle(): string
   {
     return $this->title;
   }
@@ -205,7 +213,7 @@ class Chat
    *
    * @return boolean
    */
-  public function getAllMembersAreAdministrators()
+  public function getAllMembersAreAdministrators(): bool
   {
     return $this->allMembersAreAdministrators;
   }
@@ -229,9 +237,9 @@ class Chat
    *
    * @return integer
    */
-  public function getTelegramId()
+  public function getTelegramId(): int
   {
-    return $this->telegramId;
+    return (int)$this->telegramId;
   }
 
   /**
@@ -241,18 +249,11 @@ class Chat
    *
    * @return Chat
    */
-  public function setTelegramId($telegramId)
+  public function setTelegramId(int $telegramId)
   {
     $this->telegramId = $telegramId;
 
     return $this;
-  }
-  /**
-   * Constructor
-   */
-  public function __construct()
-  {
-    $this->chatMembers = new ArrayCollection();
   }
 
   /**

@@ -7,6 +7,7 @@ namespace Kettari\TelegramBundle\Telegram;
 use Kettari\TelegramBundle\Entity\Hook;
 use Symfony\Bridge\Doctrine\RegistryInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
+use Symfony\Component\Translation\TranslatorInterface;
 use unreal4u\TelegramAPI\Telegram\Types\Update;
 use unreal4u\TelegramAPI\Telegram\Types\User as TelegramUser;
 
@@ -93,6 +94,11 @@ interface CommandBusInterface
    * @return \Kettari\TelegramBundle\Telegram\PusherInterface
    */
   public function getPusher(): PusherInterface;
+
+  /**
+   * @return TranslatorInterface
+   */
+  public function getTrans(): TranslatorInterface;
 
   /**
    * Creates hook.

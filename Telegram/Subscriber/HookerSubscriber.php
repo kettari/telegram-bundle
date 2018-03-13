@@ -5,7 +5,6 @@ namespace Kettari\TelegramBundle\Telegram\Subscriber;
 
 
 use Kettari\TelegramBundle\Entity\Hook;
-use Kettari\TelegramBundle\Telegram\Communicator;
 use Kettari\TelegramBundle\Telegram\Event\UpdateReceivedEvent;
 use Kettari\TelegramBundle\Telegram\UpdateTypeResolver;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
@@ -71,10 +70,14 @@ class HookerSubscriber extends AbstractBotSubscriber implements EventSubscriberI
        */
       if (UpdateTypeResolver::UT_CALLBACK_QUERY ==
         UpdateTypeResolver::getUpdateType($event->getUpdate())) {
+
+        // Tell the poor guy (girl) to use command again
         $this->communicator->answerCallbackQuery(
           $event->getUpdate()->callback_query->id,
-          'Ввод данных устарел. Отправьте команду заново, пожалуйста.'
+          $this->bus->getTrans()
+            ->trans('command.input_obsolete')
         );
+
       }
     }
 

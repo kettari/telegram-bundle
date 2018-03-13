@@ -17,12 +17,12 @@ use unreal4u\TelegramAPI\Telegram\Types\Update;
 class RegisterCommand extends AbstractCommand
 {
 
-  const BTN_PHONE = 'Сообщить номер телефона';
-  const BTN_CANCEL = 'Отмена';
+  const BTN_PHONE = 'command.register.send_phone';
+  const BTN_CANCEL = 'command.button.cancel';
   const NOTIFICATION_NEW_REGISTER = 'new-register';
 
   static public $name = 'register';
-  static public $description = 'Зарегистрироваться у бота';
+  static public $description = 'command.register.description';
   static public $requiredPermissions = ['execute command register'];
   static public $declaredNotifications = [self::NOTIFICATION_NEW_REGISTER];
 
@@ -31,22 +31,23 @@ class RegisterCommand extends AbstractCommand
    */
   public function execute()
   {
-    if ('private' == $this->update->message->chat->type) {
+    // This command is available only in private chat
+    if ('private' != $this->update->message->chat->type) {
       $this->replyWithMessage(
-        'Чтобы зарегистрироваться, мне нужно узнать ваш телефон.'.PHP_EOL.
-        PHP_EOL.
-        'Пришлите мне его, нажав кнопку «Сообщить номер телефона» и подтвердите своё согласие.',
-        Communicator::PARSE_MODE_PLAIN,
-        $this->getReplyKeyboardMarkup()
+        $this->trans->trans('command.private_only')
       );
 
-      // Register the hook so when user will send information, we will be notified.
-      $this->bus->createHook($this->update, get_class($this), 'handleContact');
-    } else {
-      $this->replyWithMessage(
-        'Эта команда работает только в личной переписке с ботом. В общем канале регистрация невозможна.'
-      );
+      return;
     }
+
+    $this->replyWithMessage(
+      $this->trans->trans('command.register.send_instruction'),
+      Communicator::PARSE_MODE_PLAIN,
+      $this->getReplyKeyboardMarkup()
+    );
+
+    // Register the hook so when user will send information, we will be notified.
+    $this->bus->createHook($this->update, get_class($this), 'handleContact');
   }
 
   /**
@@ -59,11 +60,11 @@ class RegisterCommand extends AbstractCommand
     // Phone button
     $phoneBtn = new KeyboardButton();
     $phoneBtn->request_contact = true;
-    $phoneBtn->text = self::BTN_PHONE;
+    $phoneBtn->text = $this->trans->trans(self::BTN_PHONE);
 
     // Cancel button
     $cancelBtn = new KeyboardButton();
-    $cancelBtn->text = self::BTN_CANCEL;
+    $cancelBtn->text = $this->trans->trans(self::BTN_CANCEL);
 
     // Keyboard
     $replyMarkup = new ReplyKeyboardMarkup();
@@ -85,7 +86,7 @@ class RegisterCommand extends AbstractCommand
       // Check if user sent his contact
       if ($message->contact->user_id != $message->from->id) {
         $this->replyWithMessage(
-          'Вы прислали не свой номер телефона! Попробуйте ещё раз /register',
+          $this->trans->trans('command.register.not_your_phone'),
           Communicator::PARSE_MODE_PLAIN,
           new ReplyKeyboardRemove()
         );
@@ -96,14 +97,15 @@ class RegisterCommand extends AbstractCommand
       // Seems to be OK
       if ($this->registerUser($message->contact)) {
         $this->replyWithMessage(
-          'Вы зарегистрированы с номером телефона '.
-          $message->contact->phone_number.PHP_EOL.PHP_EOL.
-          'Теперь у вас есть доступ к командам для зарегистрированных пользователей, проверьте их список по команде /help'
+          $this->trans->trans(
+            'command.register.success',
+            ['%phone_number%' => $message->contact->phone_number]
+          )
         );
       }
-    } elseif (self::BTN_CANCEL == $message->text) {
+    } elseif ($this->trans->trans(self::BTN_CANCEL) == $message->text) {
       $this->replyWithMessage(
-        'Регистрация отменена.',
+        $this->trans->trans('command.cancelled'),
         Communicator::PARSE_MODE_PLAIN,
         new ReplyKeyboardRemove()
       );
@@ -116,8 +118,7 @@ class RegisterCommand extends AbstractCommand
       );
       if (mb_strlen($sanitizedText) > 7) {
         $this->replyWithMessage(
-          'Вы прислали мне номер телефона, набранный на клавиатуре. Мне надо, чтобы вы нажали <b>специальную кнопку «Сообщить номер телефона»</b>.'.
-          PHP_EOL.PHP_EOL.'Пожалуйста, попробуйте ещё раз?',
+          $this->trans->trans('command.register.not_contact'),
           Communicator::PARSE_MODE_HTML,
           $this->getReplyKeyboardMarkup()
         );
@@ -131,7 +132,7 @@ class RegisterCommand extends AbstractCommand
 
       } else {
         $this->replyWithMessage(
-          'Вы прислали не телефон, а что-то, мне непонятное. Попробуйте ещё раз команду /register',
+          $this->trans->trans('command.register.invalid_number'),
           Communicator::PARSE_MODE_PLAIN,
           new ReplyKeyboardRemove()
         );

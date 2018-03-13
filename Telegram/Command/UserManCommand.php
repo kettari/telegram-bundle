@@ -15,12 +15,12 @@ class UserManCommand extends AbstractCommand
 {
 
   const LIST_MARK = "\xF0\x9F\x94\xB9";
-  const BTN_ROLES_ADD = 'Добавить роли';
-  const BTN_ROLES_REMOVE = 'Убрать роли';
-  const BTN_BLOCK = 'Изменить блокировку';
-  const BTN_CANCEL = 'Отмена';
+  const BTN_ROLES_ADD = 'command.userman.add_roles';
+  const BTN_ROLES_REMOVE = 'command.userman.remove_roles';
+  const BTN_BLOCK = 'command.userman.flip_blocking';
+  const BTN_CANCEL = 'command.button.cancel';
   static public $name = 'userman';
-  static public $description = 'Управление ролями пользователей';
+  static public $description = 'command.userman.description';
   static public $requiredPermissions = ['execute command userman'];
 
   /**
@@ -30,30 +30,33 @@ class UserManCommand extends AbstractCommand
    */
   public function execute()
   {
-    if ('private' == $this->update->message->chat->type) {
-      if (!empty($this->getCommandParameter())) {
-        $this->showUserManMenu($this->getCommandParameter());
-
-        return;
-      }
-
+    // This command is available only in private chat
+    if ('private' != $this->update->message->chat->type) {
       $this->replyWithMessage(
-        'Укажите часть ФИО, никнейма либо номер телефона:',
-        null,
-        $this->getReplyKeyboardMarkup_Cancel()
+        $this->trans->trans('command.private_only')
       );
 
-      // Create the hook to handle user's reply
-      $this->bus->createHook(
-        $this->update,
-        get_class($this),
-        'showUserManMenu'
-      );
-    } else {
-      $this->replyWithMessage(
-        'Эта команда работает только в личной переписке с ботом. В общем канале управление пользователями невозможно.'
-      );
+      return;
     }
+
+    if (!empty($this->getCommandParameter())) {
+      $this->showUserManMenu($this->getCommandParameter());
+
+      return;
+    }
+
+    $this->replyWithMessage(
+      $this->trans->trans('command.userman.specify_search_string'),
+      Communicator::PARSE_MODE_PLAIN,
+      $this->getReplyKeyboardMarkup_Cancel()
+    );
+
+    // Create the hook to handle user's reply
+    $this->bus->createHook(
+      $this->update,
+      get_class($this),
+      'showUserManMenu'
+    );
   }
 
   /**
@@ -75,7 +78,7 @@ class UserManCommand extends AbstractCommand
     }
     if (mb_strlen($name) < 3) {
       $this->replyWithMessage(
-        'Запрос должен содержать минимум 3 символа.',
+        $this->trans->trans('command.userman.request_min_count_length'),
         Communicator::PARSE_MODE_PLAIN,
         new ReplyKeyboardRemove()
       );
@@ -86,7 +89,7 @@ class UserManCommand extends AbstractCommand
     // Cancel
     if (self::BTN_CANCEL == $name) {
       $this->replyWithMessage(
-        'Команда отменена.',
+        $this->trans->trans('command.cancelled'),
         Communicator::PARSE_MODE_PLAIN,
         new ReplyKeyboardRemove()
       );
@@ -99,7 +102,7 @@ class UserManCommand extends AbstractCommand
       ->search($name);
     if (0 == count($users)) {
       $this->replyWithMessage(
-        'Не нашёл ни одного пользователя, удовлетворяющего этим критериями.',
+        $this->trans->trans('command.userman.no_users_found'),
         Communicator::PARSE_MODE_PLAIN,
         new ReplyKeyboardRemove()
       );
@@ -107,9 +110,9 @@ class UserManCommand extends AbstractCommand
       return;
     } elseif (count($users) > 1) {
       $this->replyWithMessage(
-        sprintf(
-          'Нашёл нескольких пользователей (%d, если быть точным), удовлетворяющих этим критериями. Пожалуйста, уточните запрос так, чтобы был найден только один.',
-          count($users)
+        $this->trans->trans(
+          'command.userman.multiple_users_found',
+          ['command.userman.multiple_users_found' => count($users)]
         ),
         Communicator::PARSE_MODE_PLAIN,
         new ReplyKeyboardRemove()
@@ -142,18 +145,25 @@ class UserManCommand extends AbstractCommand
    */
   private function getUserInformation(User $user)
   {
-    $text = sprintf(
-        '<b>%s</b>',
-        trim($user->getFirstName().' '.$user->getLastName())
-      ).PHP_EOL;
-    $text .= 'В Талланто: '.trim(
-        $user->getExternalFirstName().' '.$user->getExternalLastName()
-      ).PHP_EOL;
-    $text .= 'Телефон: '.$user->getPhone().PHP_EOL;
-    $text .= 'Telegram ID: '.$user->getTelegramId().PHP_EOL;
-    $text .= 'Заблокирован: '.($user->isBlocked() ? 'Да' : 'Нет').PHP_EOL;
+    $text = $this->trans->trans(
+      'command.userman.user_info',
+      [
+        '%full_name%' => trim(
+          $user->getFirstName().' '.$user->getLastName()
+        ),
+        '%full_external_name%' => trim(
+          $user->getExternalFirstName().' '.$user->getExternalLastName()
+        ),
+        '%username%' => $user->getUsername(),
+        '%phone_number%' => $user->getPhone(),
+        '%telegram_id%' => $user->getTelegramId(),
+        '%blocking_status%' => $user->isBlocked() ? $this->trans->trans(
+          'command.option.yes'
+        ) : $this->trans->trans('command.option.no'),
+      ]
+    );
+    $text .= PHP_EOL;
     // Enumerate roles
-    $text .= PHP_EOL.'<b>Роли:</b>'.PHP_EOL;
     /** @var \Kettari\TelegramBundle\Entity\Role $role */
     foreach ($user->getRoles() as $role) {
       $text .= self::LIST_MARK.' '.$role->getName().PHP_EOL;
@@ -176,18 +186,18 @@ class UserManCommand extends AbstractCommand
 
     // Roles
     $rolesBtn = new KeyboardButton();
-    $rolesBtn->text = self::BTN_ROLES_ADD;
+    $rolesBtn->text = $this->trans->trans(self::BTN_ROLES_ADD);
     $replyMarkup->keyboard[][] = $rolesBtn;
     $rolesBtn = new KeyboardButton();
-    $rolesBtn->text = self::BTN_ROLES_REMOVE;
+    $rolesBtn->text = $this->trans->trans(self::BTN_ROLES_REMOVE);
     $replyMarkup->keyboard[][] = $rolesBtn;
     // Block
     $blockBtn = new KeyboardButton();
-    $blockBtn->text = self::BTN_BLOCK;
+    $blockBtn->text = $this->trans->trans(self::BTN_BLOCK);
     $replyMarkup->keyboard[][] = $blockBtn;
     // Cancel button
     $cancelBtn = new KeyboardButton();
-    $cancelBtn->text = self::BTN_CANCEL;
+    $cancelBtn->text = $this->trans->trans(self::BTN_CANCEL);
     $replyMarkup->keyboard[][] = $cancelBtn;
 
     return $replyMarkup;
@@ -202,7 +212,7 @@ class UserManCommand extends AbstractCommand
   {
     // Cancel button
     $cancelBtn = new KeyboardButton();
-    $cancelBtn->text = self::BTN_CANCEL;
+    $cancelBtn->text = $this->trans->trans(self::BTN_CANCEL);
 
     // Keyboard
     $replyMarkup = new ReplyKeyboardMarkup();
@@ -230,10 +240,10 @@ class UserManCommand extends AbstractCommand
     }
 
     // Cancel
-    if (self::BTN_CANCEL == $selection) {
+    if ($this->trans->trans(self::BTN_CANCEL) == $selection) {
       $this->replyWithMessage(
-        'Команда отменена.',
-        null,
+        $this->trans->trans('command.cancelled'),
+        Communicator::PARSE_MODE_PLAIN,
         new ReplyKeyboardRemove()
       );
 
@@ -241,9 +251,9 @@ class UserManCommand extends AbstractCommand
     }
 
     // Add roles option
-    if (self::BTN_ROLES_ADD == $selection) {
+    if ($this->trans->trans(self::BTN_ROLES_ADD) == $selection) {
       $this->replyWithMessage(
-        'Какую роль добавить пользователю?',
+        $this->trans->trans('command.userman.select_role_to_add'),
         Communicator::PARSE_MODE_HTML,
         $this->getReplyKeyboardMarkup_Roles_Add($foundUser)
       );
@@ -259,9 +269,9 @@ class UserManCommand extends AbstractCommand
     }
 
     // Remove roles option
-    if (self::BTN_ROLES_REMOVE == $selection) {
+    if ($this->trans->trans(self::BTN_ROLES_REMOVE) == $selection) {
       $this->replyWithMessage(
-        'Какую роль убрать у пользователя?',
+        $this->trans->trans('command.userman.select_role_to_remove'),
         Communicator::PARSE_MODE_HTML,
         $this->getReplyKeyboardMarkup_Roles_Remove($foundUser)
       );
@@ -277,15 +287,15 @@ class UserManCommand extends AbstractCommand
     }
 
     // Change blocked status
-    if (self::BTN_BLOCK == $selection) {
+    if ($this->trans->trans(self::BTN_BLOCK) == $selection) {
       $this->changeBlockState($foundUser);
 
       return;
     }
 
     $this->replyWithMessage(
-      'Команда непонятна. Попробуйте еще раз /userman',
-      null,
+      $this->trans->trans('command.userman.invalid_option'),
+      Communicator::PARSE_MODE_PLAIN,
       new ReplyKeyboardRemove()
     );
   }
@@ -310,7 +320,7 @@ class UserManCommand extends AbstractCommand
         ->find($foundUser->getId())
     )) {
       $this->replyWithMessage(
-        'Пользователь не найден :('
+        $this->trans->trans('command.userman.user_not_found')
       );
 
       return null;
@@ -330,7 +340,7 @@ class UserManCommand extends AbstractCommand
     }
     // Cancel button
     $cancelBtn = new KeyboardButton();
-    $cancelBtn->text = self::BTN_CANCEL;
+    $cancelBtn->text = $this->trans->trans(self::BTN_CANCEL);
     $replyMarkup->keyboard[][] = $cancelBtn;
 
     return $replyMarkup;
@@ -361,7 +371,7 @@ class UserManCommand extends AbstractCommand
     }
     // Cancel button
     $cancelBtn = new KeyboardButton();
-    $cancelBtn->text = self::BTN_CANCEL;
+    $cancelBtn->text = $this->trans->trans(self::BTN_CANCEL);
     $replyMarkup->keyboard[][] = $cancelBtn;
 
     return $replyMarkup;
@@ -381,8 +391,8 @@ class UserManCommand extends AbstractCommand
         ->find($foundUser->getId())
     )) {
       $this->replyWithMessage(
-        'Пользователь не найден :(',
-        null,
+        $this->trans->trans('command.userman.user_not_found'),
+        Communicator::PARSE_MODE_PLAIN,
         new ReplyKeyboardRemove()
       );
 
@@ -395,7 +405,9 @@ class UserManCommand extends AbstractCommand
       ->getManager()
       ->flush();
 
-    $this->replyWithMessage('Статус блокровки изменён.');
+    $this->replyWithMessage(
+      $this->trans->trans('command.userman.blocking_status_changed')
+    );
     $this->replyWithMessage(
       $this->getUserInformation($userToManipulate),
       Communicator::PARSE_MODE_HTML,
@@ -416,10 +428,10 @@ class UserManCommand extends AbstractCommand
     $selection = trim($this->update->message->text);
 
     // Cancel
-    if (self::BTN_CANCEL == $selection) {
+    if ($this->trans->trans(self::BTN_CANCEL) == $selection) {
       $this->replyWithMessage(
-        'Команда отменена.',
-        null,
+        $this->trans->trans('command.cancelled'),
+        Communicator::PARSE_MODE_PLAIN,
         new ReplyKeyboardRemove()
       );
 
@@ -433,7 +445,10 @@ class UserManCommand extends AbstractCommand
         ->findOneByName($selection)
     )) {
       $this->replyWithMessage(
-        'Роль не найдена в списке: '.$selection
+        $this->trans->trans(
+          'command.userman.role_not_found',
+          ['%role_name%' => $selection]
+        )
       );
 
       return;
@@ -446,7 +461,7 @@ class UserManCommand extends AbstractCommand
         ->find($foundUser->getId())
     )) {
       $this->replyWithMessage(
-        'Пользователь не найден :('
+        $this->trans->trans('command.userman.user_not_found')
       );
 
       return;
@@ -458,7 +473,7 @@ class UserManCommand extends AbstractCommand
       ->getManager()
       ->flush();
 
-    $this->replyWithMessage('Роль добавлена.');
+    $this->replyWithMessage($this->trans->trans('command.userman.role_added'));
     $this->replyWithMessage(
       $this->getUserInformation($userToManipulate),
       Communicator::PARSE_MODE_HTML,
@@ -479,10 +494,10 @@ class UserManCommand extends AbstractCommand
     $selection = trim($this->update->message->text);
 
     // Cancel
-    if (self::BTN_CANCEL == $selection) {
+    if ($this->trans->trans(self::BTN_CANCEL) == $selection) {
       $this->replyWithMessage(
-        'Команда отменена.',
-        null,
+        $this->trans->trans('command.cancelled'),
+        Communicator::PARSE_MODE_PLAIN,
         new ReplyKeyboardRemove()
       );
 
@@ -496,7 +511,10 @@ class UserManCommand extends AbstractCommand
         ->findOneByName($selection)
     )) {
       $this->replyWithMessage(
-        'Роль не найдена в списке: '.$selection
+        $this->trans->trans(
+          'command.userman.role_not_found',
+          ['%role_name%' => $selection]
+        )
       );
 
       return;
@@ -509,7 +527,7 @@ class UserManCommand extends AbstractCommand
         ->find($foundUser->getId())
     )) {
       $this->replyWithMessage(
-        'Пользователь не найден :('
+        $this->trans->trans('command.userman.user_not_found')
       );
 
       return;
@@ -529,7 +547,9 @@ class UserManCommand extends AbstractCommand
       ->getManager()
       ->flush();
 
-    $this->replyWithMessage('Роль убрана.');
+    $this->replyWithMessage(
+      $this->trans->trans('command.userman.role_removed')
+    );
     $this->replyWithMessage(
       $this->getUserInformation($userToManipulate),
       Communicator::PARSE_MODE_HTML,

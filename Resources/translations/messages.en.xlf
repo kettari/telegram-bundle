@@ -1,0 +1,293 @@
+<?xml version="1.0"?>
+<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
+    <file source-language="en" datatype="plaintext" original="file.ext">
+        <body>
+            <trans-unit id="general.account_blocked">
+                <source>general.account_blocked</source>
+                <target>Sorry, your account is blocked.</target>
+            </trans-unit>
+
+            <!-- Commands general strings -->
+            <trans-unit id="command.private_only">
+                <source>command.private_only</source>
+                <target>This command works only in the private chat with the bot.</target>
+            </trans-unit>
+            <trans-unit id="command.cancelled">
+                <source>command.cancelled</source>
+                <target>Command cancelled.</target>
+            </trans-unit>
+            <trans-unit id="command.input_obsolete">
+                <source>command.input_obsolete</source>
+                <target>Input outdated. Submit the command again, please.</target>
+            </trans-unit>
+            <trans-unit id="command.unknown">
+                <source>command.unknown</source>
+                <target>Sorry, unknown command.</target>
+            </trans-unit>
+            <trans-unit id="command.forbidden">
+                <source>command.forbidden</source>
+                <target>Sorry, this command is forbidden.</target>
+            </trans-unit>
+
+            <!-- General UI elements -->
+            <trans-unit id="command.button.cancel">
+                <source>command.button.cancel</source>
+                <target>Cancel</target>
+            </trans-unit>
+            <trans-unit id="command.option.yes">
+                <source>command.option.yes</source>
+                <target>Yes</target>
+            </trans-unit>
+            <trans-unit id="command.option.no">
+                <source>command.option.no</source>
+                <target>No</target>
+            </trans-unit>
+
+            <!-- Commands descriptions -->
+            <trans-unit id="command.start.description">
+                <source>command.start.description</source>
+                <target>Start chat with bot</target>
+            </trans-unit>
+            <trans-unit id="command.help.description">
+                <source>command.help.description</source>
+                <target>Show bot commands</target>
+            </trans-unit>
+            <trans-unit id="command.listroles.description">
+                <source>command.listroles.description</source>
+                <target>Show list of roles &amp; permissions</target>
+            </trans-unit>
+            <trans-unit id="command.push.description">
+                <source>command.push.description</source>
+                <target>Send mass notification message</target>
+            </trans-unit>
+            <trans-unit id="command.register.description">
+                <source>command.register.description</source>
+                <target>Sign in</target>
+            </trans-unit>
+            <trans-unit id="command.settings.description">
+                <source>command.settings.description</source>
+                <target>Bot settings</target>
+            </trans-unit>
+            <trans-unit id="command.userman.description">
+                <source>command.userman.description</source>
+                <target>Manage users roles</target>
+            </trans-unit>
+
+            <!-- /start command -->
+            <trans-unit id="command.start.welcome">
+                <source>command.start.welcome</source>
+                <target>Hi! To see list of available commands use /help</target>
+            </trans-unit>
+
+            <!-- /help command -->
+            <trans-unit id="command.help.list_of_commands">
+                <source>command.help.list_of_commands</source>
+                <target>List of bot commands:</target>
+            </trans-unit>
+
+            <!-- /listroles command -->
+            <trans-unit id="command.listroles.list_of_roles">
+                <source>command.listroles.list_of_roles</source>
+                <target>List of roles &amp; permissions:</target>
+            </trans-unit>
+            <trans-unit id="command.listroles.roles_undefined">
+                <source>command.listroles.roles_undefined</source>
+                <target>Roles are not defined.</target>
+            </trans-unit>
+
+            <!-- /push command -->
+            <trans-unit id="command.push.send_text">
+                <source>command.push.send_text</source>
+                <target>Send me text of the notification, please.</target>
+            </trans-unit>
+            <trans-unit id="command.push.empty_text">
+                <source>command.push.empty_text</source>
+                <target>You sent me empty message. Please try again /push</target>
+            </trans-unit>
+            <trans-unit id="command.push.text_too_long">
+                <source>command.push.text_too_long</source>
+                <target>Text exceeds allowed length of 4096 symbols: %text_length% symbols. Please try again /push
+                </target>
+            </trans-unit>
+            <trans-unit id="command.push.choose_channel">
+                <source>command.push.choose_channel</source>
+                <target>Which notification channel to use?</target>
+            </trans-unit>
+            <trans-unit id="command.push.text_lost">
+                <source>command.push.text_lost</source>
+                <target>Notification text was lost. Please try again /push</target>
+            </trans-unit>
+            <trans-unit id="command.push.channel_name_empty">
+                <source>command.push.channel_name_empty</source>
+                <target>Channel name is empty. Please try again /push</target>
+            </trans-unit>
+            <trans-unit id="command.push.channel_name_invalid">
+                <source>command.push.channel_name_invalid</source>
+                <target>Invalid channel name. Please select one from the list.</target>
+            </trans-unit>
+            <trans-unit id="command.push.cancelled">
+                <source>command.push.cancelled</source>
+                <target>Push cancelled.</target>
+            </trans-unit>
+            <trans-unit id="command.push.confirmation_message">
+                <source>command.push.confirmation_message</source>
+                <target>Please check everything is correct below.
+
+&lt;b&gt;Channel:&lt;/b&gt; %channel_caption% (%channel_name%)
+&lt;b&gt;Length:&lt;/b&gt; %text_length% symbols
+&lt;b&gt;Text:&lt;/b&gt;</target>
+            </trans-unit>
+            <trans-unit id="command.push.confirmation_instructions">
+                <source>command.push.confirmation_instructions</source>
+                <target>If everything is OK, type in CAPITAL LETTERS text "PUSH CONFIRMED". Any other text will cancel operation.</target>
+            </trans-unit>
+            <trans-unit id="command.push.something_went_wrong">
+                <source>command.push.something_went_wrong</source>
+                <target>Something went wrong. Please try again /push</target>
+            </trans-unit>
+            <trans-unit id="command.push.confirmation">
+                <source>command.push.confirmation</source>
+                <target>PUSH CONFIRMED</target>
+            </trans-unit>
+            <trans-unit id="command.push.notification_sent">
+                <source>command.push.notification_sent</source>
+                <target>Push to the channel «%channel_caption%» confirmed and sent (%text_length% symbols).</target>
+            </trans-unit>
+
+            <!-- /register command -->
+            <trans-unit id="command.register.send_phone">
+                <source>command.register.send_phone</source>
+                <target>Send phone number</target>
+            </trans-unit>
+            <trans-unit id="command.register.send_instruction">
+                <source>command.register.send_instruction</source>
+                <target>To sign you in, I need your phone number.
+
+Please send me your contact by pressing the button "Send phone number" and confirm the dialog.</target>
+            </trans-unit>
+            <trans-unit id="command.register.not_your_phone">
+                <source>command.register.not_your_phone</source>
+                <target>You sent me not your contact. Please try again /register</target>
+            </trans-unit>
+            <trans-unit id="command.register.success">
+                <source>command.register.success</source>
+                <target>You successfully signed in with the phone number %phone_number%.
+
+Now you have access to commands for registered users, please check the list with /help</target>
+            </trans-unit>
+            <trans-unit id="command.register.not_contact">
+                <source>command.register.not_contact</source>
+                <target>You sent me phone number typed with hands. I need you to press &lt;b&gt;special button "Send phone number"&lt;/b&gt;.
+
+Please, try again.</target>
+            </trans-unit>
+            <trans-unit id="command.register.invalid_number">
+                <source>command.register.invalid_number</source>
+                <target>You sent me something weird. Please try again /register</target>
+            </trans-unit>
+
+            <!-- /settings command -->
+            <trans-unit id="command.settings.notifications">
+                <source>command.settings.notifications</source>
+                <target>Notifications</target>
+            </trans-unit>
+            <trans-unit id="command.settings.choose_section">
+                <source>command.settings.choose_section</source>
+                <target>Which settings do you want to update?</target>
+            </trans-unit>
+            <trans-unit id="command.settings.select_notifications">
+                <source>command.settings.select_notifications</source>
+                <target>Select notifications you want to receive:</target>
+            </trans-unit>
+            <trans-unit id="command.settings.invalid_option">
+                <source>command.settings.invalid_option</source>
+                <target>I don't understand option you sent to me. Please try again  /settings</target>
+            </trans-unit>
+            <trans-unit id="command.settings.notifications_settings_saved">
+                <source>command.settings.notifications_settings_saved</source>
+                <target>Notification settings updated.</target>
+            </trans-unit>
+            <trans-unit id="command.settings.notification.self_update">
+                <source>command.settings.notification.self_update</source>
+                <target>Bot news</target>
+            </trans-unit>
+            <trans-unit id="command.settings.notification.new_registration">
+                <source>command.settings.notification.new_registration</source>
+                <target>New registrations</target>
+            </trans-unit>
+
+            <!-- /userman command -->
+            <trans-unit id="command.userman.add_roles">
+                <source>command.userman.add_roles</source>
+                <target>Add roles</target>
+            </trans-unit>
+            <trans-unit id="command.userman.remove_roles">
+                <source>command.userman.remove_roles</source>
+                <target>Remove roles</target>
+            </trans-unit>
+            <trans-unit id="command.userman.flip_blocking">
+                <source>command.userman.flip_blocking</source>
+                <target>Flip blocking status</target>
+            </trans-unit>
+            <trans-unit id="command.userman.specify_search_string">
+                <source>command.userman.specify_search_string</source>
+                <target>Specify part of name, username or phone:</target>
+            </trans-unit>
+            <trans-unit id="command.userman.request_min_count_length">
+                <source>command.userman.request_min_count_length</source>
+                <target>Search substring should be at least 3 characters length.</target>
+            </trans-unit>
+            <trans-unit id="command.userman.no_users_found">
+                <source>command.userman.no_users_found</source>
+                <target>I did not find any users that meet these criteria.</target>
+            </trans-unit>
+            <trans-unit id="command.userman.multiple_users_found">
+                <source>command.userman.multiple_users_found</source>
+                <target>Found several users (%users_count%, если быть точным), that meet these criteria. Please, be more specific so only 1 should be found.</target>
+            </trans-unit>
+            <trans-unit id="command.userman.user_info">
+                <source>command.userman.user_info</source>
+                <target>&lt;b&gt;%full_name%&lt;/b&gt;
+External name: %full_external_name%
+Username: @%username%
+Phone: %phone_number%
+Telegram ID: %telegram_id%
+Blocked: %blocking_status%
+
+&lt;b&gt;Roles:&lt;/b&gt;</target>
+            </trans-unit>
+            <trans-unit id="command.userman.select_role_to_add">
+                <source>command.userman.select_role_to_add</source>
+                <target>Which role add to user?</target>
+            </trans-unit>
+            <trans-unit id="command.userman.select_role_to_remove">
+                <source>command.userman.select_role_to_remove</source>
+                <target>Which role remove from user?</target>
+            </trans-unit>
+            <trans-unit id="command.userman.invalid_option">
+                <source>command.userman.invalid_option</source>
+                <target>Invalid option. Please try again /userman</target>
+            </trans-unit>
+            <trans-unit id="command.userman.user_not_found">
+                <source>command.userman.user_not_found</source>
+                <target>User not found :(</target>
+            </trans-unit>
+            <trans-unit id="command.userman.blocking_status_changed">
+                <source>command.userman.blocking_status_changed</source>
+                <target>Blocking status changed.</target>
+            </trans-unit>
+            <trans-unit id="command.userman.role_not_found">
+                <source>command.userman.role_not_found</source>
+                <target>Role "%role_name%" not found in the list</target>
+            </trans-unit>
+            <trans-unit id="command.userman.role_added">
+                <source>command.userman.role_added</source>
+                <target>Role added.</target>
+            </trans-unit>
+            <trans-unit id="command.userman.role_removed">
+                <source>command.userman.role_removed</source>
+                <target>Role removed.</target>
+            </trans-unit>
+        </body>
+    </file>
+</xliff>

@@ -4,13 +4,12 @@ declare(strict_types=1);
 namespace Kettari\TelegramBundle\Telegram\Command;
 
 use Kettari\TelegramBundle\Telegram\Communicator;
-use Symfony\Bridge\Doctrine\RegistryInterface;
 
 class ListRolesCommand extends AbstractCommand
 {
 
   static public $name = 'listroles';
-  static public $description = 'Показать список ролей и разрешений';
+  static public $description = 'command.listroles.description';
   static public $requiredPermissions = ['execute command listroles'];
 
   /**
@@ -18,39 +17,43 @@ class ListRolesCommand extends AbstractCommand
    */
   public function execute()
   {
-    if ('private' == $this->update->message->chat->type) {
-      $rolesAndPermissions = $this->getRolesAndPermissions($this->bus->getDoctrine());
-
-      $text = 'Список ролей и разрешений:'.PHP_EOL.PHP_EOL;
-      if (count($rolesAndPermissions)) {
-        foreach ($rolesAndPermissions as $roleName => $permissions) {
-          $text .= '<b>'.$roleName.'</b>'.PHP_EOL;
-          foreach ($permissions as $permissionItem) {
-            $text .= $permissionItem.PHP_EOL;
-          }
-          $text .= PHP_EOL;
-        }
-      } else {
-        $text .= 'Роли в системе не определены.';
-      }
-
-      $this->replyWithMessage($text, Communicator::PARSE_MODE_HTML);
-    } else {
+    // This command is available only in private chat
+    if ('private' != $this->update->message->chat->type) {
       $this->replyWithMessage(
-        'Эта команда работает только в личной переписке с ботом. В общем канале просмотр ролей невозможен.'
+        $this->trans->trans('command.private_only')
       );
+
+      return;
     }
+
+    // Collect all roles and permissions from database
+    $rolesAndPermissions = $this->getRolesAndPermissions();
+    $text = $this->trans->trans('command.listroles.list_of_roles').PHP_EOL.
+      PHP_EOL;
+    if (count($rolesAndPermissions)) {
+      foreach ($rolesAndPermissions as $roleName => $permissions) {
+        $text .= '<b>'.$roleName.'</b>'.PHP_EOL;
+        foreach ($permissions as $permissionItem) {
+          $text .= $permissionItem.PHP_EOL;
+        }
+        $text .= PHP_EOL;
+      }
+    } else {
+      $text .= $this->trans->trans('command.listroles.roles_undefined');
+    }
+
+    $this->replyWithMessage($text, Communicator::PARSE_MODE_HTML);
   }
 
 
   /**
    * Returns array with roles and permissions defined in the database.
    *
-   * @param \Symfony\Bridge\Doctrine\RegistryInterface $doctrine
    * @return array
    */
-  private function getRolesAndPermissions(RegistryInterface $doctrine)
+  private function getRolesAndPermissions()
   {
+    $doctrine = $this->bus->getDoctrine();
     $result = [];
     $roles = $doctrine->getRepository('KettariTelegramBundle:Role')
       ->findAll();

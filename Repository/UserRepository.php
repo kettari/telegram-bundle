@@ -31,7 +31,7 @@ class UserRepository extends EntityRepository
     foreach ($parts as $part) {
       $paramName = 'needle_'.$i++;
       $where .= sprintf(
-        ' AND (u.first_name LIKE :%s OR 
+        ' AND (u.firstName LIKE :%s OR 
           u.lastName LIKE :%s OR 
           u.username LIKE :%s OR 
           u.phone LIKE :%s OR 

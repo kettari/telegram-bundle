@@ -137,7 +137,8 @@ class CommandSubscriber extends AbstractBotSubscriber implements EventSubscriber
     // Tell user command is not found
     $this->communicator->sendMessage(
       $event->getMessage()->chat->id,
-      'Извините, такой команды я не знаю.',
+      $this->bus->getTrans()
+        ->trans('command.unknown'),
       Communicator::PARSE_MODE_PLAIN,
       new ReplyKeyboardRemove()
     );
@@ -172,7 +173,8 @@ class CommandSubscriber extends AbstractBotSubscriber implements EventSubscriber
     // Tell the user he is not authorized to execute the command
     $this->communicator->sendMessage(
       $event->getMessage()->chat->id,
-      'Извините, у вас недостаточно прав для доступа к этой команде.',
+      $this->bus->getTrans()
+        ->trans('command.forbidden'),
       Communicator::PARSE_MODE_PLAIN
     );
 

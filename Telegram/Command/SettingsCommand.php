@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Kettari\TelegramBundle\Telegram\Command;
 
 
+use Kettari\TelegramBundle\Telegram\Communicator;
 use unreal4u\TelegramAPI\Telegram\Types\Inline\Keyboard\Button;
 use unreal4u\TelegramAPI\Telegram\Types\Inline\Keyboard\Markup;
 use unreal4u\TelegramAPI\Telegram\Types\KeyboardButton;
@@ -13,12 +14,12 @@ use unreal4u\TelegramAPI\Telegram\Types\ReplyKeyboardRemove;
 class SettingsCommand extends AbstractCommand
 {
 
-  const BTN_NOTIFICATION = 'Уведомления';
-  const BTN_CANCEL = 'Ничего не менять';
+  const BTN_NOTIFICATION = 'command.settings.notifications';
+  const BTN_CANCEL = 'command.button.cancel';
   const MARK_V = "\xE2\x9C\x85";
   const MARK_X = "\xE2\x9D\x8C";
   static public $name = 'settings';
-  static public $description = 'Настройки бота';
+  static public $description = 'command.settings.description';
   static public $requiredPermissions = ['execute command settings'];
 
   /**
@@ -26,23 +27,26 @@ class SettingsCommand extends AbstractCommand
    */
   public function execute()
   {
-    if ('private' == $this->update->message->chat->type) {
+    // This command is available only in private chat
+    if ('private' != $this->update->message->chat->type) {
       $this->replyWithMessage(
-        'Какие настройки бота вы хотите изменить?',
-        '',
-        $this->getReplyKeyboardMarkup_MainMenu()
+        $this->trans->trans('command.private_only')
       );
 
-      $this->bus->createHook(
-        $this->update,
-        get_class($this),
-        'handleSettingsMainMenu'
-      );
-    } else {
-      $this->replyWithMessage(
-        'Эта команда работает только в личной переписке с ботом. В общем канале управление настройками невозможно.'
-      );
+      return;
     }
+
+    $this->replyWithMessage(
+      $this->trans->trans('command.settings.choose_section'),
+      Communicator::PARSE_MODE_PLAIN,
+      $this->getReplyKeyboardMarkup_MainMenu()
+    );
+
+    $this->bus->createHook(
+      $this->update,
+      get_class($this),
+      'handleSettingsMainMenu'
+    );
   }
 
   /**
@@ -54,11 +58,11 @@ class SettingsCommand extends AbstractCommand
   {
     // Notification button
     $notificationBtn = new KeyboardButton();
-    $notificationBtn->text = self::BTN_NOTIFICATION;
+    $notificationBtn->text = $this->trans->trans(self::BTN_NOTIFICATION);
 
     // Cancel button
     $cancelBtn = new KeyboardButton();
-    $cancelBtn->text = self::BTN_CANCEL;
+    $cancelBtn->text = $this->trans->trans(self::BTN_CANCEL);
 
     // Keyboard
     $replyMarkup = new ReplyKeyboardMarkup();
@@ -81,10 +85,10 @@ class SettingsCommand extends AbstractCommand
     }
 
     switch ($message->text) {
-      case self::BTN_NOTIFICATION:
+      case $this->trans->trans(self::BTN_NOTIFICATION):
         $this->replyWithMessage(
-          'Отметьте уведомления, которые хотите получать:',
-          '',
+          $this->trans->trans('command.settings.select_notifications'),
+          Communicator::PARSE_MODE_PLAIN,
           $this->getReplyKeyboardMarkup_Notifications()
         );
         $this->bus->createHook(
@@ -93,17 +97,17 @@ class SettingsCommand extends AbstractCommand
           'handleSettingsNotificationOption'
         );
         break;
-      case self::BTN_CANCEL:
+      case $this->trans->trans(self::BTN_CANCEL):
         $this->replyWithMessage(
-          'Команда отменена.',
-          '',
+          $this->trans->trans('command.cancelled'),
+          Communicator::PARSE_MODE_PLAIN,
           new ReplyKeyboardRemove()
         );
         break;
       default:
         $this->replyWithMessage(
-          'Вы прислали непонятный мне вариант меню. Попробуйте ещё раз /settings',
-          '',
+          $this->trans->trans('command.settings.invalid_option'),
+          Communicator::PARSE_MODE_PLAIN,
           new ReplyKeyboardRemove()
         );
         break;
@@ -141,7 +145,8 @@ class SettingsCommand extends AbstractCommand
         )) ? self::MARK_V : self::MARK_X;
 
         $inlineKeyboardButton = new Button();
-        $inlineKeyboardButton->text = $mark.' '.$notificationItem->getTitle();
+        $inlineKeyboardButton->text = $mark.' '.
+          $this->trans->trans($notificationItem->getTitle());
         $inlineKeyboardButton->callback_data = $notificationItem->getName();
         $row[] = $inlineKeyboardButton;
       }
@@ -160,7 +165,7 @@ class SettingsCommand extends AbstractCommand
   {
     $cq = $this->update->callback_query;
     if (is_null($cq) && !is_null($this->update->message)) {
-      $this->replyWithMessage('Команда отменена.');
+      $this->replyWithMessage($this->trans->trans('command.cancelled'));
 
       return;
     }
@@ -214,13 +219,16 @@ class SettingsCommand extends AbstractCommand
       );
     // Answer callback
     $this->bus->getCommunicator()
-      ->answerCallbackQuery($cq->id, 'Настройки уведомлений изменены.');
+      ->answerCallbackQuery(
+        $cq->id,
+        $this->trans->trans('command.settings.notifications_settings_saved')
+      );
     // Register this hook again
     $this->bus->createHook(
-        $this->update,
-        get_class($this),
-        'handleSettingsNotificationOption'
-      );
+      $this->update,
+      get_class($this),
+      'handleSettingsNotificationOption'
+    );
   }
 
 }

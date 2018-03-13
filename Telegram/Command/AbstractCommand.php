@@ -5,6 +5,7 @@ namespace Kettari\TelegramBundle\Telegram\Command;
 
 use Kettari\TelegramBundle\Telegram\CommandBusInterface;
 use Kettari\TelegramBundle\Telegram\Communicator;
+use Symfony\Component\Translation\TranslatorInterface;
 use unreal4u\TelegramAPI\Abstracts\KeyboardMethods;
 use unreal4u\TelegramAPI\Telegram\Types\Message;
 use unreal4u\TelegramAPI\Telegram\Types\Update;
@@ -69,15 +70,25 @@ abstract class AbstractCommand implements TelegramCommandInterface
   protected $bus;
 
   /**
+   * @var \Symfony\Component\Translation\TranslatorInterface
+   */
+  protected $trans;
+
+  /**
    * AbstractCommand constructor.
    *
    * @param \Kettari\TelegramBundle\Telegram\CommandBusInterface $bus
    * @param \unreal4u\TelegramAPI\Telegram\Types\Update $update
+   * @param \Symfony\Component\Translation\TranslatorInterface $translator
    */
-  public function __construct(CommandBusInterface $bus, Update $update)
-  {
+  public function __construct(
+    CommandBusInterface $bus,
+    Update $update,
+    TranslatorInterface $translator
+  ) {
     $this->bus = $bus;
     $this->update = $update;
+    $this->trans = $translator;
   }
 
   /**
