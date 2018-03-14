@@ -54,8 +54,8 @@ class UserHq implements UserHqInterface
   {
     $updateType = UpdateTypeResolver::getUpdateType($update);
     $this->logger->debug(
-      'Resolving current user for the update type "{update_type}"',
-      ['update_type' => $updateType]
+      'Resolving current user',
+      ['update_id' => $update->update_id, 'update_type' => $updateType]
     );
 
     // Assign telegram user object depending on update type

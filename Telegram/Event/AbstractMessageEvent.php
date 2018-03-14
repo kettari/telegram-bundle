@@ -4,15 +4,18 @@ declare(strict_types=1);
 namespace Kettari\TelegramBundle\Telegram\Event;
 
 
+use Kettari\TelegramBundle\Telegram\TelegramObjectsRetrieverTrait;
 use unreal4u\TelegramAPI\Telegram\Types\Message;
 use unreal4u\TelegramAPI\Telegram\Types\Update;
 
 abstract class AbstractMessageEvent extends AbstractUpdateEvent
 {
+  use TelegramObjectsRetrieverTrait;
+
   /**
    * @var Message
    */
-  private $message;
+  protected $message;
 
   /**
    * AbstractMessageEvent constructor.
@@ -22,12 +25,13 @@ abstract class AbstractMessageEvent extends AbstractUpdateEvent
   public function __construct(Update $update)
   {
     parent::__construct($update);
-    if (is_null($update->message)) {
+    $message = $this->getMessageFromUpdate($update);
+    if (is_null($message)) {
       throw new \RuntimeException(
         'Message can\'t be null for the AbstractMessageEvent.'
       );
     }
-    $this->message = $update->message;
+    $this->message = $message;
   }
 
   /**

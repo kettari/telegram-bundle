@@ -39,12 +39,8 @@ class MenuSubscriber extends AbstractBotSubscriber implements EventSubscriberInt
   public function onRequestTermination(TerminateEvent $event)
   {
     $this->logger->debug(
-      'Processing MenuSubscriber::TerminateEvent for the update ID={update_id}; request status: {request_status}',
-      [
-        'update_id'      => $event->getUpdate()->update_id,
-        'request_status' => $event->getKeeper()
-          ->isRequestHandled() ? 'handled' : 'not handled',
-      ]
+      'Processing MenuSubscriber::TerminateEvent, request status: {request_status}',
+      ['update_id' => $event->getUpdate()->update_id,]
     );
 
     if (!$event->getKeeper()
@@ -54,12 +50,8 @@ class MenuSubscriber extends AbstractBotSubscriber implements EventSubscriberInt
     }
 
     $this->logger->info(
-      'MenuSubscriber::TerminateEvent for the update ID={update_id} processed; request status: {request_status}',
-      [
-        'update_id'      => $event->getUpdate()->update_id,
-        'request_status' => $event->getKeeper()
-          ->isRequestHandled() ? 'handled' : 'not handled',
-      ]
+      'MenuSubscriber::TerminateEvent processed',
+      ['update_id' => $event->getUpdate()->update_id]
     );
   }
 

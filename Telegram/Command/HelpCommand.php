@@ -4,6 +4,9 @@ declare(strict_types=1);
 namespace Kettari\TelegramBundle\Telegram\Command;
 
 
+use Kettari\TelegramBundle\Telegram\Communicator;
+use unreal4u\TelegramAPI\Telegram\Types\ReplyKeyboardRemove;
+
 class HelpCommand extends AbstractCommand
 {
 
@@ -36,7 +39,11 @@ class HelpCommand extends AbstractCommand
           $this->trans->trans($command::$description)
         ).PHP_EOL;
     }
-    $this->replyWithMessage($text);
+    $this->replyWithMessage(
+      $text,
+      Communicator::PARSE_MODE_PLAIN,
+      new ReplyKeyboardRemove()
+    );
   }
 
 }

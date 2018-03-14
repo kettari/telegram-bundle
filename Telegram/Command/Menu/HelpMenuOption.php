@@ -9,7 +9,7 @@ use Kettari\TelegramBundle\Telegram\Communicator;
 use Kettari\TelegramBundle\Telegram\TelegramObjectsRetrieverTrait;
 use unreal4u\TelegramAPI\Telegram\Types\Update;
 
-class SettingsMenuOption extends AbstractMenuOption
+class HelpMenuOption extends AbstractMenuOption
 {
   use TelegramObjectsRetrieverTrait;
 
@@ -20,8 +20,8 @@ class SettingsMenuOption extends AbstractMenuOption
   public function __construct(CommandBusInterface $bus, Update $update)
   {
     parent::__construct($bus, $update);
-    $this->caption = 'menu.settings.button_caption';
-    $this->callbackId = 'menu.settings';
+    $this->caption = 'menu.help.button_caption';
+    $this->callbackId = 'menu.help';
   }
 
   /**
@@ -29,18 +29,15 @@ class SettingsMenuOption extends AbstractMenuOption
    */
   public function click(): bool
   {
-    $this->logger->debug('Clicking settings option');
+    $this->logger->debug('Clicking help option');
 
     if (is_null($tgMessage = $this->getMessageFromUpdate($this->update))) {
       return false;
     }
 
-    // Execute command /settings
-    if ($this->bus->isCommandRegistered('settings')) {
-      $this->bus->executeCommand($this->update, 'settings');
-
-      // Mark request as handled to prevent home menu
-      $this->keeper->setRequestHandled(true);
+    // Execute command /help
+    if ($this->bus->isCommandRegistered('help')) {
+      $this->bus->executeCommand($this->update, 'help');
     } else {
       $this->comm->sendMessage(
         $tgMessage->chat->id,
@@ -49,7 +46,7 @@ class SettingsMenuOption extends AbstractMenuOption
       );
     }
 
-    $this->logger->info('Clicked settings option');
+    $this->logger->info('Clicked help option');
 
     return false;
   }

@@ -32,7 +32,7 @@ abstract class AbstractCommandEvent extends AbstractMessageEvent
     string $parameter
   ) {
     parent::__construct($update);
-    if (empty($update->message->text)) {
+    if (empty($this->message->text)) {
       throw new RuntimeException(
         'Text of the Message can\'t be empty for the AbstractCommandEvent.'
       );

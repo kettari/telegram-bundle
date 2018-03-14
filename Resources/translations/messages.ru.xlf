@@ -189,26 +189,6 @@
             </trans-unit>
 
             <!-- /settings command -->
-            <trans-unit id="command.settings.notifications">
-                <source>command.settings.notifications</source>
-                <target>Уведомления</target>
-            </trans-unit>
-            <trans-unit id="command.settings.choose_section">
-                <source>command.settings.choose_section</source>
-                <target>Какие настройки бота вы хотите изменить?</target>
-            </trans-unit>
-            <trans-unit id="command.settings.select_notifications">
-                <source>command.settings.select_notifications</source>
-                <target>Отметьте уведомления, которые хотите получать:</target>
-            </trans-unit>
-            <trans-unit id="command.settings.invalid_option">
-                <source>command.settings.invalid_option</source>
-                <target>Вы прислали непонятный мне вариант меню. Попробуйте ещё раз /settings</target>
-            </trans-unit>
-            <trans-unit id="command.settings.notifications_settings_saved">
-                <source>command.settings.notifications_settings_saved</source>
-                <target>Настройки уведомлений изменены.</target>
-            </trans-unit>
             <trans-unit id="command.settings.notification.self_update">
                 <source>command.settings.notification.self_update</source>
                 <target>Что нового в боте</target>
@@ -289,6 +269,46 @@ Telegram ID: %telegram_id%
             <trans-unit id="command.userman.role_removed">
                 <source>command.userman.role_removed</source>
                 <target>Роль убрана.</target>
+            </trans-unit>
+
+            <!-- Menu general -->
+            <trans-unit id="menu.main.title">
+                <source>menu.main.title</source>
+                <target>Главное меню</target>
+            </trans-unit>
+
+            <!-- Help menu -->
+            <trans-unit id="menu.help.button_caption">
+                <source>menu.help.button_caption</source>
+                <target>&#8505; Помощь</target>
+            </trans-unit>
+
+            <!-- Setting menu -->
+            <trans-unit id="menu.settings.button_caption">
+                <source>menu.settings.button_caption</source>
+                <target>&#9881; Настройки</target>
+            </trans-unit>
+            <trans-unit id="menu.settings.title">
+                <source>menu.settings.title</source>
+                <target>Какие настройки бота вы хотите изменить?</target>
+            </trans-unit>
+            <trans-unit id="menu.settings.notifications">
+                <source>menu.settings.notifications</source>
+                <target>Уведомления</target>
+            </trans-unit>
+
+            <!-- Notifications menu -->
+            <trans-unit id="menu.notifications.button_caption">
+                <source>menu.notifications.button_caption</source>
+                <target>&#128232; Уведомления</target>
+            </trans-unit>
+            <trans-unit id="menu.notifications.select">
+                <source>menu.notifications.select</source>
+                <target>Отметьте уведомления, которые хотите получать:</target>
+            </trans-unit>
+            <trans-unit id="menu.notifications.settings_saved">
+                <source>menu.notifications.settings_saved</source>
+                <target>Настройки уведомлений изменены.</target>
             </trans-unit>
         </body>
     </file>

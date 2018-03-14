@@ -153,7 +153,7 @@ class CommandBus implements CommandBusInterface
     string $parameter = ''
   ): bool {
     $this->logger->debug(
-      'About to execute command "{command_name}" with parameter "{parameter}" for the update ID={update_id}',
+      'About to execute command "{command_name}" with parameter "{parameter}"',
       [
         'command_name' => $commandName,
         'parameter'    => $parameter,
@@ -165,8 +165,12 @@ class CommandBus implements CommandBusInterface
       /** @var AbstractCommand $commandClass */
       if ($commandClass::getName() == $commandName) {
 
+
         // Check permissions for current user
-        if (!$this->isAuthorized($update->message->from, $commandClass)) {
+        if (!$this->isAuthorized(
+          $this->getUserFromUpdate($update),
+          $commandClass
+        )) {
           $this->logger->notice(
             'User is not authorized to execute /{command_name} command with the class "{class_name}"',
             ['command_name' => $commandName, 'class_name' => $commandClass]
@@ -190,7 +194,7 @@ class CommandBus implements CommandBusInterface
         );
 
         /** @var AbstractCommand $command */
-        $command = new $commandClass($this, $update, $this->translator);
+        $command = new $commandClass($this, $update);
         $command->initialize($parameter)
           ->execute();
 
@@ -392,11 +396,11 @@ class CommandBus implements CommandBusInterface
   public function createHook(
     Update $update,
     string $className,
-    string $methodName,
+    string $methodName = 'handler',
     string $parameters = ''
   ) {
     $this->logger->debug(
-      'Creating hook for the update ID={update_id} with class name "{class_name}"::"{method_name}"',
+      'Creating hook with class name "{class_name}"::"{method_name}"',
       [
         'update_id'   => $update->update_id,
         'class_name'  => $className,
@@ -444,7 +448,7 @@ class CommandBus implements CommandBusInterface
       ->flush();
 
     $this->logger->info(
-      'Hook ID={hook_id} created for the update ID={update_id} with class name "{class_name}"::"{method_name}"',
+      'Hook ID={hook_id} created with class name "{class_name}"::"{method_name}"',
       [
         'hook_id'     => $hook->getId(),
         'update_id'   => $update->update_id,
@@ -462,7 +466,7 @@ class CommandBus implements CommandBusInterface
   public function findHook(Update $update)
   {
     $this->logger->debug(
-      'Searching hook for the update ID={update_id}',
+      'Searching hook',
       ['update_id' => $update->update_id]
     );
 
@@ -510,7 +514,7 @@ class CommandBus implements CommandBusInterface
       /** @var Hook $hook */
       $hook = reset($activeHooks);
       $this->logger->info(
-        'Found hook ID={hook_id} for the update ID={update_id}: chat entity ID={chat_id}, user entity ID={user_id}',
+        'Found hook ID={hook_id}: chat entity ID={chat_id}, user entity ID={user_id}',
         [
           'hook_id'   => $hook->getId(),
           'update_id' => $update->update_id,
@@ -541,7 +545,7 @@ class CommandBus implements CommandBusInterface
     }
 
     $this->logger->info(
-      'No hooks found for the update ID={update_id}: chat entity ID={chat_id}, user entity ID={user_id}',
+      'No hooks found: chat entity ID={chat_id}, user entity ID={user_id}',
       [
         'update_id' => $update->update_id,
         'chat_id'   => $chat->getId(),
@@ -558,22 +562,22 @@ class CommandBus implements CommandBusInterface
   public function executeHook(Hook $hook, Update $update): CommandBusInterface
   {
     $this->logger->debug(
-      'Executing hook ID={hook_id} for the update ID={update_id}',
+      'Executing hook ID={hook_id}',
       ['hook_id' => $hook->getId(), 'update_id' => $update->update_id]
     );
 
     if (class_exists($hook->getClassName())) {
       if (method_exists($hook->getClassName(), $hook->getMethodName())) {
-        $commandName = $hook->getClassName();
+        $className = $hook->getClassName();
         $methodName = $hook->getMethodName();
 
         $this->logger->debug(
-          'Hook command name "{command_name}", method name "{method_name}"',
-          ['command_name' => $commandName, 'method_name' => $methodName]
+          'Hook class name "{class_name}", method name "{method_name}"',
+          ['class_name' => $className, 'method_name' => $methodName]
         );
 
         /** @var AbstractCommand $command */
-        $command = new $commandName($this, $update, $this->translator);
+        $command = new $className($this, $update);
         $command->$methodName($hook->getParameters());
       } else {
         throw new HookException(
@@ -590,7 +594,7 @@ class CommandBus implements CommandBusInterface
     }
 
     $this->logger->info(
-      'Hook ID={hook_id} for the update ID={update_id} executed',
+      'Hook ID={hook_id} executed',
       ['hook_id' => $hook->getId(), 'update_id' => $update->update_id]
     );
 

@@ -42,6 +42,7 @@ services:
             - [registerCommand, ['Kettari\TelegramBundle\Telegram\Command\StartCommand']]
             - [registerCommand, ['Kettari\TelegramBundle\Telegram\Command\SettingsCommand']]
             - [registerCommand, ['Kettari\TelegramBundle\Telegram\Command\HelpCommand']]
+            - [registerCommand, ['Kettari\TelegramBundle\Telegram\Command\MenuCommand']]
             # These standard commands commented out so if you need them, add manually
             #- [registerCommand, ['Kettari\TelegramBundle\Telegram\Command\ListRolesCommand']]
             #- [registerCommand, ['Kettari\TelegramBundle\Telegram\Command\PushCommand']]

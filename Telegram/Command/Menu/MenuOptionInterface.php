@@ -3,8 +3,6 @@
 namespace Kettari\TelegramBundle\Telegram\Command\Menu;
 
 
-use unreal4u\TelegramAPI\Telegram\Types\Update;
-
 interface MenuOptionInterface
 {
   /**
@@ -25,16 +23,14 @@ interface MenuOptionInterface
   public function getHandler(): HookHandleInterface;
 
   /**
-   * @param \unreal4u\TelegramAPI\Telegram\Types\Update $update
    * @return bool
    */
-  public function checkIsClicked(Update $update): bool;
+  public function checkIsClicked(): bool;
 
   /**
    * Executed when user clicked this option.
    *
-   * @param \unreal4u\TelegramAPI\Telegram\Types\Update $update
    * @return bool True if option class expects callback from the user.
    */
-  public function click(Update $update): bool;
+  public function click(): bool;
 }

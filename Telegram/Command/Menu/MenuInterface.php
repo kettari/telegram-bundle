@@ -6,8 +6,6 @@ interface MenuInterface
 {
   /**
    * Show menu to user.
-   *
-   * @param int $chatId Telegram chat ID.
    */
-  public function show(int $chatId);
+  public function show();
 }

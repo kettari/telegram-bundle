@@ -43,7 +43,7 @@ class CurrentUserSubscriber extends AbstractBotSubscriber implements EventSubscr
   public function onUpdateReceived(UpdateReceivedEvent $event)
   {
     $this->logger->debug(
-      'Processing CurrentUserSubscriber::UpdateReceivedEvent for the update ID={update_id}',
+      'Processing CurrentUserSubscriber::UpdateReceivedEvent',
       ['update_id' => $event->getUpdate()->update_id]
     );
 
@@ -66,7 +66,7 @@ class CurrentUserSubscriber extends AbstractBotSubscriber implements EventSubscr
     }
 
     $this->logger->info(
-      'CurrentUserSubscriber::UpdateReceivedEvent for the update ID={update_id} processed',
+      'CurrentUserSubscriber::UpdateReceivedEvent processed',
       ['update_id' => $event->getUpdate()->update_id]
     );
   }

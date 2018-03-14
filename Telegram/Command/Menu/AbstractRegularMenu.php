@@ -3,21 +3,36 @@ declare(strict_types=1);
 
 namespace Kettari\TelegramBundle\Telegram\Command\Menu;
 
+use Kettari\TelegramBundle\Exception\MenuException;
+use Kettari\TelegramBundle\Exception\TelegramBundleException;
 use Kettari\TelegramBundle\Telegram\Communicator;
+use Kettari\TelegramBundle\Telegram\TelegramObjectsRetrieverTrait;
 use unreal4u\TelegramAPI\Telegram\Types\KeyboardButton;
 use unreal4u\TelegramAPI\Telegram\Types\ReplyKeyboardMarkup;
 
 abstract class AbstractRegularMenu extends AbstractMenu
 {
+  use TelegramObjectsRetrieverTrait;
 
   /**
    * @inheritDoc
    */
-  public function show(int $chatId)
+  public function show()
   {
+    if (empty($this->title)) {
+      throw new MenuException('Menu title can\'t be empty.');
+    }
+    if (is_null(
+      $telegramMessage = $this->getMessageFromUpdate($this->update)
+    )) {
+      throw new TelegramBundleException(
+        'Unable to show menu: Telegram message is not found in the update'
+      );
+    }
+
     $this->bus->getCommunicator()
       ->sendMessage(
-        $chatId,
+        $telegramMessage->chat->id,
         $this->trans->trans($this->title),
         Communicator::PARSE_MODE_PLAIN,
         $this->getReplyKeyboardMarkup()

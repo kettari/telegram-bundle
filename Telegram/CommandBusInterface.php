@@ -119,7 +119,7 @@ interface CommandBusInterface
   public function createHook(
     Update $update,
     string $className,
-    string $methodName,
+    string $methodName = 'handler',
     string $parameters = ''
   );
 

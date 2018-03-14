@@ -6,7 +6,6 @@ namespace Kettari\TelegramBundle\Telegram\Command\Menu;
 
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
-use Kettari\TelegramBundle\Exception\MenuException;
 use Kettari\TelegramBundle\Telegram\CommandBusInterface;
 use Kettari\TelegramBundle\Telegram\UpdateTypeResolver;
 use Psr\Log\LoggerInterface;
@@ -46,21 +45,23 @@ abstract class AbstractMenu implements MenuInterface, HookHandleInterface
   protected $title = '';
 
   /**
+   * @var Update
+   */
+  protected $update;
+
+  /**
    * AbstractMenu constructor.
    *
    * @param \Kettari\TelegramBundle\Telegram\CommandBusInterface $bus
-   * @param string $title Menu title which is displayed with menu options.
+   * @param \unreal4u\TelegramAPI\Telegram\Types\Update $update
    */
-  public function __construct(CommandBusInterface $bus, string $title)
+  public function __construct(CommandBusInterface $bus, Update $update)
   {
-    if (empty($this->title)) {
-      throw new MenuException('Menu title can\'t be empty.');
-    }
     $this->options = new ArrayCollection();
     $this->bus = $bus;
     $this->logger = $bus->getLogger();
     $this->trans = $bus->getTrans();
-    $this->title = $title;
+    $this->update = $update;
   }
 
   /**
@@ -102,28 +103,53 @@ abstract class AbstractMenu implements MenuInterface, HookHandleInterface
   }
 
   /**
+   * @return string
+   */
+  public function getTitle(): string
+  {
+    return $this->title;
+  }
+
+  /**
+   * @param string $title
+   * @return AbstractMenu
+   */
+  public function setTitle(string $title): AbstractMenu
+  {
+    $this->title = $title;
+
+    return $this;
+  }
+
+  /**
    * @inheritdoc
    */
-  public function handler(Update $update, $parameter)
+  public function handler($parameter)
   {
     $this->logger->debug(
-      'Menu hook for the update ID={update_id} type "{update_type}" is about to execute',
+      'Menu hook is about to execute',
       [
-        'update_id'   => $update->update_id,
-        'update_type' => UpdateTypeResolver::getUpdateType($update),
-        'update'      => $update,
+        'update_id' => $this->update->update_id,
+        'update_type' => UpdateTypeResolver::getUpdateType($this->update),
+        'parameter' => $parameter,
       ]
+    );
+    $this->logger->debug(
+      'Options count: {options_count} items',
+      ['options_count' => $this->options->count()]
     );
 
     /** @var \Kettari\TelegramBundle\Telegram\Command\Menu\MenuOptionInterface $option */
-    foreach ($this->options as $option) {
-      if ($option->checkIsClicked($update)) {
+    foreach ($this->options->toArray() as $option) {
+      if ($option->checkIsClicked()) {
+
+        $this->logger->debug('Option "{callback_ud}" ');
 
         // Let option do whatever is needed when it's clicked
-        if ($option->click($parameter)) {
+        if ($option->click()) {
           // If option is connected to some menu object, register callback
           $this->bus->createHook(
-            $update,
+            $this->update,
             get_class($option->getHandler()),
             'handler'
           );
@@ -134,9 +160,17 @@ abstract class AbstractMenu implements MenuInterface, HookHandleInterface
     }
 
     $this->logger->info(
-      'Menu hook for update ID={update_id} executed',
-      ['update_id' => $update->update_id]
+      'Menu hook executed',
+      ['update_id' => $this->update->update_id]
     );
+  }
+
+  /**
+   * @inheritdoc
+   */
+  public function hookMySelf()
+  {
+    $this->bus->createHook($this->update, get_class($this));
   }
 
 }

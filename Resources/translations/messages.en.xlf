@@ -195,16 +195,16 @@ Please, try again.</target>
                 <source>command.settings.choose_section</source>
                 <target>Which settings do you want to update?</target>
             </trans-unit>
-            <trans-unit id="command.settings.select_notifications">
-                <source>command.settings.select_notifications</source>
+            <trans-unit id="menu.notifications.select">
+                <source>menu.notifications.select</source>
                 <target>Select notifications you want to receive:</target>
             </trans-unit>
             <trans-unit id="command.settings.invalid_option">
                 <source>command.settings.invalid_option</source>
                 <target>I don't understand option you sent to me. Please try again  /settings</target>
             </trans-unit>
-            <trans-unit id="command.settings.notifications_settings_saved">
-                <source>command.settings.notifications_settings_saved</source>
+            <trans-unit id="menu.notifications.settings_saved">
+                <source>menu.notifications.settings_saved</source>
                 <target>Notification settings updated.</target>
             </trans-unit>
             <trans-unit id="command.settings.notification.self_update">

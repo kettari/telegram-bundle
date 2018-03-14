@@ -4,23 +4,33 @@ declare(strict_types=1);
 namespace Kettari\TelegramBundle\Telegram\Command;
 
 
-use Kettari\TelegramBundle\Telegram\Communicator;
-use unreal4u\TelegramAPI\Telegram\Types\Inline\Keyboard\Button;
-use unreal4u\TelegramAPI\Telegram\Types\Inline\Keyboard\Markup;
-use unreal4u\TelegramAPI\Telegram\Types\KeyboardButton;
-use unreal4u\TelegramAPI\Telegram\Types\ReplyKeyboardMarkup;
-use unreal4u\TelegramAPI\Telegram\Types\ReplyKeyboardRemove;
+use Kettari\TelegramBundle\Telegram\Command\Menu\SettingsMenu;
+use Kettari\TelegramBundle\Telegram\CommandBusInterface;
+use unreal4u\TelegramAPI\Telegram\Types\Update;
 
 class SettingsCommand extends AbstractCommand
 {
 
-  const BTN_NOTIFICATION = 'command.settings.notifications';
-  const BTN_CANCEL = 'command.button.cancel';
-  const MARK_V = "\xE2\x9C\x85";
-  const MARK_X = "\xE2\x9D\x8C";
   static public $name = 'settings';
   static public $description = 'command.settings.description';
   static public $requiredPermissions = ['execute command settings'];
+
+  /**
+   * @var \Kettari\TelegramBundle\Telegram\Command\Menu\SettingsMenu
+   */
+  private $menu;
+
+  /**
+   * @inheritDoc
+   */
+  public function __construct(
+    CommandBusInterface $bus,
+    Update $update
+  ) {
+    parent::__construct($bus, $update);
+
+    $this->menu = new SettingsMenu($this->bus, $this->update);
+  }
 
   /**
    * Executes command.
@@ -36,199 +46,8 @@ class SettingsCommand extends AbstractCommand
       return;
     }
 
-    $this->replyWithMessage(
-      $this->trans->trans('command.settings.choose_section'),
-      Communicator::PARSE_MODE_PLAIN,
-      $this->getReplyKeyboardMarkup_MainMenu()
-    );
-
-    $this->bus->createHook(
-      $this->update,
-      get_class($this),
-      'handleSettingsMainMenu'
-    );
-  }
-
-  /**
-   * Returns reply markup object.
-   *
-   * @return ReplyKeyboardMarkup
-   */
-  private function getReplyKeyboardMarkup_MainMenu()
-  {
-    // Notification button
-    $notificationBtn = new KeyboardButton();
-    $notificationBtn->text = $this->trans->trans(self::BTN_NOTIFICATION);
-
-    // Cancel button
-    $cancelBtn = new KeyboardButton();
-    $cancelBtn->text = $this->trans->trans(self::BTN_CANCEL);
-
-    // Keyboard
-    $replyMarkup = new ReplyKeyboardMarkup();
-    $replyMarkup->one_time_keyboard = true;
-    $replyMarkup->resize_keyboard = true;
-    $replyMarkup->keyboard[][] = $notificationBtn;
-    $replyMarkup->keyboard[][] = $cancelBtn;
-
-    return $replyMarkup;
-  }
-
-  /**
-   * Handles /settings main menu.
-   */
-  public function handleSettingsMainMenu()
-  {
-    $message = $this->update->message;
-    if (is_null($message)) {
-      return;
-    }
-
-    switch ($message->text) {
-      case $this->trans->trans(self::BTN_NOTIFICATION):
-        $this->replyWithMessage(
-          $this->trans->trans('command.settings.select_notifications'),
-          Communicator::PARSE_MODE_PLAIN,
-          $this->getReplyKeyboardMarkup_Notifications()
-        );
-        $this->bus->createHook(
-          $this->update,
-          get_class($this),
-          'handleSettingsNotificationOption'
-        );
-        break;
-      case $this->trans->trans(self::BTN_CANCEL):
-        $this->replyWithMessage(
-          $this->trans->trans('command.cancelled'),
-          Communicator::PARSE_MODE_PLAIN,
-          new ReplyKeyboardRemove()
-        );
-        break;
-      default:
-        $this->replyWithMessage(
-          $this->trans->trans('command.settings.invalid_option'),
-          Communicator::PARSE_MODE_PLAIN,
-          new ReplyKeyboardRemove()
-        );
-        break;
-    }
-  }
-
-  /**
-   * Returns reply markup for notifications option.
-   *
-   * @return \unreal4u\TelegramAPI\Telegram\Types\Inline\Keyboard\Markup
-   */
-  private function getReplyKeyboardMarkup_Notifications()
-  {
-    // Load user's permissions and notifications
-    $userPermissions = $this->bus->getUserHq()
-      ->getUserPermissions();
-    $userNotifications = $this->bus->getUserHq()
-      ->getUserNotifications();
-
-    // Load notifications
-    /** @var \Kettari\TelegramBundle\Entity\Notification $notifications */
-    $notifications = $this->bus->getDoctrine()
-      ->getRepository('KettariTelegramBundle:Notification')
-      ->findAllOrdered();
-    // Check if user has required for each notification permission
-    $inlineKeyboard = new Markup();
-    /** @var \Kettari\TelegramBundle\Entity\Notification $notificationItem */
-    foreach ($notifications as $notificationItem) {
-      $row = [];
-      if ($userPermissions->contains($notificationItem->getPermission())) {
-
-        // Does user have this notification enabled?
-        $mark = ($userNotifications->contains(
-          $notificationItem
-        )) ? self::MARK_V : self::MARK_X;
-
-        $inlineKeyboardButton = new Button();
-        $inlineKeyboardButton->text = $mark.' '.
-          $this->trans->trans($notificationItem->getTitle());
-        $inlineKeyboardButton->callback_data = $notificationItem->getName();
-        $row[] = $inlineKeyboardButton;
-      }
-      if (count($row)) {
-        $inlineKeyboard->inline_keyboard[] = $row;
-      }
-    }
-
-    return $inlineKeyboard;
-  }
-
-  /**
-   * Handles selection of the Notification option in the Settings
-   */
-  public function handleSettingsNotificationOption()
-  {
-    $cq = $this->update->callback_query;
-    if (is_null($cq) && !is_null($this->update->message)) {
-      $this->replyWithMessage($this->trans->trans('command.cancelled'));
-
-      return;
-    }
-    if (is_null($cq) || is_null($cq->message)) {
-      return;
-    }
-
-    // Load user's permissions and notifications
-    /** @var \Kettari\TelegramBundle\Entity\User $user */
-    $user = $this->bus->getUserHq()
-      ->getCurrentUser();
-    $userPermissions = $this->bus->getUserHq()
-      ->getUserPermissions();
-    $userNotifications = $this->bus->getUserHq()
-      ->getUserNotifications();
-
-    // Load notification
-    /** @var \Kettari\TelegramBundle\Entity\Notification $notification */
-    $notification = $this->bus->getDoctrine()
-      ->getRepository('KettariTelegramBundle:Notification')
-      ->findOneByName($cq->data);
-    if (is_null($notification)) {
-      return;
-    }
-    // Check user permission
-    if (!$userPermissions->contains($notification->getPermission())) {
-      return;
-    }
-
-    // Enable notification or disable it
-    if ($userNotifications->contains($notification)) {
-      $user->removeNotification($notification);
-    } else {
-      $user->addNotification($notification);
-    }
-    // Save changes
-    $this->bus->getDoctrine()
-      ->getManager()
-      ->persist($user);
-    $this->bus->getDoctrine()
-      ->getManager()
-      ->flush();
-
-    // Update keyboard
-    $this->bus->getCommunicator()
-      ->editMessageReplyMarkup(
-        $cq->message->chat->id,
-        $cq->message->message_id,
-        null,
-        $this->getReplyKeyboardMarkup_Notifications()
-      );
-    // Answer callback
-    $this->bus->getCommunicator()
-      ->answerCallbackQuery(
-        $cq->id,
-        $this->trans->trans('command.settings.notifications_settings_saved')
-      );
-    // Register this hook again
-    $this->bus->createHook(
-      $this->update,
-      get_class($this),
-      'handleSettingsNotificationOption'
-    );
+    $this->menu->show();
+    $this->menu->hookMySelf();
   }
 
 }

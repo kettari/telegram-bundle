@@ -43,8 +43,11 @@ class HookerSubscriber extends AbstractBotSubscriber implements EventSubscriberI
   public function onUpdateReceived(UpdateReceivedEvent $event)
   {
     $this->logger->debug(
-      'Processing HookerSubscriber::UpdateReceivedEvent for the update ID={update_id}',
-      ['update_id' => $event->getUpdate()->update_id]
+      'Processing HookerSubscriber::UpdateReceivedEvent',
+      [
+        'update_id'      => $event->getUpdate()->update_id,
+        'callback_query' => $event->getUpdate()->callback_query,
+      ]
     );
 
     // Check for hooks and execute if any found
@@ -56,33 +59,32 @@ class HookerSubscriber extends AbstractBotSubscriber implements EventSubscriberI
         ['hook_id' => $hook->getId()]
       );
 
-      // Set flag that request is handled
-      $event->getKeeper()
-        ->setRequestHandled(true);
       // Execute & delete the hook
       $this->bus->executeHook($hook, $event->getUpdate())
         ->deleteHook($hook);
 
-    } else {
-      /**
-       * No hooks found. Check update type. If it is UT_CALLBACK_QUERY then
-       * we have orphan request. Should answer with "Input obsolete, blah-blah"
-       */
-      if (UpdateTypeResolver::UT_CALLBACK_QUERY ==
-        UpdateTypeResolver::getUpdateType($event->getUpdate())) {
+    }
 
-        // Tell the poor guy (girl) to use command again
-        $this->communicator->answerCallbackQuery(
-          $event->getUpdate()->callback_query->id,
-          $this->bus->getTrans()
-            ->trans('command.input_obsolete')
-        );
+    /**
+     * Check update type. If it is UT_CALLBACK_QUERY and request is not
+     * handled -- we have orphan callback request. Should answer with
+     * "Input obsolete, blah-blah"
+     */
+    if (!$event->getKeeper()
+        ->isRequestHandled() && (UpdateTypeResolver::UT_CALLBACK_QUERY ==
+        UpdateTypeResolver::getUpdateType($event->getUpdate()))) {
 
-      }
+      // Tell the poor guy (girl) to use command again
+      $this->communicator->answerCallbackQuery(
+        $event->getUpdate()->callback_query->id,
+        $this->bus->getTrans()
+          ->trans('command.input_obsolete')
+      );
+
     }
 
     $this->logger->info(
-      'HookerSubscriber::UpdateReceivedEvent for the update ID={update_id} processed',
+      'HookerSubscriber::UpdateReceivedEvent processed',
       ['update_id' => $event->getUpdate()->update_id]
     );
   }

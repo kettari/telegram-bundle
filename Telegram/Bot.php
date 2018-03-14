@@ -68,7 +68,7 @@ class Bot implements BotInterface
   public function handle(Update $update)
   {
     $this->logger->debug(
-      'Handling update ID={update_id}',
+      'Processing update ID={update_id}',
       [
         'update_id' => $update->update_id,
         'update'    => $update,
@@ -90,9 +90,11 @@ class Bot implements BotInterface
     $this->dispatcher->dispatch(TerminateEvent::NAME, $terminateEvent);
 
     $this->logger->info(
-      'Update ID={update_id} handled',
+      'Update processed, request status: {request_status}',
       [
         'update_id'          => $update->update_id,
+        'request_status'     => $terminateEvent->getKeeper()
+          ->isRequestHandled() ? 'handled' : 'not handled',
         'is_method_deferred' => $this->communicator->isMethodDeferred(
         ) ? 'yes' : 'no',
       ]
