@@ -26,6 +26,7 @@ abstract class AbstractMethodEvent extends AbstractTelegramEvent
    */
   public function __construct(TelegramMethods $method, $response)
   {
+    parent::__construct();
     $this->method = $method;
     $this->response = $response;
     // @TODO Clarify response type in the comment

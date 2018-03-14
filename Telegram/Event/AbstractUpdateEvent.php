@@ -26,6 +26,7 @@ abstract class AbstractUpdateEvent extends AbstractTelegramEvent
    */
   public function __construct(Update $update)
   {
+    parent::__construct();
     $this->update = $update;
   }
 

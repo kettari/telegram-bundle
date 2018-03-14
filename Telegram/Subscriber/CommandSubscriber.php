@@ -74,20 +74,14 @@ class CommandSubscriber extends AbstractBotSubscriber implements EventSubscriber
     }
 
     // Execute the command
-    $this->bus->executeCommand(
-      $event->getUpdate(),
-      $event->getCommandName(),
-      $event->getParameter()
-    );
-    /*if ($this->bus->executeCommand(
+    if ($this->bus->executeCommand(
       $event->getUpdate(),
       $event->getCommandName(),
       $event->getParameter()
     )) {
-      // Set flag that request is handled
-      $this->getBot()
+      $event->getKeeper()
         ->setRequestHandled(true);
-    }*/
+    }
     $this->logger->info(
       'CommandSubscriber::CommandReceivedEvent for the message ID={message_id}, command "{command_name}" processed',
       [
@@ -144,8 +138,8 @@ class CommandSubscriber extends AbstractBotSubscriber implements EventSubscriber
     );
 
     // Set flag that request is handled
-    /*$this->getBot()
-      ->setRequestHandled(true);*/
+    $event->getKeeper()
+      ->setRequestHandled(true);
     $this->logger->info(
       'CommandSubscriber::CommandUnknownEvent for the message ID={message_id}, command "{command_name}" processed',
       [
@@ -179,8 +173,8 @@ class CommandSubscriber extends AbstractBotSubscriber implements EventSubscriber
     );
 
     // Set flag that request is handled
-    /*$this->getBot()
-      ->setRequestHandled(true);*/
+    $event->getKeeper()
+      ->setRequestHandled(true);
     $this->logger->info(
       'CommandSubscriber::CommandUnauthorizedEvent for the message ID={message_id}, command "{command_name}" processed',
       [

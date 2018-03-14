@@ -79,8 +79,8 @@ class ChatMemberSubscriber extends AbstractBotSubscriber implements EventSubscri
       ->flush();
 
     // Tell the Bot this request is handled
-    /*$this->getBot()
-      ->setRequestHandled(true);*/
+    $event->getKeeper()
+      ->setRequestHandled(true);
 
     $this->logger->info(
       'ChatMemberSubscriber::JoinChatMembersManyEvent for the message ID={message_id} processed',
@@ -236,8 +236,8 @@ class ChatMemberSubscriber extends AbstractBotSubscriber implements EventSubscri
       ->flush();
 
     // Tell the Bot this request is handled
-    /*$this->getBot()
-      ->setRequestHandled(true);*/
+    $event->getKeeper()
+      ->setRequestHandled(true);
 
     $this->logger->info(
       'ChatMemberSubscriber::LeftChatMemberEvent for the message ID={message_id} processed',

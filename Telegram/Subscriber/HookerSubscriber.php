@@ -57,8 +57,8 @@ class HookerSubscriber extends AbstractBotSubscriber implements EventSubscriberI
       );
 
       // Set flag that request is handled
-      /*$this->getBot()
-        ->setRequestHandled(true);*/
+      $event->getKeeper()
+        ->setRequestHandled(true);
       // Execute & delete the hook
       $this->bus->executeHook($hook, $event->getUpdate())
         ->deleteHook($hook);

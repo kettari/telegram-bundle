@@ -50,8 +50,8 @@ class GroupSubscriber extends AbstractBotSubscriber implements EventSubscriberIn
     $this->processGroupCreation($event->getUpdate());
 
     // Tell the Bot this request is handled
-    /*$this->getBot()
-      ->setRequestHandled(true);*/
+    $event->getKeeper()
+      ->setRequestHandled(true);
     $this->logger->info(
       'GroupSubscriber::GroupCreatedEvent for the message ID={message_id} processed',
       ['message_id' => $event->getMessage()->message_id]

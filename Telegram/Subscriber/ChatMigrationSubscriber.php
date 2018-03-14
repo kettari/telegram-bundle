@@ -71,8 +71,8 @@ class ChatMigrationSubscriber extends AbstractBotSubscriber implements EventSubs
       ->flush();
 
     // Tell the Bot this request is handled
-    /*$this->getBot()
-      ->setRequestHandled(true);*/
+    $event->getKeeper()
+      ->setRequestHandled(true);
     $this->logger->notice(
       'Migrated to chat with id "{chat_id}"',
       ['chat_id' => $chatToId]
@@ -116,8 +116,8 @@ class ChatMigrationSubscriber extends AbstractBotSubscriber implements EventSubs
       ->flush();
 
     // Tell the Bot this request is handled
-    /*$this->getBot()
-      ->setRequestHandled(true);*/
+    $event->getKeeper()
+      ->setRequestHandled(true);
     $this->logger->notice(
       'Migrated from chat with id "{chat_id}"',
       ['chat_id' => $event->getMessage()->chat->id]
