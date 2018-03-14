@@ -48,8 +48,9 @@ class MenuSubscriber extends AbstractBotSubscriber implements EventSubscriberInt
     );
 
     if (!$event->getKeeper()
-      ->isRequestHandled()) {
-      // @TODO Show main menu
+        ->isRequestHandled() && $this->bus->isCommandRegistered('menu')) {
+      $this->logger->debug('Request was not handled, executing menu command');
+      $this->bus->executeCommand($event->getUpdate(), 'menu');
     }
 
     $this->logger->info(

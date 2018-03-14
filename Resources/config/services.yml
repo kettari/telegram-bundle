@@ -7,7 +7,7 @@ services:
     kettari_telegram.communicator:
         class: Kettari\TelegramBundle\Telegram\Communicator
         arguments:
-            - '@monolog.logger'
+            - '@logger'
             - '@event_dispatcher'
             - '@kettari_telegram.throttle'
 
@@ -15,7 +15,7 @@ services:
     kettari_telegram.pusher:
         class: Kettari\TelegramBundle\Telegram\Pusher
         arguments:
-            - '@monolog.logger'
+            - '@logger'
             - '@doctrine'
             - '@kettari_telegram.communicator'
 
@@ -23,7 +23,7 @@ services:
     kettari_telegram.user_hq:
         class: Kettari\TelegramBundle\Telegram\UserHq
         arguments:
-            - '@monolog.logger'
+            - '@logger'
             - '@doctrine'
 
     # Command bus
@@ -31,7 +31,7 @@ services:
         class: Kettari\TelegramBundle\Telegram\CommandBus
         public: true
         arguments:
-            - '@monolog.logger'
+            - '@logger'
             - '@doctrine'
             - '@event_dispatcher'
             - '@kettari_telegram.user_hq'
@@ -42,7 +42,7 @@ services:
             - [registerCommand, ['Kettari\TelegramBundle\Telegram\Command\StartCommand']]
             - [registerCommand, ['Kettari\TelegramBundle\Telegram\Command\SettingsCommand']]
             - [registerCommand, ['Kettari\TelegramBundle\Telegram\Command\HelpCommand']]
-            # These standard commands commented out so if you need them, added manually
+            # These standard commands commented out so if you need them, add manually
             #- [registerCommand, ['Kettari\TelegramBundle\Telegram\Command\ListRolesCommand']]
             #- [registerCommand, ['Kettari\TelegramBundle\Telegram\Command\PushCommand']]
             #- [registerCommand, ['Kettari\TelegramBundle\Telegram\Command\UserManCommand']]
@@ -53,7 +53,7 @@ services:
     kettari_telegram.subscriber.audit:
         class: Kettari\TelegramBundle\Telegram\Subscriber\AuditSubscriber
         arguments:
-            - '@monolog.logger'
+            - '@logger'
             - '@doctrine'
             - '@event_dispatcher'
             - '@kettari_telegram.user_hq'
@@ -65,7 +65,7 @@ services:
     kettari_telegram.subscriber.current_user:
         class: Kettari\TelegramBundle\Telegram\Subscriber\CurrentUserSubscriber
         arguments: 
-            - '@monolog.logger'
+            - '@logger'
             - '@doctrine'
             - '@event_dispatcher'
             - '@kettari_telegram.user_hq'
@@ -77,7 +77,7 @@ services:
     kettari_telegram.subscriber.hooker:
         class: Kettari\TelegramBundle\Telegram\Subscriber\HookerSubscriber
         arguments: 
-            - '@monolog.logger'
+            - '@logger'
             - '@doctrine'
             - '@event_dispatcher'
             - '@kettari_telegram.user_hq'
@@ -89,7 +89,7 @@ services:
     kettari_telegram.subscriber.update:
         class: Kettari\TelegramBundle\Telegram\Subscriber\UpdateSubscriber
         arguments: 
-            - '@monolog.logger'
+            - '@logger'
             - '@doctrine'
             - '@event_dispatcher'
             - '@kettari_telegram.user_hq'
@@ -101,7 +101,7 @@ services:
     kettari_telegram.subscriber.chat:
         class: Kettari\TelegramBundle\Telegram\Subscriber\ChatSubscriber
         arguments: 
-            - '@monolog.logger'
+            - '@logger'
             - '@doctrine'
             - '@event_dispatcher'
             - '@kettari_telegram.user_hq'
@@ -113,7 +113,7 @@ services:
     kettari_telegram.subscriber.message:
         class: Kettari\TelegramBundle\Telegram\Subscriber\MessageSubscriber
         arguments: 
-            - '@monolog.logger'
+            - '@logger'
             - '@doctrine'
             - '@event_dispatcher'
             - '@kettari_telegram.user_hq'
@@ -125,7 +125,7 @@ services:
     kettari_telegram.subscriber.text:
         class: Kettari\TelegramBundle\Telegram\Subscriber\TextSubscriber
         arguments: 
-            - '@monolog.logger'
+            - '@logger'
             - '@doctrine'
             - '@event_dispatcher'
             - '@kettari_telegram.user_hq'
@@ -137,7 +137,7 @@ services:
     kettari_telegram.subscriber.command:
         class: Kettari\TelegramBundle\Telegram\Subscriber\CommandSubscriber
         arguments: 
-            - '@monolog.logger'
+            - '@logger'
             - '@doctrine'
             - '@event_dispatcher'
             - '@kettari_telegram.user_hq'
@@ -149,7 +149,7 @@ services:
     kettari_telegram.subscriber.chat_member:
         class: Kettari\TelegramBundle\Telegram\Subscriber\ChatMemberSubscriber
         arguments: 
-            - '@monolog.logger'
+            - '@logger'
             - '@doctrine'
             - '@event_dispatcher'
             - '@kettari_telegram.user_hq'
@@ -161,7 +161,7 @@ services:
     kettari_telegram.subscriber.group:
         class: Kettari\TelegramBundle\Telegram\Subscriber\GroupSubscriber
         arguments: 
-            - '@monolog.logger'
+            - '@logger'
             - '@doctrine'
             - '@event_dispatcher'
             - '@kettari_telegram.user_hq'
@@ -173,7 +173,7 @@ services:
     kettari_telegram.subscriber.chat_migration:
         class: Kettari\TelegramBundle\Telegram\Subscriber\ChatMigrationSubscriber
         arguments: 
-            - '@monolog.logger'
+            - '@logger'
             - '@doctrine'
             - '@event_dispatcher'
             - '@kettari_telegram.user_hq'
@@ -185,7 +185,19 @@ services:
     kettari_telegram.subscriber.user_registration:
         class: Kettari\TelegramBundle\Telegram\Subscriber\UserRegistrationSubscriber
         arguments: 
-            - '@monolog.logger'
+            - '@logger'
+            - '@doctrine'
+            - '@event_dispatcher'
+            - '@kettari_telegram.user_hq'
+            - '@kettari_telegram.bus'
+            - '@kettari_telegram.communicator'
+            - '@kettari_telegram.pusher'
+            
+    # Menu subscriber
+    kettari_telegram.subscriber.menu:
+        class: Kettari\TelegramBundle\Telegram\Subscriber\MenuSubscriber
+        arguments: 
+            - '@logger'
             - '@doctrine'
             - '@event_dispatcher'
             - '@kettari_telegram.user_hq'
@@ -198,7 +210,7 @@ services:
         class: Kettari\TelegramBundle\Telegram\Bot
         public: true
         arguments:
-            - '@monolog.logger'
+            - '@logger'
             - '@event_dispatcher'
             - '@kettari_telegram.bus'
             - '@kettari_telegram.communicator'
@@ -215,6 +227,8 @@ services:
             - [addSubscriber, ['@kettari_telegram.subscriber.group']]
             - [addSubscriber, ['@kettari_telegram.subscriber.chat_migration']]
             - [addSubscriber, ['@kettari_telegram.subscriber.user_registration']]
+            # These standard subscribers commented out so if you need them, add manually
+            - [addSubscriber, ['@kettari_telegram.subscriber.menu']]
 
     # Shortcuts
     telegram:

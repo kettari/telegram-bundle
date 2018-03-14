@@ -22,6 +22,8 @@ use unreal4u\TelegramAPI\Telegram\Types\User as TelegramUser;
 
 class CommandBus implements CommandBusInterface
 {
+  use TelegramObjectsRetrieverTrait;
+
   /**
    * Commands classes.
    *
@@ -204,6 +206,15 @@ class CommandBus implements CommandBusInterface
       }
     }
 
+    $this->logger->warning(
+      'Command "{command_name}" was not found',
+      [
+        'command_name' => $commandName,
+        'parameter'    => $parameter,
+        'update_id'    => $update->update_id,
+      ]
+    );
+
     return false;
   }
 
@@ -322,6 +333,14 @@ class CommandBus implements CommandBusInterface
   /**
    * @inheritDoc
    */
+  public function getLogger(): LoggerInterface
+  {
+    return $this->logger;
+  }
+
+  /**
+   * @inheritDoc
+   */
   public function getDoctrine(): RegistryInterface
   {
     return $this->doctrine;
@@ -435,41 +454,6 @@ class CommandBus implements CommandBusInterface
         'user_id'     => $user->getId(),
       ]
     );
-  }
-
-  /**
-   * Tries to return correct Message object.
-   *
-   * @param \unreal4u\TelegramAPI\Telegram\Types\Update $update
-   * @return \unreal4u\TelegramAPI\Telegram\Types\Message
-   */
-  private function getMessageFromUpdate(Update $update)
-  {
-    if (!is_null($update->message)) {
-      return $update->message;
-    } elseif (!is_null($update->callback_query) &&
-      (!is_null($update->callback_query->message))) {
-      return $update->callback_query->message;
-    } else {
-      return null;
-    }
-  }
-
-  /**
-   * Tries to return correct User object.
-   *
-   * @param \unreal4u\TelegramAPI\Telegram\Types\Update $update
-   * @return \unreal4u\TelegramAPI\Telegram\Types\User
-   */
-  private function getUserFromUpdate(Update $update)
-  {
-    if (!is_null($update->callback_query)) {
-      return $update->callback_query->from;
-    } elseif (!is_null($m = $this->getMessageFromUpdate($update))) {
-      return $m->from;
-    } else {
-      return null;
-    }
   }
 
   /**

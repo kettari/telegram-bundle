@@ -5,6 +5,7 @@ namespace Kettari\TelegramBundle\Telegram;
 
 
 use Kettari\TelegramBundle\Entity\Hook;
+use Psr\Log\LoggerInterface;
 use Symfony\Bridge\Doctrine\RegistryInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Translation\TranslatorInterface;
@@ -59,6 +60,13 @@ interface CommandBusInterface
    * @return array
    */
   public function getCommands(): array;
+
+  /**
+   * Returns Logger service.
+   *
+   * @return \Psr\Log\LoggerInterface
+   */
+  public function getLogger(): LoggerInterface;
 
   /**
    * Returns Doctrine service.
