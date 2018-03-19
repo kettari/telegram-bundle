@@ -58,7 +58,7 @@ class CommandSubscriber extends AbstractBotSubscriber implements EventSubscriber
     parent::__construct($logger);
     $this->dispatcher = $dispatcher;
     $this->bus = $bus;
-    $this->communicator;
+    $this->communicator = $communicator;
     $this->trans = $translator;
   }
 

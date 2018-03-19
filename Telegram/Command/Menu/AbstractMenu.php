@@ -137,9 +137,9 @@ abstract class AbstractMenu implements MenuInterface, HookHandleInterface
     $this->logger->debug(
       'Menu hook is about to execute',
       [
-        'update_id' => $update->update_id,
+        'update_id'   => $update->update_id,
         'update_type' => UpdateTypeResolver::getUpdateType($update),
-        'parameter' => $parameter,
+        'parameter'   => $parameter,
       ]
     );
     $this->logger->debug(
@@ -150,17 +150,8 @@ abstract class AbstractMenu implements MenuInterface, HookHandleInterface
     /** @var \Kettari\TelegramBundle\Telegram\Command\Menu\MenuOptionInterface $option */
     foreach ($this->options->toArray() as $option) {
       if ($option->checkIsClicked($update)) {
-
         // Let option do whatever is needed when it's clicked
-        if ($option->click($update)) {
-          // If option is connected to some menu object, register callback
-          $this->bus->createHook(
-            $update,
-            get_class($option->getHandler()),
-            'handler'
-          );
-        }
-
+        $option->click($update);
         break;
       }
     }

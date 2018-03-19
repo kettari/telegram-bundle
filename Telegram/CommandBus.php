@@ -288,6 +288,7 @@ class CommandBus implements CommandBusInterface
     foreach ($this->commandServices as $commandName => $serviceId) {
       $classes[] = $this->container->get($serviceId);
     }
+
     return $classes;
   }
 
@@ -378,7 +379,13 @@ class CommandBus implements CommandBusInterface
       return null;
     }
     // Try to find User object
-    if (is_null($telegramUser = $this->getUserFromUpdate($update))) {
+    if (UpdateTypeResolver::UT_CALLBACK_QUERY ==
+      UpdateTypeResolver::getUpdateType($update)) {
+      $telegramUser = $update->callback_query->from;
+    } else {
+      $telegramUser = $this->getUserFromUpdate($update);
+    }
+    if (is_null($telegramUser)) {
       $this->logger->debug('No user within the update');
 
       return null;

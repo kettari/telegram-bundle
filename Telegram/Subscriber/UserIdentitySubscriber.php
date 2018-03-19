@@ -46,7 +46,7 @@ class UserIdentitySubscriber extends AbstractBotSubscriber implements EventSubsc
     UserHqInterface $userHq
   ) {
     parent::__construct($logger);
-    $this->communicator;
+    $this->communicator = $communicator;
     $this->trans = $translator;
     $this->userHq = $userHq;
   }

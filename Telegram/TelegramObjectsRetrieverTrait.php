@@ -16,6 +16,7 @@ trait TelegramObjectsRetrieverTrait
    */
   protected function getUserFromUpdate(Update $update)
   {
+    // TODO Return User from callback->from with UpdateTypeResolver
     if (!is_null($message = $this->getMessageFromUpdate($update))) {
       return $message->from;
     } elseif (!is_null($update->edited_message)) {

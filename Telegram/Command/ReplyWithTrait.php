@@ -60,7 +60,7 @@ trait ReplyWithTrait
     foreach ($messages as $oneMessage) {
       /** @noinspection PhpUndefinedFieldInspection */
       /** @noinspection PhpUndefinedMethodInspection */
-      return $this->bus->getCommunicator()
+      return $this->comm
         ->sendMessage(
           $update->message->chat->id,
           $oneMessage,

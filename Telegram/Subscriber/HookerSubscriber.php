@@ -46,7 +46,7 @@ class HookerSubscriber extends AbstractBotSubscriber implements EventSubscriberI
   ) {
     parent::__construct($logger);
     $this->bus = $bus;
-    $this->communicator;
+    $this->communicator = $communicator;
     $this->trans = $translator;
   }
 
@@ -71,7 +71,7 @@ class HookerSubscriber extends AbstractBotSubscriber implements EventSubscriberI
    */
   public static function getSubscribedEvents()
   {
-    return [UpdateReceivedEvent::NAME => ['onUpdateReceived', 70000]];
+    return [UpdateReceivedEvent::NAME => ['onUpdateReceived', -10000]];
   }
 
   /**

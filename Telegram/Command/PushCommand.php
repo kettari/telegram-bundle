@@ -226,7 +226,7 @@ class PushCommand extends AbstractCommand
       );
       $this->bus->createHook(
         $update,
-        get_class($this),
+        'kettari_telegram.command.push',
         'handlePushChannel',
         $pushText
       );

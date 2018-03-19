@@ -48,9 +48,7 @@ class MainMenu extends AbstractRegularMenu
    */
   public function hookMySelf(Update $update)
   {
-    throw new TelegramBundleException(
-      'Main menu is not expected to be self-hooked.'
-    );
+    $this->bus->createHook($update, 'kettari_telegram.menu.main');
   }
 
 

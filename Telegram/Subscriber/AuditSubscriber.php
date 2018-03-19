@@ -77,7 +77,7 @@ class AuditSubscriber extends AbstractBotSubscriber implements EventSubscriberIn
   public static function getSubscribedEvents()
   {
     return [
-      UpdateReceivedEvent::NAME    => 'onUpdateReceived', // @TODO define correct priority
+      UpdateReceivedEvent::NAME    => ['onUpdateReceived', -5000], // @TODO define correct priority
       CommandExecutedEvent::NAME   => 'onCommandExecuted',
       JoinChatMemberEvent::NAME    => 'onMemberJoined',
       JoinChatMemberBotEvent::NAME => 'onBotJoined',

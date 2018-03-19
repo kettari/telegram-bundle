@@ -177,7 +177,7 @@ class RegisterCommand extends AbstractCommand
         // Register the hook so when user will send information, we will be notified.
         $this->bus->createHook(
           $update,
-          get_class($this),
+          'kettari_telegram.command.register',
           'handleContact'
         );
 
