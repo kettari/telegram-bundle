@@ -5,12 +5,51 @@ namespace Kettari\TelegramBundle\Telegram\Subscriber;
 
 
 use Kettari\TelegramBundle\Entity\Hook;
+use Kettari\TelegramBundle\Telegram\CommandBusInterface;
+use Kettari\TelegramBundle\Telegram\CommunicatorInterface;
 use Kettari\TelegramBundle\Telegram\Event\UpdateReceivedEvent;
 use Kettari\TelegramBundle\Telegram\UpdateTypeResolver;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+use Symfony\Component\Translation\TranslatorInterface;
 
 class HookerSubscriber extends AbstractBotSubscriber implements EventSubscriberInterface
 {
+  /**
+   * @var \Kettari\TelegramBundle\Telegram\CommandBusInterface
+   */
+  private $bus;
+
+  /**
+   * @var CommunicatorInterface
+   */
+  private $communicator;
+
+  /**
+   * @var TranslatorInterface
+   */
+  private $trans;
+
+  /**
+   * HookerSubscriber constructor.
+   *
+   * @param \Psr\Log\LoggerInterface $logger
+   * @param \Kettari\TelegramBundle\Telegram\CommandBusInterface $bus
+   * @param \Kettari\TelegramBundle\Telegram\CommunicatorInterface $communicator
+   * @param \Symfony\Component\Translation\TranslatorInterface $translator
+   */
+  public function __construct(
+    LoggerInterface $logger,
+    CommandBusInterface $bus,
+    CommunicatorInterface $communicator,
+    TranslatorInterface $translator
+  ) {
+    parent::__construct($logger);
+    $this->bus = $bus;
+    $this->communicator;
+    $this->trans = $translator;
+  }
+
   /**
    * Returns an array of event names this subscriber wants to listen to.
    *
@@ -77,8 +116,7 @@ class HookerSubscriber extends AbstractBotSubscriber implements EventSubscriberI
       // Tell the poor guy (girl) to use command again
       $this->communicator->answerCallbackQuery(
         $event->getUpdate()->callback_query->id,
-        $this->bus->getTrans()
-          ->trans('command.input_obsolete')
+        $this->trans->trans('command.input_obsolete')
       );
 
     }

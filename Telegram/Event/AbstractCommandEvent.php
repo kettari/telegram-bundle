@@ -29,7 +29,7 @@ abstract class AbstractCommandEvent extends AbstractMessageEvent
   public function __construct(
     Update $update,
     string $commandName,
-    string $parameter
+    string $parameter = ''
   ) {
     parent::__construct($update);
     if (empty($this->message->text)) {

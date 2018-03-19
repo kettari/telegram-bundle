@@ -3,7 +3,13 @@ declare(strict_types=1);
 
 namespace Kettari\TelegramBundle\Telegram\Command;
 
+use Kettari\TelegramBundle\Telegram\CommandBusInterface;
 use Kettari\TelegramBundle\Telegram\Communicator;
+use Kettari\TelegramBundle\Telegram\CommunicatorInterface;
+use Psr\Log\LoggerInterface;
+use Symfony\Bridge\Doctrine\RegistryInterface;
+use Symfony\Component\Translation\TranslatorInterface;
+use unreal4u\TelegramAPI\Telegram\Types\Update;
 
 class ListRolesCommand extends AbstractCommand
 {
@@ -13,13 +19,40 @@ class ListRolesCommand extends AbstractCommand
   static public $requiredPermissions = ['execute command listroles'];
 
   /**
-   * Executes command.
+   * @var \Symfony\Bridge\Doctrine\RegistryInterface
    */
-  public function execute()
+  private $doctrine;
+
+  /**
+   * ListRolesCommand constructor.
+   *
+   * @param \Psr\Log\LoggerInterface $logger
+   * @param \Kettari\TelegramBundle\Telegram\CommandBusInterface $bus
+   * @param \Symfony\Component\Translation\TranslatorInterface $translator
+   * @param \Symfony\Bridge\Doctrine\RegistryInterface $doctrine
+   * @param \Kettari\TelegramBundle\Telegram\CommunicatorInterface $communicator
+   */
+  public function __construct(
+    LoggerInterface $logger,
+    CommandBusInterface $bus,
+    TranslatorInterface $translator,
+    RegistryInterface $doctrine,
+    CommunicatorInterface $communicator
+  ) {
+    parent::__construct($logger, $bus, $translator, $communicator);
+    $this->doctrine = $doctrine;
+  }
+
+
+  /**
+   * @inheritdoc
+   */
+  public function execute(Update $update, string $parameter = '')
   {
     // This command is available only in private chat
-    if ('private' != $this->update->message->chat->type) {
+    if ('private' != $update->message->chat->type) {
       $this->replyWithMessage(
+        $update,
         $this->trans->trans('command.private_only')
       );
 
@@ -42,7 +75,7 @@ class ListRolesCommand extends AbstractCommand
       $text .= $this->trans->trans('command.listroles.roles_undefined');
     }
 
-    $this->replyWithMessage($text, Communicator::PARSE_MODE_HTML);
+    $this->replyWithMessage($update, $text, Communicator::PARSE_MODE_HTML);
   }
 
 
@@ -53,9 +86,8 @@ class ListRolesCommand extends AbstractCommand
    */
   private function getRolesAndPermissions()
   {
-    $doctrine = $this->bus->getDoctrine();
     $result = [];
-    $roles = $doctrine->getRepository('KettariTelegramBundle:Role')
+    $roles = $this->doctrine->getRepository('KettariTelegramBundle:Role')
       ->findAll();
     /** @var \Kettari\TelegramBundle\Entity\Role $roleItem */
     foreach ($roles as $roleItem) {

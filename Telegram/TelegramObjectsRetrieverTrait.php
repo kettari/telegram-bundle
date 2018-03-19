@@ -9,6 +9,25 @@ use unreal4u\TelegramAPI\Telegram\Types\Update;
 trait TelegramObjectsRetrieverTrait
 {
   /**
+   * Tries to return correct User object.
+   *
+   * @param \unreal4u\TelegramAPI\Telegram\Types\Update $update
+   * @return \unreal4u\TelegramAPI\Telegram\Types\User
+   */
+  protected function getUserFromUpdate(Update $update)
+  {
+    if (!is_null($message = $this->getMessageFromUpdate($update))) {
+      return $message->from;
+    } elseif (!is_null($update->edited_message)) {
+      return $update->edited_message->from;
+    } elseif (!is_null($update->channel_post)) {
+      return $update->channel_post->from;
+    }
+
+    return null;
+  }
+
+  /**
    * Tries to return correct Message object.
    *
    * @param \unreal4u\TelegramAPI\Telegram\Types\Update $update
@@ -21,25 +40,27 @@ trait TelegramObjectsRetrieverTrait
     } elseif (!is_null($update->callback_query) &&
       (!is_null($update->callback_query->message))) {
       return $update->callback_query->message;
-    } else {
-      return null;
     }
+
+    return null;
   }
 
   /**
-   * Tries to return correct User object.
+   * Tries to track down chat this update was sent from.
    *
-   * @param \unreal4u\TelegramAPI\Telegram\Types\Update $update
-   * @return \unreal4u\TelegramAPI\Telegram\Types\User
+   * @param Update $update
+   * @return \unreal4u\TelegramAPI\Telegram\Types\Chat|null
    */
-  protected function getUserFromUpdate(Update $update)
+  protected function getChatFromUpdate(Update $update)
   {
-    if (!is_null($update->callback_query)) {
-      return $update->callback_query->from;
-    } elseif (!is_null($m = $this->getMessageFromUpdate($update))) {
-      return $m->from;
-    } else {
-      return null;
+    if (!is_null($message = $this->getMessageFromUpdate($update))) {
+      return $message->chat;
+    } elseif (!is_null($update->edited_message)) {
+      return $update->edited_message->chat;
+    } elseif (!is_null($update->channel_post)) {
+      return $update->channel_post->chat;
     }
+
+    return null;
   }
 }

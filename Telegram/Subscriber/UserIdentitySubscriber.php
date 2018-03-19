@@ -4,12 +4,53 @@ declare(strict_types=1);
 namespace Kettari\TelegramBundle\Telegram\Subscriber;
 
 
-use Kettari\TelegramBundle\Telegram\Communicator;
-use Kettari\TelegramBundle\Telegram\Event\UpdateReceivedEvent;
-use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
-class CurrentUserSubscriber extends AbstractBotSubscriber implements EventSubscriberInterface
+use Kettari\TelegramBundle\Telegram\Communicator;
+use Kettari\TelegramBundle\Telegram\CommunicatorInterface;
+use Kettari\TelegramBundle\Telegram\Event\UpdateReceivedEvent;
+use Kettari\TelegramBundle\Telegram\UserHqInterface;
+use Psr\Log\LoggerInterface;
+
+use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+use Symfony\Component\Translation\TranslatorInterface;
+
+class UserIdentitySubscriber extends AbstractBotSubscriber implements EventSubscriberInterface
 {
+  /**
+   * @var CommunicatorInterface
+   */
+  private $communicator;
+
+  /**
+   * @var \Symfony\Component\Translation\TranslatorInterface
+   */
+  private $trans;
+
+  /**
+   * @var UserHqInterface
+   */
+  private $userHq;
+
+  /**
+   * UserIdentitySubscriber constructor.
+   *
+   * @param \Psr\Log\LoggerInterface $logger
+   * @param \Kettari\TelegramBundle\Telegram\CommunicatorInterface $communicator
+   * @param \Symfony\Component\Translation\TranslatorInterface $translator
+   * @param \Kettari\TelegramBundle\Telegram\UserHqInterface $userHq
+   */
+  public function __construct(
+    LoggerInterface $logger,
+    CommunicatorInterface $communicator,
+    TranslatorInterface $translator,
+    UserHqInterface $userHq
+  ) {
+    parent::__construct($logger);
+    $this->communicator;
+    $this->trans = $translator;
+    $this->userHq = $userHq;
+  }
+
   /**
    * Returns an array of event names this subscriber wants to listen to.
    *
@@ -43,7 +84,7 @@ class CurrentUserSubscriber extends AbstractBotSubscriber implements EventSubscr
   public function onUpdateReceived(UpdateReceivedEvent $event)
   {
     $this->logger->debug(
-      'Processing CurrentUserSubscriber::UpdateReceivedEvent',
+      'Processing UserIdentitySubscriber::UpdateReceivedEvent',
       ['update_id' => $event->getUpdate()->update_id]
     );
 
@@ -58,7 +99,7 @@ class CurrentUserSubscriber extends AbstractBotSubscriber implements EventSubscr
       if (!is_null($event->getUpdate()->message)) {
         $this->communicator->sendMessage(
             $event->getUpdate()->message->chat->id,
-            $this->bus->getTrans()->trans('general.account_blocked'),
+            $this->trans->trans('general.account_blocked'),
             Communicator::PARSE_MODE_PLAIN
           );
       }
@@ -66,7 +107,7 @@ class CurrentUserSubscriber extends AbstractBotSubscriber implements EventSubscr
     }
 
     $this->logger->info(
-      'CurrentUserSubscriber::UpdateReceivedEvent processed',
+      'UserIdentitySubscriber::UpdateReceivedEvent processed',
       ['update_id' => $event->getUpdate()->update_id]
     );
   }

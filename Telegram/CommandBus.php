@@ -6,16 +6,15 @@ namespace Kettari\TelegramBundle\Telegram;
 use Kettari\TelegramBundle\Entity\Hook;
 use Kettari\TelegramBundle\Entity\Permission;
 use Kettari\TelegramBundle\Entity\Role;
+use Kettari\TelegramBundle\Exception\CommandNotFoundException;
 use Kettari\TelegramBundle\Exception\HookException;
-use Kettari\TelegramBundle\Exception\InvalidCommandException;
-use Kettari\TelegramBundle\Telegram\Command\AbstractCommand;
 use Kettari\TelegramBundle\Telegram\Command\TelegramCommandInterface;
 use Kettari\TelegramBundle\Telegram\Event\CommandExecutedEvent;
 use Kettari\TelegramBundle\Telegram\Event\CommandUnauthorizedEvent;
 use Psr\Log\LoggerInterface;
 use Symfony\Bridge\Doctrine\RegistryInterface;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
-use Symfony\Component\Translation\TranslatorInterface;
 use unreal4u\TelegramAPI\Telegram\Types\Update;
 use unreal4u\TelegramAPI\Telegram\Types\User as TelegramUser;
 
@@ -25,11 +24,9 @@ class CommandBus implements CommandBusInterface
   use TelegramObjectsRetrieverTrait;
 
   /**
-   * Commands classes.
-   *
-   * @var array
+   * @var \Symfony\Component\DependencyInjection\Container
    */
-  protected $commandsClasses = [];
+  private $container;
 
   /**
    * @var LoggerInterface
@@ -47,83 +44,43 @@ class CommandBus implements CommandBusInterface
   private $dispatcher;
 
   /**
-   * @var UserHqInterface
+   * Commands classes.
+   *
+   * @var array
    */
-  private $userHq;
-
-  /**
-   * @var \Kettari\TelegramBundle\Telegram\CommunicatorInterface
-   */
-  private $communicator;
-
-  /**
-   * @var \Kettari\TelegramBundle\Telegram\PusherInterface
-   */
-  private $pusher;
-
-  /**
-   * @var TranslatorInterface
-   */
-  private $translator;
+  private $commandServices = [];
 
   /**
    * CommandBus constructor.
    *
+   * @param \Symfony\Component\DependencyInjection\ContainerInterface $container
    * @param \Psr\Log\LoggerInterface $logger
    * @param \Symfony\Bridge\Doctrine\RegistryInterface $doctrine
    * @param EventDispatcherInterface $dispatcher
-   * @param UserHqInterface $userHq
-   * @param \Kettari\TelegramBundle\Telegram\CommunicatorInterface $communicator
-   * @param \Kettari\TelegramBundle\Telegram\PusherInterface $pusher
-   * @param TranslatorInterface $translator
    */
   public function __construct(
+    ContainerInterface $container,
     LoggerInterface $logger,
     RegistryInterface $doctrine,
-    EventDispatcherInterface $dispatcher,
-    UserHqInterface $userHq,
-    CommunicatorInterface $communicator,
-    PusherInterface $pusher,
-    TranslatorInterface $translator
+    EventDispatcherInterface $dispatcher
   ) {
+    $this->container = $container;
     $this->logger = $logger;
     $this->doctrine = $doctrine;
     $this->dispatcher = $dispatcher;
-    $this->userHq = $userHq;
-    $this->communicator = $communicator;
-    $this->pusher = $pusher;
-    $this->translator = $translator;
   }
 
   /**
    * {@inheritdoc}
    */
-  public function registerCommand(string $commandClass): CommandBusInterface
-  {
-    $this->logger->debug(
-      'Registering command class "{command_class}"',
-      ['command_class' => $commandClass]
-    );
-
-    if (class_exists($commandClass)) {
-      if (is_subclass_of($commandClass, TelegramCommandInterface::class)) {
-        $this->commandsClasses[$commandClass] = true;
-      } else {
-        throw new InvalidCommandException(
-          'Unable to register command: "'.$commandClass.
-          '" The command should implement '.TelegramCommandInterface::class.
-          ' interface'
-        );
-      }
-    } else {
-      throw new InvalidCommandException(
-        'Unable to register command: '.$commandClass.' Class is not found'
-      );
-    }
-
+  public function registerCommand(
+    string $commandName,
+    string $serviceId
+  ): CommandBusInterface {
+    $this->commandServices[$commandName] = $serviceId;
     $this->logger->info(
-      'Command class "{command_class}" registered',
-      ['command_class' => $commandClass]
+      'Command "{command_name}" as "{service_id}" service registered',
+      ['command_name' => $commandName, 'service_id' => $serviceId]
     );
 
     return $this;
@@ -132,108 +89,104 @@ class CommandBus implements CommandBusInterface
   /**
    * {@inheritdoc}
    */
-  public function isCommandRegistered(string $commandName): bool
-  {
-    foreach ($this->commandsClasses as $commandClass => $placeholder) {
-      /** @var AbstractCommand $commandClass */
-      if ($commandClass::getName() == $commandName) {
-        return true;
-      }
-    }
-
-    return false;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
   public function executeCommand(
     Update $update,
     string $commandName,
-    string $parameter = ''
+    string $commandParameter = ''
   ): bool {
     $this->logger->debug(
       'About to execute command "{command_name}" with parameter "{parameter}"',
       [
         'command_name' => $commandName,
-        'parameter'    => $parameter,
+        'parameter'    => empty($commandParameter) ? '(empty)' : $commandParameter,
         'update_id'    => $update->update_id,
       ]
     );
 
-    foreach ($this->commandsClasses as $commandClass => $placeholder) {
-      /** @var AbstractCommand $commandClass */
-      if ($commandClass::getName() == $commandName) {
-
-
-        // Check permissions for current user
-        if (!$this->isAuthorized(
-          $this->getUserFromUpdate($update),
-          $commandClass
-        )) {
-          $this->logger->notice(
-            'User is not authorized to execute /{command_name} command with the class "{class_name}"',
-            ['command_name' => $commandName, 'class_name' => $commandClass]
-          );
-
-          // Dispatch command is unauthorized
-          $this->dispatchUnauthorizedCommand($update, $commandName, $parameter);
-
-          return false;
-        }
-
-        // User is authorized, OK
-        $this->logger->info(
-          'Executing /{command_name} command with the parameter "{parameter}"',
-          [
-            'command_name' => $commandName,
-            'class_name'   => $commandClass,
-            'parameter'    => $parameter,
-            'update_id'    => $update->update_id,
-          ]
-        );
-
-        /** @var AbstractCommand $command */
-        $command = new $commandClass($this, $update);
-        $command->initialize($parameter)
-          ->execute();
-
-        $this->logger->debug(
-          'Command /{command_name} executed with the class "{class_name}"',
-          ['command_name' => $commandName, 'class_name' => $commandClass]
-        );
-
-        // Dispatch command is executed
-        $this->dispatchCommandExecuted($update, $command);
-
-        return true;
-      }
+    if (!$this->isCommandRegistered($commandName)) {
+      throw new CommandNotFoundException(
+        sprintf('Command "%s" is not registered.', $commandName)
+      );
     }
 
-    $this->logger->warning(
-      'Command "{command_name}" was not found',
+    /** @var \Kettari\TelegramBundle\Telegram\Command\TelegramCommandInterface $commandService */
+    $commandService = $this->container->get(
+      $this->commandServices[$commandName]
+    );
+    // Check permissions for current user
+    if (!$this->isAuthorized(
+      $this->getUserFromUpdate($update),
+      $commandService
+    )) {
+      $this->logger->notice(
+        'User is not authorized to execute /{command_name} command with the class "{class_name}"',
+        ['command_name' => $commandName, 'class_name' => $commandName]
+      );
+
+      // Dispatch command is unauthorized
+      $this->dispatchUnauthorizedCommand(
+        $update,
+        $commandName,
+        $commandParameter
+      );
+
+      return false;
+    }
+
+    // User is authorized, OK
+    $this->logger->info(
+      'Executing /{command_name} command with the parameter "{parameter}"',
       [
         'command_name' => $commandName,
-        'parameter'    => $parameter,
+        'service_id'   => $this->commandServices[$commandName],
+        'class_name'   => get_class($commandService),
+        'parameter'    => empty($commandParameter) ? '(empty)' : $commandParameter,
         'update_id'    => $update->update_id,
       ]
     );
 
-    return false;
+    // Execute command
+    $commandService->execute($update, $commandParameter);
+
+    $this->logger->debug(
+      'Command /{command_name} executed with the class "{class_name}"',
+      [
+        'command_name' => $commandName,
+        'class_name'   => get_class($commandService),
+      ]
+    );
+
+    // Dispatch command is executed
+    $this->dispatchCommandExecuted($update, $commandService);
+
+    return true;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function isCommandRegistered(string $commandName): bool
+  {
+    return isset($this->commandServices[$commandName]);
   }
 
   /**
    * Return true if telegram user is authorized to execute specified command.
    *
    * @param \unreal4u\TelegramAPI\Telegram\Types\User $telegramUser
-   * @param \Kettari\TelegramBundle\Telegram\Command\AbstractCommand $command
+   * @param \Kettari\TelegramBundle\Telegram\Command\TelegramCommandInterface $command
    * @return bool
    */
-  public function isAuthorized(TelegramUser $telegramUser, $command): bool
-  {
+  public function isAuthorized(
+    TelegramUser $telegramUser,
+    TelegramCommandInterface $command
+  ): bool {
     $this->logger->debug(
       'Checking Telegram user ID={user_id} authorization to execute command "{command_name}"',
-      ['user_id' => $telegramUser->id, 'command_name' => $command::getName()]
+      [
+        'user_id'      => $telegramUser->id,
+        'command_name' => $command::getName(),
+      ]
     );
 
     // Find user object
@@ -312,11 +265,11 @@ class CommandBus implements CommandBusInterface
    * Dispatches command is executed.
    *
    * @param Update $update
-   * @param \Kettari\TelegramBundle\Telegram\Command\AbstractCommand $command
+   * @param \Kettari\TelegramBundle\Telegram\Command\TelegramCommandInterface $command
    */
   private function dispatchCommandExecuted(
     Update $update,
-    AbstractCommand $command
+    TelegramCommandInterface $command
   ) {
     // Dispatch command event
     $commandExecutedEvent = new CommandExecutedEvent($update, $command);
@@ -331,63 +284,11 @@ class CommandBus implements CommandBusInterface
    */
   public function getCommands(): array
   {
-    return $this->commandsClasses;
-  }
-
-  /**
-   * @inheritDoc
-   */
-  public function getLogger(): LoggerInterface
-  {
-    return $this->logger;
-  }
-
-  /**
-   * @inheritDoc
-   */
-  public function getDoctrine(): RegistryInterface
-  {
-    return $this->doctrine;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function getDispatcher(): EventDispatcherInterface
-  {
-    return $this->dispatcher;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function getUserHq(): UserHqInterface
-  {
-    return $this->userHq;
-  }
-
-  /**
-   * @inheritDoc
-   */
-  public function getCommunicator(): CommunicatorInterface
-  {
-    return $this->communicator;
-  }
-
-  /**
-   * @inheritDoc
-   */
-  public function getPusher(): PusherInterface
-  {
-    return $this->pusher;
-  }
-
-  /**
-   * @inheritdoc
-   */
-  public function getTrans(): TranslatorInterface
-  {
-    return $this->translator;
+    $classes = [];
+    foreach ($this->commandServices as $commandName => $serviceId) {
+      $classes[] = $this->container->get($serviceId);
+    }
+    return $classes;
   }
 
   /**
@@ -395,24 +296,24 @@ class CommandBus implements CommandBusInterface
    */
   public function createHook(
     Update $update,
-    string $className,
+    string $serviceId,
     string $methodName = 'handler',
-    string $parameters = ''
+    string $parameter = ''
   ) {
     $this->logger->debug(
-      'Creating hook with class name "{class_name}"::"{method_name}"',
+      'Creating hook with service ID= "{service_id}"::"{method_name}"',
       [
         'update_id'   => $update->update_id,
-        'class_name'  => $className,
+        'service_id'  => $serviceId,
         'method_name' => $methodName,
       ]
     );
 
     if (is_null($telegramMessage = $this->getMessageFromUpdate($update))) {
-      throw new HookException('Unable to create hook: Message is NULL');
+      throw new HookException('Unable to create hook: message is null');
     }
     if (is_null($telegramUser = $this->getUserFromUpdate($update))) {
-      throw new HookException('Unable to create hook: Message->From is NULL');
+      throw new HookException('Unable to create hook: user is null');
     }
 
     // Find chat object. If not found, create new
@@ -439,20 +340,20 @@ class CommandBus implements CommandBusInterface
     $hook->setCreated(new \DateTime('now', new \DateTimeZone('UTC')))
       ->setChat($chat)
       ->setUser($user)
-      ->setClassName($className)
+      ->setServiceId($serviceId)
       ->setMethodName($methodName)
-      ->setParameters($parameters);
+      ->setParameter($parameter);
     $this->doctrine->getManager()
       ->persist($hook);
     $this->doctrine->getManager()
       ->flush();
 
     $this->logger->info(
-      'Hook ID={hook_id} created with class name "{class_name}"::"{method_name}"',
+      'Hook ID={hook_id} created with service ID="{service_id}"::"{method_name}"',
       [
         'hook_id'     => $hook->getId(),
         'update_id'   => $update->update_id,
-        'class_name'  => $className,
+        'service_id'  => $serviceId,
         'method_name' => $methodName,
         'chat_id'     => $chat->getId(),
         'user_id'     => $user->getId(),
@@ -482,29 +383,21 @@ class CommandBus implements CommandBusInterface
 
       return null;
     }
-
     // Find chat object. If not found, nothing to do
     $chat = $this->doctrine->getRepository('KettariTelegramBundle:Chat')
       ->findOneByTelegramId($telegramMessage->chat->id);
     if (!$chat) {
-      $this->logger->debug(
-        'Chat entity not found for the chat ID={chat_id}',
-        ['chat_id' => $telegramMessage->chat->id]
+      throw new HookException(
+        'Chat entity not found for Telegram chat ID='.$telegramMessage->chat->id
       );
-
-      return null;
     }
-
     // Find user object. If not found, nothing to do
     $user = $this->doctrine->getRepository('KettariTelegramBundle:User')
       ->findOneByTelegramId($telegramUser->id);
     if (!$user) {
-      $this->logger->debug(
-        'User entity not found for the user ID={user_id}',
-        ['user_id' => $telegramUser->id]
+      throw new HookException(
+        'User entity not found for Telegram user ID='.$telegramUser->id
       );
-
-      return null;
     }
 
     // Find hook object
@@ -563,33 +456,35 @@ class CommandBus implements CommandBusInterface
   {
     $this->logger->debug(
       'Executing hook ID={hook_id}',
-      ['hook_id' => $hook->getId(), 'update_id' => $update->update_id]
+      [
+        'hook_id'    => $hook->getId(),
+        'update_id'  => $update->update_id,
+        'service_id' => $hook->getServiceId(),
+      ]
     );
 
-    if (class_exists($hook->getClassName())) {
-      if (method_exists($hook->getClassName(), $hook->getMethodName())) {
-        $className = $hook->getClassName();
-        $methodName = $hook->getMethodName();
+    /** @var \Kettari\TelegramBundle\Telegram\Command\TelegramCommandInterface $commandService */
+    $hookService = $this->container->get($hook->getServiceId());
 
-        $this->logger->debug(
-          'Hook class name "{class_name}", method name "{method_name}"',
-          ['class_name' => $className, 'method_name' => $methodName]
-        );
+    if (method_exists($hookService, $hook->getMethodName())) {
+      $methodName = $hook->getMethodName();
 
-        /** @var AbstractCommand $command */
-        $command = new $className($this, $update);
-        $command->$methodName($hook->getParameters());
-      } else {
-        throw new HookException(
-          'Unable to execute the hook ID='.$hook->getId().
-          '. Method not exists "'.$hook->getMethodName().'"" for the class: '.
-          $hook->getClassName()
-        );
-      }
+      $this->logger->debug(
+        'Hook service ID "{service_id}" for "{class_name}", method name "{method_name}"',
+        [
+          'service_id'  => $hook->getServiceId(),
+          'class_name'  => get_class($hookService),
+          'method_name' => $methodName,
+        ]
+      );
+
+      // Execute the hook
+      $hookService->$methodName($update, $hook->getParameter());
+
     } else {
       throw new HookException(
-        'Unable to execute the hook ID='.$hook->getId().'. Class not exists: '.
-        $hook->getClassName()
+        'Unable to execute the hook ID='.$hook->getId().'. Method not exists "'.
+        $hook->getMethodName().'"" for the class: '.get_class($hookService)
       );
     }
 

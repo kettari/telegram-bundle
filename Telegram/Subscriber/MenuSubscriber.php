@@ -4,11 +4,36 @@ declare(strict_types=1);
 namespace Kettari\TelegramBundle\Telegram\Subscriber;
 
 
+use Kettari\TelegramBundle\Telegram\CommandBusInterface;
+
 use Kettari\TelegramBundle\Telegram\Event\TerminateEvent;
+use Psr\Log\LoggerInterface;
+
+
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+
 
 class MenuSubscriber extends AbstractBotSubscriber implements EventSubscriberInterface
 {
+  /**
+   * @var \Kettari\TelegramBundle\Telegram\CommandBusInterface
+   */
+  private $bus;
+
+  /**
+   * CommandSubscriber constructor.
+   *
+   * @param \Psr\Log\LoggerInterface $logger
+   * @param \Kettari\TelegramBundle\Telegram\CommandBusInterface $bus
+   */
+  public function __construct(
+    LoggerInterface $logger,
+    CommandBusInterface $bus
+  ) {
+    parent::__construct($logger);
+    $this->bus = $bus;
+  }
+
   /**
    * Returns an array of event names this subscriber wants to listen to.
    *

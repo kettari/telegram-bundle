@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Kettari\TelegramBundle\Telegram\Command\Menu;
 
 use Kettari\TelegramBundle\Telegram\CommandBusInterface;
+use Kettari\TelegramBundle\Telegram\CommunicatorInterface;
 use Kettari\TelegramBundle\Telegram\Event\KeeperSingleton;
 use Kettari\TelegramBundle\Telegram\UpdateTypeResolver;
 use Psr\Log\LoggerInterface;
@@ -33,11 +34,6 @@ abstract class AbstractMenuOption implements MenuOptionInterface, HookHandleInte
   protected $trans;
 
   /**
-   * @var Update
-   */
-  protected $update;
-
-  /**
    * @var string
    */
   protected $caption = '';
@@ -60,18 +56,21 @@ abstract class AbstractMenuOption implements MenuOptionInterface, HookHandleInte
   /**
    * AbstractMenuOption constructor.
    *
+   * @param \Psr\Log\LoggerInterface $logger
    * @param \Kettari\TelegramBundle\Telegram\CommandBusInterface $bus
-   * @param \unreal4u\TelegramAPI\Telegram\Types\Update $update
+   * @param \Symfony\Component\Translation\TranslatorInterface $translator
+   * @param \Kettari\TelegramBundle\Telegram\CommunicatorInterface $communicator
    */
   public function __construct(
+    LoggerInterface $logger,
     CommandBusInterface $bus,
-    Update $update
+    TranslatorInterface $translator,
+    CommunicatorInterface $communicator
   ) {
+    $this->logger = $logger;
     $this->bus = $bus;
-    $this->logger = $bus->getLogger();
-    $this->comm = $bus->getCommunicator();
-    $this->trans = $bus->getTrans();
-    $this->update = $update;
+    $this->trans = $translator;
+    $this->comm = $communicator;
     $this->keeper = KeeperSingleton::getInstance();
   }
 
@@ -111,24 +110,24 @@ abstract class AbstractMenuOption implements MenuOptionInterface, HookHandleInte
   }
 
   /**
-   * @return bool
+   * @inheritdoc
    */
-  public function checkIsClicked(): bool
+  public function checkIsClicked(Update $update): bool
   {
     $this->logger->debug(
       'Checking if option "{callback_id}" is clicked',
       [
         'callback_id' => $this->callbackId,
-        'update_id'   => $this->update->update_id,
-        'update_type' => UpdateTypeResolver::getUpdateType($this->update),
+        'update_id'   => $update->update_id,
+        'update_type' => UpdateTypeResolver::getUpdateType($update),
       ]
     );
 
     // Check if option clicked depending on the update type
-    switch (UpdateTypeResolver::getUpdateType($this->update)) {
+    switch (UpdateTypeResolver::getUpdateType($update)) {
       case UpdateTypeResolver::UT_MESSAGE:
         if ($this->trans->trans($this->caption) ==
-          $this->update->message->text) {
+          $update->message->text) {
           $this->logger->debug(
             'Option "{callback_id}" is clicked with message text',
             ['callback_id' => $this->callbackId]
@@ -155,13 +154,5 @@ abstract class AbstractMenuOption implements MenuOptionInterface, HookHandleInte
     );
 
     return false;
-  }
-
-  /**
-   * @inheritdoc
-   */
-  public function hookMySelf()
-  {
-    $this->bus->createHook($this->update, get_class($this));
   }
 }

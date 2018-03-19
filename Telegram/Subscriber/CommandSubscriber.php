@@ -4,16 +4,64 @@ declare(strict_types=1);
 namespace Kettari\TelegramBundle\Telegram\Subscriber;
 
 
+use Kettari\TelegramBundle\Telegram\CommandBusInterface;
 use Kettari\TelegramBundle\Telegram\Communicator;
+use Kettari\TelegramBundle\Telegram\CommunicatorInterface;
 use Kettari\TelegramBundle\Telegram\Event\CommandReceivedEvent;
 use Kettari\TelegramBundle\Telegram\Event\CommandUnauthorizedEvent;
 use Kettari\TelegramBundle\Telegram\Event\CommandUnknownEvent;
+use Psr\Log\LoggerInterface;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+use Symfony\Component\Translation\TranslatorInterface;
 use unreal4u\TelegramAPI\Telegram\Types\ReplyKeyboardRemove;
 use unreal4u\TelegramAPI\Telegram\Types\Update;
 
 class CommandSubscriber extends AbstractBotSubscriber implements EventSubscriberInterface
 {
+  /**
+   * @var EventDispatcherInterface
+   */
+  private $dispatcher;
+
+  /**
+   * @var \Kettari\TelegramBundle\Telegram\CommandBusInterface
+   */
+  private $bus;
+
+  /**
+   * @var CommunicatorInterface
+   */
+  private $communicator;
+
+  /**
+   * @var \Symfony\Component\Translation\TranslatorInterface
+   */
+  private $trans;
+
+  /**
+   * CommandSubscriber constructor.
+   *
+   * @param \Psr\Log\LoggerInterface $logger
+   * @param \Symfony\Component\EventDispatcher\EventDispatcherInterface $dispatcher
+   * @param \Kettari\TelegramBundle\Telegram\CommandBusInterface $bus
+   * @param \Kettari\TelegramBundle\Telegram\CommunicatorInterface $communicator
+   * @param \Symfony\Component\Translation\TranslatorInterface $translator
+   */
+  public function __construct(
+    LoggerInterface $logger,
+    EventDispatcherInterface $dispatcher,
+    CommandBusInterface $bus,
+    CommunicatorInterface $communicator,
+    TranslatorInterface $translator
+  ) {
+    parent::__construct($logger);
+    $this->dispatcher = $dispatcher;
+    $this->bus = $bus;
+    $this->communicator;
+    $this->trans = $translator;
+  }
+
   /**
    * Returns an array of event names this subscriber wants to listen to.
    *
@@ -66,8 +114,7 @@ class CommandSubscriber extends AbstractBotSubscriber implements EventSubscriber
       // Unknown command
       $this->dispatchUnknownCommandReceived(
         $event->getUpdate(),
-        $event->getCommandName(),
-        $event->getParameter()
+        $event->getCommandName()
       );
 
       return;
@@ -76,8 +123,7 @@ class CommandSubscriber extends AbstractBotSubscriber implements EventSubscriber
     // Execute the command
     if ($this->bus->executeCommand(
       $event->getUpdate(),
-      $event->getCommandName(),
-      $event->getParameter()
+      $event->getCommandName()
     )) {
       $event->getKeeper()
         ->setRequestHandled(true);
@@ -96,17 +142,13 @@ class CommandSubscriber extends AbstractBotSubscriber implements EventSubscriber
    *
    * @param Update $update
    * @param string $command_name
-   * @param string $parameter
    */
   private function dispatchUnknownCommandReceived(
     Update $update,
-    $command_name,
-    $parameter
+    $command_name
   ) {
     // Dispatch command event
-    $command_unknown_event = new CommandUnknownEvent(
-      $update, $command_name, $parameter
-    );
+    $command_unknown_event = new CommandUnknownEvent($update, $command_name);
     $this->dispatcher->dispatch(
       CommandUnknownEvent::NAME,
       $command_unknown_event
@@ -131,8 +173,7 @@ class CommandSubscriber extends AbstractBotSubscriber implements EventSubscriber
     // Tell user command is not found
     $this->communicator->sendMessage(
       $event->getMessage()->chat->id,
-      $this->bus->getTrans()
-        ->trans('command.unknown'),
+      $this->trans->trans('command.unknown'),
       Communicator::PARSE_MODE_PLAIN,
       new ReplyKeyboardRemove()
     );
@@ -167,8 +208,7 @@ class CommandSubscriber extends AbstractBotSubscriber implements EventSubscriber
     // Tell the user he is not authorized to execute the command
     $this->communicator->sendMessage(
       $event->getMessage()->chat->id,
-      $this->bus->getTrans()
-        ->trans('command.forbidden'),
+      $this->trans->trans('command.forbidden'),
       Communicator::PARSE_MODE_PLAIN
     );
 

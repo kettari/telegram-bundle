@@ -6,6 +6,9 @@ namespace Kettari\TelegramBundle\Telegram\Command;
 
 use Kettari\TelegramBundle\Telegram\Command\Menu\MainMenu;
 use Kettari\TelegramBundle\Telegram\CommandBusInterface;
+use Kettari\TelegramBundle\Telegram\CommunicatorInterface;
+use Psr\Log\LoggerInterface;
+use Symfony\Component\Translation\TranslatorInterface;
 use unreal4u\TelegramAPI\Telegram\Types\Update;
 
 class MenuCommand extends AbstractCommand
@@ -22,24 +25,32 @@ class MenuCommand extends AbstractCommand
   private $menu;
 
   /**
-   * @inheritDoc
+   * MenuCommand constructor.
+   *
+   * @param \Psr\Log\LoggerInterface $logger
+   * @param \Kettari\TelegramBundle\Telegram\CommandBusInterface $bus
+   * @param \Symfony\Component\Translation\TranslatorInterface $translator
+   * @param \Kettari\TelegramBundle\Telegram\CommunicatorInterface $communicator
+   * @param \Kettari\TelegramBundle\Telegram\Command\Menu\MainMenu $mainMenu
    */
   public function __construct(
+    LoggerInterface $logger,
     CommandBusInterface $bus,
-    Update $update
+    TranslatorInterface $translator,
+    CommunicatorInterface $communicator,
+    MainMenu $mainMenu
   ) {
-    parent::__construct($bus, $update);
-
-    $this->menu = new MainMenu($this->bus, $this->update);
+    parent::__construct($logger, $bus, $translator, $communicator);
+    $this->menu = $mainMenu;
   }
 
   /**
-   * Executes command.
+   * @inheritdoc
    */
-  public function execute()
+  public function execute(Update $update, string $parameter = '')
   {
-    $this->menu->show();
-    $this->menu->hookMySelf();
+    $this->menu->show($update);
+    $this->menu->hookMySelf($update);
   }
 
 }

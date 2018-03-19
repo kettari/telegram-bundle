@@ -7,7 +7,12 @@ namespace Kettari\TelegramBundle\Telegram\Command\Menu;
 use Kettari\TelegramBundle\Telegram\Command\ReplyWithTrait;
 use Kettari\TelegramBundle\Telegram\CommandBusInterface;
 use Kettari\TelegramBundle\Telegram\Communicator;
+use Kettari\TelegramBundle\Telegram\CommunicatorInterface;
 use Kettari\TelegramBundle\Telegram\TelegramObjectsRetrieverTrait;
+use Kettari\TelegramBundle\Telegram\UserHqInterface;
+use Psr\Log\LoggerInterface;
+use Symfony\Bridge\Doctrine\RegistryInterface;
+use Symfony\Component\Translation\TranslatorInterface;
 use unreal4u\TelegramAPI\Telegram\Types\Inline\Keyboard\Button;
 use unreal4u\TelegramAPI\Telegram\Types\Inline\Keyboard\Markup;
 use unreal4u\TelegramAPI\Telegram\Types\Update;
@@ -20,12 +25,34 @@ class NotificationsMenuOption extends AbstractMenuOption
   const MARK_X = "\xE2\x9D\x8C";
 
   /**
-   * @param \Kettari\TelegramBundle\Telegram\CommandBusInterface $bus
-   * @param \unreal4u\TelegramAPI\Telegram\Types\Update $update
+   * @var RegistryInterface
    */
-  public function __construct(CommandBusInterface $bus, Update $update)
-  {
-    parent::__construct($bus, $update);
+  private $doctrine;
+
+  /**
+   * @var \Kettari\TelegramBundle\Telegram\UserHqInterface
+   */
+  private $userHq;
+
+  /**
+   * @param \Psr\Log\LoggerInterface $logger
+   * @param \Kettari\TelegramBundle\Telegram\CommandBusInterface $bus
+   * @param \Symfony\Component\Translation\TranslatorInterface $translator
+   * @param \Kettari\TelegramBundle\Telegram\CommunicatorInterface $communicator
+   * @param \Symfony\Bridge\Doctrine\RegistryInterface $doctrine
+   * @param \Kettari\TelegramBundle\Telegram\UserHqInterface $userHq
+   */
+  public function __construct(
+    LoggerInterface $logger,
+    CommandBusInterface $bus,
+    TranslatorInterface $translator,
+    CommunicatorInterface $communicator,
+    RegistryInterface $doctrine,
+    UserHqInterface $userHq
+  ) {
+    parent::__construct($logger, $bus, $translator, $communicator);
+    $this->doctrine = $doctrine;
+    $this->userHq = $userHq;
     $this->caption = 'menu.notifications.button_caption';
     $this->callbackId = 'menu.notifications';
   }
@@ -33,12 +60,13 @@ class NotificationsMenuOption extends AbstractMenuOption
   /**
    * @inheritDoc
    */
-  public function click(): bool
+  public function click(Update $update): bool
   {
     $this->logger->debug('Clicking notifications option');
 
     // Reply with notifications set
     $this->replyWithMessage(
+      $update,
       $this->trans->trans('menu.notifications.select'),
       Communicator::PARSE_MODE_PLAIN,
       $this->getReplyKeyboardMarkup_Notifications()
@@ -59,15 +87,14 @@ class NotificationsMenuOption extends AbstractMenuOption
   private function getReplyKeyboardMarkup_Notifications()
   {
     // Load user's permissions and notifications
-    $userPermissions = $this->bus->getUserHq()
-      ->getUserPermissions();
-    $userNotifications = $this->bus->getUserHq()
-      ->getUserNotifications();
+    $userPermissions = $this->userHq->getUserPermissions();
+    $userNotifications = $this->userHq->getUserNotifications();
 
     // Load notifications
     /** @var \Kettari\TelegramBundle\Entity\Notification $notifications */
-    $notifications = $this->bus->getDoctrine()
-      ->getRepository('KettariTelegramBundle:Notification')
+    $notifications = $this->doctrine->getRepository(
+        'KettariTelegramBundle:Notification'
+      )
       ->findAllOrdered();
     // Check if user has required for each notification permission
     $inlineKeyboard = new Markup();
@@ -98,13 +125,16 @@ class NotificationsMenuOption extends AbstractMenuOption
   /**
    * @inheritDoc
    */
-  public function handler($parameter)
+  public function handler(Update $update, $parameter)
   {
     $this->logger->debug('Handling notifications option');
 
-    $cq = $this->update->callback_query;
-    if (is_null($cq) && !is_null($this->update->message)) {
-      $this->replyWithMessage($this->trans->trans('command.cancelled'));
+    $cq = $update->callback_query;
+    if (is_null($cq) && !is_null($update->message)) {
+      $this->replyWithMessage(
+        $update,
+        $this->trans->trans('command.cancelled')
+      );
 
       return;
     }
@@ -114,17 +144,15 @@ class NotificationsMenuOption extends AbstractMenuOption
 
     // Load user's permissions and notifications
     /** @var \Kettari\TelegramBundle\Entity\User $user */
-    $user = $this->bus->getUserHq()
-      ->getCurrentUser();
-    $userPermissions = $this->bus->getUserHq()
-      ->getUserPermissions();
-    $userNotifications = $this->bus->getUserHq()
-      ->getUserNotifications();
+    $user = $this->userHq->getCurrentUser();
+    $userPermissions = $this->userHq->getUserPermissions();
+    $userNotifications = $this->userHq->getUserNotifications();
 
     // Load notification
     /** @var \Kettari\TelegramBundle\Entity\Notification $notification */
-    $notification = $this->bus->getDoctrine()
-      ->getRepository('KettariTelegramBundle:Notification')
+    $notification = $this->doctrine->getRepository(
+        'KettariTelegramBundle:Notification'
+      )
       ->findOneByName($cq->data);
     if (is_null($notification)) {
       return;
@@ -141,10 +169,10 @@ class NotificationsMenuOption extends AbstractMenuOption
       $user->addNotification($notification);
     }
     // Save changes
-    $this->bus->getDoctrine()
+    $this->doctrine
       ->getManager()
       ->persist($user);
-    $this->bus->getDoctrine()
+    $this->doctrine
       ->getManager()
       ->flush();
 
@@ -161,10 +189,18 @@ class NotificationsMenuOption extends AbstractMenuOption
       $this->trans->trans('menu.notifications.settings_saved')
     );
     // Register hook
-    $this->hookMySelf();
+    $this->hookMySelf($update);
     // Mark request as handled to prevent home menu
     $this->keeper->setRequestHandled(true);
 
     $this->logger->debug('Notifications option handled');
+  }
+
+  /**
+   * @inheritDoc
+   */
+  public function hookMySelf(Update $update)
+  {
+    $this->bus->createHook($update, 'kettari_telegram.option.notifications');
   }
 }

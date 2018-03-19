@@ -40,7 +40,7 @@ class Hook
    * @ORM\Column(type="string",length=255)
    *
    */
-  private $className;
+  private $serviceId;
 
   /**
    * @ORM\Column(type="string",length=255)
@@ -52,7 +52,7 @@ class Hook
    * @ORM\Column(type="text",nullable=true)
    *
    */
-  private $parameters;
+  private $parameter;
 
 
   /**
@@ -60,7 +60,7 @@ class Hook
    *
    * @return integer
    */
-  public function getId()
+  public function getId(): int
   {
     return $this->id;
   }
@@ -72,7 +72,7 @@ class Hook
    *
    * @return Hook
    */
-  public function setCreated($created)
+  public function setCreated($created): Hook
   {
     $this->created = $created;
 
@@ -84,7 +84,7 @@ class Hook
    *
    * @return \DateTime
    */
-  public function getCreated()
+  public function getCreated(): \DateTime
   {
     return $this->created;
   }
@@ -92,13 +92,13 @@ class Hook
   /**
    * Set className
    *
-   * @param string $className
+   * @param string $serviceId
    *
    * @return Hook
    */
-  public function setClassName($className)
+  public function setServiceId($serviceId): Hook
   {
-    $this->className = $className;
+    $this->serviceId = $serviceId;
 
     return $this;
   }
@@ -108,9 +108,9 @@ class Hook
    *
    * @return string
    */
-  public function getClassName()
+  public function getServiceId(): string
   {
-    return $this->className;
+    return $this->serviceId;
   }
 
   /**
@@ -120,7 +120,7 @@ class Hook
    *
    * @return Hook
    */
-  public function setMethodName($methodName)
+  public function setMethodName($methodName): Hook
   {
     $this->methodName = $methodName;
 
@@ -132,7 +132,7 @@ class Hook
    *
    * @return string
    */
-  public function getMethodName()
+  public function getMethodName(): string
   {
     return $this->methodName;
   }
@@ -140,13 +140,13 @@ class Hook
   /**
    * Set parameters
    *
-   * @param string $parameters
+   * @param string $parameter
    *
    * @return Hook
    */
-  public function setParameters($parameters)
+  public function setParameter($parameter): Hook
   {
-    $this->parameters = $parameters;
+    $this->parameter = $parameter;
 
     return $this;
   }
@@ -156,9 +156,9 @@ class Hook
    *
    * @return string
    */
-  public function getParameters()
+  public function getParameter()
   {
-    return $this->parameters;
+    return $this->parameter;
   }
 
   /**
@@ -168,7 +168,7 @@ class Hook
    *
    * @return Hook
    */
-  public function setChat(Chat $chat = null)
+  public function setChat(Chat $chat): Hook
   {
     $this->chat = $chat;
 
@@ -180,7 +180,7 @@ class Hook
    *
    * @return Chat
    */
-  public function getChat()
+  public function getChat(): Chat
   {
     return $this->chat;
   }
@@ -192,7 +192,7 @@ class Hook
    *
    * @return Hook
    */
-  public function setUser(User $user = null)
+  public function setUser(User $user): Hook
   {
     $this->user = $user;
 
@@ -204,7 +204,7 @@ class Hook
    *
    * @return User
    */
-  public function getUser()
+  public function getUser(): User
   {
     return $this->user;
   }

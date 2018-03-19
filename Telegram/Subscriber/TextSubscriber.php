@@ -6,11 +6,32 @@ namespace Kettari\TelegramBundle\Telegram\Subscriber;
 
 use Kettari\TelegramBundle\Telegram\Event\CommandReceivedEvent;
 use Kettari\TelegramBundle\Telegram\Event\TextReceivedEvent;
+use Psr\Log\LoggerInterface;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use unreal4u\TelegramAPI\Telegram\Types\Update;
 
 class TextSubscriber extends AbstractBotSubscriber implements EventSubscriberInterface
 {
+  /**
+   * @var EventDispatcherInterface
+   */
+  private $dispatcher;
+
+  /**
+   * TextSubscriber constructor.
+   *
+   * @param \Psr\Log\LoggerInterface $logger
+   * @param \Symfony\Component\EventDispatcher\EventDispatcherInterface $dispatcher
+   */
+  public function __construct(
+    LoggerInterface $logger,
+    EventDispatcherInterface $dispatcher
+  ) {
+    parent::__construct($logger);
+    $this->dispatcher = $dispatcher;
+  }
+
   /**
    * Returns an array of event names this subscriber wants to listen to.
    *
@@ -121,7 +142,9 @@ class TextSubscriber extends AbstractBotSubscriber implements EventSubscriberInt
   ) {
     // Dispatch command event
     $command_received_event = new CommandReceivedEvent(
-      $update, $commandName, $parameter
+      $update,
+      $commandName,
+      $parameter
     );
     $this->dispatcher->dispatch(
       CommandReceivedEvent::NAME,

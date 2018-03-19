@@ -12,12 +12,51 @@ use Kettari\TelegramBundle\Telegram\Event\JoinChatMembersManyEvent;
 use Kettari\TelegramBundle\Telegram\Event\LeftChatMemberBotEvent;
 use Kettari\TelegramBundle\Telegram\Event\LeftChatMemberEvent;
 use Kettari\TelegramBundle\Telegram\Event\TextReceivedEvent;
+use Kettari\TelegramBundle\Telegram\UserHqInterface;
+use Psr\Log\LoggerInterface;
+use Symfony\Bridge\Doctrine\RegistryInterface;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use unreal4u\TelegramAPI\Telegram\Types\Update;
 use unreal4u\TelegramAPI\Telegram\Types\User as TelegramUser;
 
 class ChatMemberSubscriber extends AbstractBotSubscriber implements EventSubscriberInterface
 {
+  /**
+   * @var RegistryInterface
+   */
+  protected $doctrine;
+
+  /**
+   * @var EventDispatcherInterface
+   */
+  private $dispatcher;
+
+  /**
+   * @var UserHqInterface
+   */
+  private $userHq;
+
+  /**
+   * ChatMemberSubscriber constructor.
+   *
+   * @param \Psr\Log\LoggerInterface $logger
+   * @param \Symfony\Bridge\Doctrine\RegistryInterface $doctrine
+   * @param \Symfony\Component\EventDispatcher\EventDispatcherInterface $dispatcher
+   * @param \Kettari\TelegramBundle\Telegram\UserHqInterface $userHq
+   */
+  public function __construct(
+    LoggerInterface $logger,
+    RegistryInterface $doctrine,
+    EventDispatcherInterface $dispatcher,
+    UserHqInterface $userHq
+  ) {
+    parent::__construct($logger);
+    $this->doctrine = $doctrine;
+    $this->dispatcher = $dispatcher;
+    $this->userHq = $userHq;
+  }
+
   /**
    * Returns an array of event names this subscriber wants to listen to.
    *

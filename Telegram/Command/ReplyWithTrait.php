@@ -7,6 +7,7 @@ namespace Kettari\TelegramBundle\Telegram\Command;
 use Kettari\TelegramBundle\Telegram\Communicator;
 use unreal4u\TelegramAPI\Abstracts\KeyboardMethods;
 use unreal4u\TelegramAPI\Telegram\Types\Message;
+use unreal4u\TelegramAPI\Telegram\Types\Update;
 
 trait ReplyWithTrait
 {
@@ -14,6 +15,7 @@ trait ReplyWithTrait
    * Replies with a long text message to the user. Splits message by PHP_EOL if
    * message exceeds maximum allowed by Telegram (4096 Unicode bytes).
    *
+   * @param \unreal4u\TelegramAPI\Telegram\Types\Update $update
    * @param string $text Text of the message to be sent
    * @param string $parseMode Send Markdown or HTML, if you want Telegram apps
    *   to show bold, italic, fixed-width text or inline URLs in your bot's
@@ -31,6 +33,7 @@ trait ReplyWithTrait
    * @return null|Message
    */
   protected function replyWithMessage(
+    Update $update,
     string $text,
     $parseMode = Communicator::PARSE_MODE_PLAIN,
     $replyMarkup = null,
@@ -59,7 +62,7 @@ trait ReplyWithTrait
       /** @noinspection PhpUndefinedMethodInspection */
       return $this->bus->getCommunicator()
         ->sendMessage(
-          $this->update->message->chat->id,
+          $update->message->chat->id,
           $oneMessage,
           $parseMode,
           $replyMarkup,
@@ -87,40 +90,18 @@ trait ReplyWithTrait
    * Objects defined as-is july 2016
    *
    * @see https://core.telegram.org/bots/api#sendchataction
+   * @param \unreal4u\TelegramAPI\Telegram\Types\Update $update
    * @param string $action Type of action to broadcast. Choose one, depending
    *   on what the user is about to receive: typing for text messages,
    *   upload_photo for photos, record_video or upload_video for videos,
    *   record_audio or upload_audio for audio files, upload_document for
    *   general files, find_location for location data.
    */
-  protected function replyWithAction($action = Communicator::ACTION_TYPING)
+  protected function replyWithAction(Update $update, $action = Communicator::ACTION_TYPING)
   {
     /** @noinspection PhpUndefinedFieldInspection */
     /** @noinspection PhpUndefinedMethodInspection */
     $this->bus->getCommunicator()
-      ->sendAction($this->update->message->chat->id, $action);
-  }
-
-  /**
-   * Returns text if we have some non-empty text in the message object.
-   *
-   * @return string
-   */
-  protected function getText(): string
-  {
-    /** @noinspection PhpUndefinedFieldInspection */
-    return $this->hasText() ? $this->update->message->text : '';
-  }
-
-  /**
-   * Returns true if we have some non-empty text in the message object.
-   *
-   * @return bool
-   */
-  protected function hasText(): bool
-  {
-    /** @noinspection PhpUndefinedFieldInspection */
-    return !is_null($this->update->message) &&
-      !empty($this->update->message->text);
+      ->sendAction($update->message->chat->id, $action);
   }
 }

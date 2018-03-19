@@ -5,8 +5,8 @@ namespace Kettari\TelegramBundle\Telegram\Subscriber;
 
 
 use Exception;
-
 use Kettari\TelegramBundle\Telegram\Communicator;
+use Kettari\TelegramBundle\Telegram\CommunicatorInterface;
 use Kettari\TelegramBundle\Telegram\Event\AudioReceivedEvent;
 use Kettari\TelegramBundle\Telegram\Event\ChatDeletePhotoEvent;
 use Kettari\TelegramBundle\Telegram\Event\ChatNewPhotoEvent;
@@ -32,11 +32,40 @@ use Kettari\TelegramBundle\Telegram\Event\VideoNoteReceivedEvent;
 use Kettari\TelegramBundle\Telegram\Event\VideoReceivedEvent;
 use Kettari\TelegramBundle\Telegram\Event\VoiceReceivedEvent;
 use Kettari\TelegramBundle\Telegram\MessageTypeResolver;
+use Psr\Log\LoggerInterface;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
 class MessageSubscriber extends AbstractBotSubscriber implements EventSubscriberInterface
 {
   const EMOJI_TRY_AGAIN = "\xF0\x9F\x99\x83";
+
+  /**
+   * @var EventDispatcherInterface
+   */
+  private $dispatcher;
+
+  /**
+   * @var CommunicatorInterface
+   */
+  private $communicator;
+
+  /**
+   * HookerSubscriber constructor.
+   *
+   * @param \Psr\Log\LoggerInterface $logger
+   * @param \Symfony\Component\EventDispatcher\EventDispatcherInterface $dispatcher
+   * @param \Kettari\TelegramBundle\Telegram\CommunicatorInterface $communicator
+   */
+  public function __construct(
+    LoggerInterface $logger,
+    EventDispatcherInterface $dispatcher,
+    CommunicatorInterface $communicator
+  ) {
+    parent::__construct($logger);
+    $this->dispatcher = $dispatcher;
+    $this->communicator = $communicator;
+  }
 
   /**
    * Returns an array of event names this subscriber wants to listen to.
@@ -142,7 +171,10 @@ class MessageSubscriber extends AbstractBotSubscriber implements EventSubscriber
     // Dispatch audio event
     if ($messageType & MessageTypeResolver::MT_AUDIO) {
       $audio_received_event = new AudioReceivedEvent($event->getUpdate());
-      $this->dispatcher->dispatch(AudioReceivedEvent::NAME, $audio_received_event);
+      $this->dispatcher->dispatch(
+        AudioReceivedEvent::NAME,
+        $audio_received_event
+      );
     }
     // Dispatch document event
     if ($messageType & MessageTypeResolver::MT_DOCUMENT) {
@@ -155,12 +187,18 @@ class MessageSubscriber extends AbstractBotSubscriber implements EventSubscriber
     // Dispatch game event
     if ($messageType & MessageTypeResolver::MT_GAME) {
       $game_received_event = new GameReceivedEvent($event->getUpdate());
-      $this->dispatcher->dispatch(GameReceivedEvent::NAME, $game_received_event);
+      $this->dispatcher->dispatch(
+        GameReceivedEvent::NAME,
+        $game_received_event
+      );
     }
     // Dispatch photo event
     if ($messageType & MessageTypeResolver::MT_PHOTO) {
       $photo_received_event = new PhotoReceivedEvent($event->getUpdate());
-      $this->dispatcher->dispatch(PhotoReceivedEvent::NAME, $photo_received_event);
+      $this->dispatcher->dispatch(
+        PhotoReceivedEvent::NAME,
+        $photo_received_event
+      );
     }
     // Dispatch sticker event
     if ($messageType & MessageTypeResolver::MT_STICKER) {
@@ -173,12 +211,18 @@ class MessageSubscriber extends AbstractBotSubscriber implements EventSubscriber
     // Dispatch video event
     if ($messageType & MessageTypeResolver::MT_VIDEO) {
       $video_received_event = new VideoReceivedEvent($event->getUpdate());
-      $this->dispatcher->dispatch(VideoReceivedEvent::NAME, $video_received_event);
+      $this->dispatcher->dispatch(
+        VideoReceivedEvent::NAME,
+        $video_received_event
+      );
     }
     // Dispatch voice event
     if ($messageType & MessageTypeResolver::MT_VOICE) {
       $voice_received_event = new VoiceReceivedEvent($event->getUpdate());
-      $this->dispatcher->dispatch(VoiceReceivedEvent::NAME, $voice_received_event);
+      $this->dispatcher->dispatch(
+        VoiceReceivedEvent::NAME,
+        $voice_received_event
+      );
     }
     // Dispatch contact event
     if ($messageType & MessageTypeResolver::MT_CONTACT) {
@@ -199,7 +243,10 @@ class MessageSubscriber extends AbstractBotSubscriber implements EventSubscriber
     // Dispatch venue event
     if ($messageType & MessageTypeResolver::MT_VENUE) {
       $venue_received_event = new VenueReceivedEvent($event->getUpdate());
-      $this->dispatcher->dispatch(VenueReceivedEvent::NAME, $venue_received_event);
+      $this->dispatcher->dispatch(
+        VenueReceivedEvent::NAME,
+        $venue_received_event
+      );
     }
 
     // Dispatch chat member joined event
@@ -223,17 +270,26 @@ class MessageSubscriber extends AbstractBotSubscriber implements EventSubscriber
     // Dispatch chat member left event
     if ($messageType & MessageTypeResolver::MT_LEFT_CHAT_MEMBER) {
       $left_member_event = new LeftChatMemberEvent($event->getUpdate());
-      $this->dispatcher->dispatch(LeftChatMemberEvent::NAME, $left_member_event);
+      $this->dispatcher->dispatch(
+        LeftChatMemberEvent::NAME,
+        $left_member_event
+      );
     }
     // Dispatch new chat title event
     if ($messageType & MessageTypeResolver::MT_NEW_CHAT_TITLE) {
       $new_chat_title_event = new ChatNewTitleEvent($event->getUpdate());
-      $this->dispatcher->dispatch(ChatNewTitleEvent::NAME, $new_chat_title_event);
+      $this->dispatcher->dispatch(
+        ChatNewTitleEvent::NAME,
+        $new_chat_title_event
+      );
     }
     // Dispatch new chat photo event
     if ($messageType & MessageTypeResolver::MT_NEW_CHAT_PHOTO) {
       $new_chat_photo_event = new ChatNewPhotoEvent($event->getUpdate());
-      $this->dispatcher->dispatch(ChatNewPhotoEvent::NAME, $new_chat_photo_event);
+      $this->dispatcher->dispatch(
+        ChatNewPhotoEvent::NAME,
+        $new_chat_photo_event
+      );
     }
     // Dispatch chat photo deleted event
     if ($messageType & MessageTypeResolver::MT_DELETE_CHAT_PHOTO) {
@@ -246,12 +302,18 @@ class MessageSubscriber extends AbstractBotSubscriber implements EventSubscriber
     // Dispatch group created event
     if ($messageType & MessageTypeResolver::MT_GROUP_CHAT_CREATED) {
       $group_created_event = new GroupCreatedEvent($event->getUpdate());
-      $this->dispatcher->dispatch(GroupCreatedEvent::NAME, $group_created_event);
+      $this->dispatcher->dispatch(
+        GroupCreatedEvent::NAME,
+        $group_created_event
+      );
     }
     // Dispatch migration to chat ID event
     if ($messageType & MessageTypeResolver::MT_MIGRATE_TO_CHAT_ID) {
       $migrate_to_chat_event = new MigrateToChatIdEvent($event->getUpdate());
-      $this->dispatcher->dispatch(MigrateToChatIdEvent::NAME, $migrate_to_chat_event);
+      $this->dispatcher->dispatch(
+        MigrateToChatIdEvent::NAME,
+        $migrate_to_chat_event
+      );
     }
     // Dispatch migration from chat ID event
     if ($messageType & MessageTypeResolver::MT_MIGRATE_FROM_CHAT_ID) {
@@ -266,7 +328,10 @@ class MessageSubscriber extends AbstractBotSubscriber implements EventSubscriber
     // Dispatch message pinned event
     if ($messageType & MessageTypeResolver::MT_PINNED_MESSAGE) {
       $message_pinned_event = new MessagePinnedEvent($event->getUpdate());
-      $this->dispatcher->dispatch(MessagePinnedEvent::NAME, $message_pinned_event);
+      $this->dispatcher->dispatch(
+        MessagePinnedEvent::NAME,
+        $message_pinned_event
+      );
     }
     // Dispatch successful payment event
     if ($messageType & MessageTypeResolver::MT_SUCCESSFUL_PAYMENT) {
@@ -286,35 +351,23 @@ class MessageSubscriber extends AbstractBotSubscriber implements EventSubscriber
     // Dispatch video note event
     if ($messageType & MessageTypeResolver::MT_VIDEO_NOTE) {
       $video_note_event = new VideoNoteReceivedEvent($event->getUpdate());
-      $this->dispatcher->dispatch(VideoNoteReceivedEvent::NAME, $video_note_event);
+      $this->dispatcher->dispatch(
+        VideoNoteReceivedEvent::NAME,
+        $video_note_event
+      );
     }
 
   }
- 
+
   /**
    * Handles situation when user sent us message and it is not handled.
    *
    * @param \Kettari\TelegramBundle\Telegram\Event\MessageReceivedEvent $event
+   * @obsolete
    */
   public function onMessageCheckUnhandled(MessageReceivedEvent $event)
   {
-    /*if (!$this->getBot()
-      ->isRequestHandled()) {
-      $l = $this->getBot()
-        ->getContainer()
-        ->get('logger');
-      $l->info('Request was not handled');
-
-      // Tell user we do not understand him/her
-      $this->getBot()
-        ->sendMessage(
-          $event->getMessage()->chat->id,
-          'Извините, я не понял, что вы имели в виду '.self::EMOJI_TRY_AGAIN.
-          ' Попробуйте начать с команды /help',
-          null,
-          new ReplyKeyboardRemove()
-        );
-    }*/
+    // @TODO Consider to remove this method
   }
 
 }

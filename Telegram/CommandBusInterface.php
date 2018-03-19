@@ -5,10 +5,7 @@ namespace Kettari\TelegramBundle\Telegram;
 
 
 use Kettari\TelegramBundle\Entity\Hook;
-use Psr\Log\LoggerInterface;
-use Symfony\Bridge\Doctrine\RegistryInterface;
-use Symfony\Component\EventDispatcher\EventDispatcherInterface;
-use Symfony\Component\Translation\TranslatorInterface;
+use Kettari\TelegramBundle\Telegram\Command\TelegramCommandInterface;
 use unreal4u\TelegramAPI\Telegram\Types\Update;
 use unreal4u\TelegramAPI\Telegram\Types\User as TelegramUser;
 
@@ -17,10 +14,11 @@ interface CommandBusInterface
   /**
    * Registers command.
    *
-   * @param string $commandClass
+   * @param string $commandName
+   * @param string $serviceId
    * @return \Kettari\TelegramBundle\Telegram\CommandBusInterface
    */
-  public function registerCommand(string $commandClass): CommandBusInterface;
+  public function registerCommand(string $commandName, string $serviceId): CommandBusInterface;
 
   /**
    * Return TRUE if command is registered.
@@ -35,92 +33,45 @@ interface CommandBusInterface
    *
    * @param \unreal4u\TelegramAPI\Telegram\Types\Update $update
    * @param string $commandName
-   * @param string $parameter
+   * @param string $commandParameter
    * @return bool Returns true if command was executed; false if not found or
    *   user has insufficient permissions.
    */
   public function executeCommand(
     Update $update,
     string $commandName,
-    string $parameter = ''
+    string $commandParameter = ''
   ): bool;
 
   /**
    * Return true if telegram user is authorized to execute specified command.
    *
    * @param \unreal4u\TelegramAPI\Telegram\Types\User $telegramUser
-   * @param \Kettari\TelegramBundle\Telegram\Command\AbstractCommand $command
+   * @param \Kettari\TelegramBundle\Telegram\Command\TelegramCommandInterface $command
    * @return bool
    */
-  public function isAuthorized(TelegramUser $telegramUser, $command): bool;
+  public function isAuthorized(TelegramUser $telegramUser, TelegramCommandInterface $command): bool;
 
   /**
-   * Returns array of commands classes.
+   * Returns array of all commands objects.
    *
    * @return array
    */
   public function getCommands(): array;
 
   /**
-   * Returns Logger service.
-   *
-   * @return \Psr\Log\LoggerInterface
-   */
-  public function getLogger(): LoggerInterface;
-
-  /**
-   * Returns Doctrine service.
-   *
-   * @return \Symfony\Bridge\Doctrine\RegistryInterface
-   */
-  public function getDoctrine(): RegistryInterface;
-
-  /**
-   * Returns event dispatcher service.
-   *
-   * @return \Symfony\Component\EventDispatcher\EventDispatcherInterface
-   */
-  public function getDispatcher(): EventDispatcherInterface;
-
-  /**
-   * Returns user's headquarters.
-   *
-   * @return \Kettari\TelegramBundle\Telegram\UserHqInterface
-   */
-  public function getUserHq(): UserHqInterface;
-
-  /**
-   * Returns Communicator service.
-   *
-   * @return \Kettari\TelegramBundle\Telegram\CommunicatorInterface
-   */
-  public function getCommunicator(): CommunicatorInterface;
-
-  /**
-   * Returns Pusher service.
-   *
-   * @return \Kettari\TelegramBundle\Telegram\PusherInterface
-   */
-  public function getPusher(): PusherInterface;
-
-  /**
-   * @return TranslatorInterface
-   */
-  public function getTrans(): TranslatorInterface;
-
-  /**
    * Creates hook.
    *
    * @param \unreal4u\TelegramAPI\Telegram\Types\Update $update
-   * @param string $className
+   * @param string $serviceId
    * @param string $methodName
-   * @param string $parameters
+   * @param string $parameter
    */
   public function createHook(
     Update $update,
-    string $className,
+    string $serviceId,
     string $methodName = 'handler',
-    string $parameters = ''
+    string $parameter = ''
   );
 
   /**

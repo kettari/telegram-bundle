@@ -7,11 +7,32 @@ namespace Kettari\TelegramBundle\Telegram\Subscriber;
 use Kettari\TelegramBundle\Telegram\Event\MessageReceivedEvent;
 use Kettari\TelegramBundle\Telegram\Event\UpdateReceivedEvent;
 use Kettari\TelegramBundle\Telegram\UpdateTypeResolver;
+use Psr\Log\LoggerInterface;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
 
 class UpdateSubscriber extends AbstractBotSubscriber implements EventSubscriberInterface
 {
+  /**
+   * @var EventDispatcherInterface
+   */
+  private $dispatcher;
+
+  /**
+   * HookerSubscriber constructor.
+   *
+   * @param \Psr\Log\LoggerInterface $logger
+   * @param \Symfony\Component\EventDispatcher\EventDispatcherInterface $dispatcher
+   */
+  public function __construct(
+    LoggerInterface $logger,
+    EventDispatcherInterface $dispatcher
+  ) {
+    parent::__construct($logger);
+    $this->dispatcher = $dispatcher;
+  }
+
   /**
    * Returns an array of event names this subscriber wants to listen to.
    *

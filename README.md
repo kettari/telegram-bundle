@@ -24,13 +24,13 @@ No known issues.
     * 0:FilterSubscriber -- scraps inbound data.
   * `telegram.update.received` -- when the Update object is ready.
     * 90000:AuditSubscriber -- writes the incoming log.
-    * 80000:CurrentUserSubscriber -- finds current user using 
+    * 80000:UserIdentitySubscriber -- finds current user using 
     UserHq class.
     * 70000:HookerSubscriber -- finds and executes hooks.
   * [TBD] `telegram.hook.before` -- before hook is executed.
   * [TBD] `telegram.hook.after` -- after hook is executed.
   * `telegram.message.received` -- when Message is found within the incoming Update.
-    * 90000:ChatSubscriber -- updates User and Chat tables for the current user;
+    * 90000:ChatIdentitySubscriber -- updates User and Chat tables for the current user;
     adds default roles and permissions when user send his/her first message to the bot.
     * 0:MessageSubscriber -- if text is not empty, dispatch further events.
     * –90000:MessageSubscriber -- checks if request was handled. If not, sends to the user a message.

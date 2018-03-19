@@ -25,7 +25,7 @@ class KettariTelegramExtension extends Extension {
       new FileLocator(__DIR__.'/../Resources/config'));
     $loader->load('services.yml');
 
-    // Once the services definition are read, get your service and add a method call to setConfig()
+    // Once the services definition are read, get your service and add a method call to setApiToken()
     $communicatorServiceDefinition = $container->getDefinition( 'kettari_telegram.communicator' );
     $communicatorServiceDefinition->addMethodCall( 'setApiToken', array( $config[ 'api_token' ] ) );
   }

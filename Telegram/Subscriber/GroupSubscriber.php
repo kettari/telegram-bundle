@@ -6,11 +6,32 @@ namespace Kettari\TelegramBundle\Telegram\Subscriber;
 
 use Kettari\TelegramBundle\Entity\Chat;
 use Kettari\TelegramBundle\Telegram\Event\GroupCreatedEvent;
+use Psr\Log\LoggerInterface;
+use Symfony\Bridge\Doctrine\RegistryInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use unreal4u\TelegramAPI\Telegram\Types\Update;
 
 class GroupSubscriber extends AbstractBotSubscriber implements EventSubscriberInterface
 {
+  /**
+   * @var RegistryInterface
+   */
+  protected $doctrine;
+
+  /**
+   * GroupSubscriber constructor.
+   *
+   * @param \Psr\Log\LoggerInterface $logger
+   * @param \Symfony\Bridge\Doctrine\RegistryInterface $doctrine
+   */
+  public function __construct(
+    LoggerInterface $logger,
+    RegistryInterface $doctrine
+  ) {
+    parent::__construct($logger);
+    $this->doctrine = $doctrine;
+  }
+
   /**
    * Returns an array of event names this subscriber wants to listen to.
    *

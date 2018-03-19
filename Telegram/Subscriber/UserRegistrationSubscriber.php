@@ -5,7 +5,9 @@ namespace Kettari\TelegramBundle\Telegram\Subscriber;
 
 
 use Kettari\TelegramBundle\Telegram\Event\UserRegisteredEvent;
+use Kettari\TelegramBundle\Telegram\PusherInterface;
 use Kettari\TelegramBundle\Telegram\UserHelperTrait;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
 class UserRegistrationSubscriber extends AbstractBotSubscriber implements EventSubscriberInterface
@@ -14,6 +16,23 @@ class UserRegistrationSubscriber extends AbstractBotSubscriber implements EventS
 
   const NOTIFICATION_NEW_REGISTER = 'new-register';
   const NEW_REGISTER_EMOJI = "\xF0\x9F\x98\x8C";
+
+  /**
+   * @var \Kettari\TelegramBundle\Telegram\PusherInterface
+   */
+  private $pusher;
+
+  /**
+   * UserRegistrationSubscriber constructor.
+   *
+   * @param \Psr\Log\LoggerInterface $logger
+   * @param \Kettari\TelegramBundle\Telegram\PusherInterface $pusher
+   */
+  public function __construct(LoggerInterface $logger, PusherInterface $pusher)
+  {
+    parent::__construct($logger);
+    $this->pusher = $pusher;
+  }
 
   /**
    * Returns an array of event names this subscriber wants to listen to.

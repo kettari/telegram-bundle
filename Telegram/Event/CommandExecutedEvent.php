@@ -25,7 +25,7 @@ class CommandExecutedEvent extends AbstractCommandEvent
     Update $update,
     TelegramCommandInterface $command
   ) {
-    parent::__construct($update, $command::getName(), $command->getCommandParameter());
+    parent::__construct($update, $command::getName());
     $this->command = $command;
   }
 

@@ -4,6 +4,8 @@ declare(strict_types=1);
 namespace Kettari\TelegramBundle\Telegram\Command;
 
 
+use unreal4u\TelegramAPI\Telegram\Types\Update;
+
 interface TelegramCommandInterface
 {
   /**
@@ -49,22 +51,11 @@ interface TelegramCommandInterface
   static public function getDeclaredNotifications(): array;
 
   /**
-   * Initialize command.
-   *
-   * @param string $commandParameter
-   * @return \Kettari\TelegramBundle\Telegram\Command\TelegramCommandInterface
-   */
-  public function initialize(string $commandParameter): TelegramCommandInterface;
-
-  /**
    * Executes command.
    *
+   * @param \unreal4u\TelegramAPI\Telegram\Types\Update $update
+   * @param string $parameter
    * @return void
    */
-  public function execute();
-
-  /**
-   * @return string
-   */
-  public function getCommandParameter(): string;
+  public function execute(Update $update, string $parameter = '');
 }

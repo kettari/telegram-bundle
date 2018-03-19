@@ -6,11 +6,32 @@ namespace Kettari\TelegramBundle\Telegram\Subscriber;
 
 use Kettari\TelegramBundle\Entity\Chat;
 use Kettari\TelegramBundle\Telegram\Event\MessageReceivedEvent;
+use Psr\Log\LoggerInterface;
+use Symfony\Bridge\Doctrine\RegistryInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use unreal4u\TelegramAPI\Telegram\Types\Chat as TelegramChat;
 
-class ChatSubscriber extends AbstractBotSubscriber implements EventSubscriberInterface
+class ChatIdentitySubscriber extends AbstractBotSubscriber implements EventSubscriberInterface
 {
+  /**
+   * @var RegistryInterface
+   */
+  protected $doctrine;
+
+  /**
+   * ChatIdentitySubscriber constructor.
+   *
+   * @param \Psr\Log\LoggerInterface $logger
+   * @param \Symfony\Bridge\Doctrine\RegistryInterface $doctrine
+   */
+  public function __construct(
+    LoggerInterface $logger,
+    RegistryInterface $doctrine
+  ) {
+    parent::__construct($logger);
+    $this->doctrine = $doctrine;
+  }
+
   /**
    * Returns an array of event names this subscriber wants to listen to.
    *
@@ -44,7 +65,7 @@ class ChatSubscriber extends AbstractBotSubscriber implements EventSubscriberInt
   public function onMessageReceived(MessageReceivedEvent $event)
   {
     $this->logger->debug(
-      'Processing ChatSubscriber::MessageReceivedEvent for the message ID={message_id}',
+      'Processing ChatIdentitySubscriber::MessageReceivedEvent for the message ID={message_id}',
       ['message_id' => $event->getMessage()->message_id]
     );
 
@@ -52,7 +73,7 @@ class ChatSubscriber extends AbstractBotSubscriber implements EventSubscriberInt
     $this->updateChat($event->getMessage()->chat);
 
     $this->logger->info(
-      'ChatSubscriber::MessageReceivedEvent for the message ID={message_id} processed',
+      'ChatIdentitySubscriber::MessageReceivedEvent for the message ID={message_id} processed',
       ['message_id' => $event->getMessage()->message_id]
     );
   }

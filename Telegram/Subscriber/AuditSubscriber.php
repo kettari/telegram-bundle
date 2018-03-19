@@ -6,6 +6,7 @@ namespace Kettari\TelegramBundle\Telegram\Subscriber;
 use Kettari\TelegramBundle\Entity\Audit;
 use Kettari\TelegramBundle\Entity\Chat;
 use Kettari\TelegramBundle\Entity\User;
+use Kettari\TelegramBundle\Exception\TelegramBundleException;
 use Kettari\TelegramBundle\Telegram\Event\CommandExecutedEvent;
 use Kettari\TelegramBundle\Telegram\Event\JoinChatMemberBotEvent;
 use Kettari\TelegramBundle\Telegram\Event\JoinChatMemberEvent;
@@ -18,15 +19,41 @@ use Kettari\TelegramBundle\Telegram\Event\TextReceivedEvent;
 use Kettari\TelegramBundle\Telegram\Event\UpdateReceivedEvent;
 use Kettari\TelegramBundle\Telegram\Event\UserRegisteredEvent;
 use Kettari\TelegramBundle\Telegram\MessageTypeResolver;
+use Kettari\TelegramBundle\Telegram\TelegramObjectsRetrieverTrait;
 use Kettari\TelegramBundle\Telegram\UpdateTypeResolver;
 use Kettari\TelegramBundle\Telegram\UserHelperTrait;
+use Psr\Log\LoggerInterface;
+use Symfony\Bridge\Doctrine\RegistryInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+use unreal4u\TelegramAPI\Telegram\Methods\SendChatAction;
+use unreal4u\TelegramAPI\Telegram\Methods\SendDocument;
+use unreal4u\TelegramAPI\Telegram\Methods\SendLocation;
 use unreal4u\TelegramAPI\Telegram\Methods\SendMessage;
+use unreal4u\TelegramAPI\Telegram\Methods\SendPhoto;
 use unreal4u\TelegramAPI\Telegram\Types\Update;
 
 class AuditSubscriber extends AbstractBotSubscriber implements EventSubscriberInterface
 {
-  use UserHelperTrait;
+  use UserHelperTrait, TelegramObjectsRetrieverTrait;
+
+  /**
+   * @var RegistryInterface
+   */
+  protected $doctrine;
+
+  /**
+   * ChatIdentitySubscriber constructor.
+   *
+   * @param \Psr\Log\LoggerInterface $logger
+   * @param \Symfony\Bridge\Doctrine\RegistryInterface $doctrine
+   */
+  public function __construct(
+    LoggerInterface $logger,
+    RegistryInterface $doctrine
+  ) {
+    parent::__construct($logger);
+    $this->doctrine = $doctrine;
+  }
 
   /**
    * Returns an array of event names this subscriber wants to listen to.
@@ -50,13 +77,13 @@ class AuditSubscriber extends AbstractBotSubscriber implements EventSubscriberIn
   public static function getSubscribedEvents()
   {
     return [
-      UpdateReceivedEvent::NAME    => ['onUpdateReceived', 90000],
+      UpdateReceivedEvent::NAME    => 'onUpdateReceived', // @TODO define correct priority
       CommandExecutedEvent::NAME   => 'onCommandExecuted',
       JoinChatMemberEvent::NAME    => 'onMemberJoined',
       JoinChatMemberBotEvent::NAME => 'onBotJoined',
       LeftChatMemberEvent::NAME    => 'onMemberLeft',
       LeftChatMemberBotEvent::NAME => 'onBotLeft',
-      TextReceivedEvent::NAME      => 'onTextReceived',
+      /*TextReceivedEvent::NAME      => 'onTextReceived',*/
       RequestBlockedEvent::NAME    => 'onRequestBlocked',
       RequestExceptionEvent::NAME  => 'onRequestException',
       UserRegisteredEvent::NAME    => 'onUserRegistered',
@@ -71,9 +98,8 @@ class AuditSubscriber extends AbstractBotSubscriber implements EventSubscriberIn
    */
   public function onUpdateReceived(UpdateReceivedEvent $event)
   {
-    // Resolve chat and user objects
-    $chatEntity = $this->resolveChat($event->getUpdate());
-    $userEntity = $this->resolveUser($event->getUpdate());
+    $chatEntity = $this->resolveChatEntity($event->getUpdate());
+    $userEntity = $this->resolveUserEntity($event->getUpdate());
 
     // Format human-readable description
     $updateType = UpdateTypeResolver::getUpdateType($event->getUpdate());
@@ -100,58 +126,53 @@ class AuditSubscriber extends AbstractBotSubscriber implements EventSubscriberIn
   }
 
   /**
-   * Tries to track down chat this update was sent from.
+   * Resolves update to chat entity.
    *
-   * @param Update $update
-   * @return \Kettari\TelegramBundle\Entity\Chat|null
+   * @param \unreal4u\TelegramAPI\Telegram\Types\Update $update
+   * @return Chat
    */
-  private function resolveChat(Update $update)
+  private function resolveChatEntity(Update $update)
   {
-    // Resolve chat object
-    $chatId = null;
-    if (!is_null($update->message)) {
-      $chatId = $update->message->chat->id;
-    } elseif (!is_null($update->edited_message)) {
-      $chatId = $update->edited_message->chat->id;
-    } elseif (!is_null($update->channel_post)) {
-      $chatId = $update->channel_post->chat->id;
-    } elseif (!is_null($update->callback_query)) {
-      if (!is_null($update->callback_query->message)) {
-        $chatId = $update->callback_query->message->chat->id;
-      }
+    $chat = $this->getChatFromUpdate($update);
+    if (is_null($chat)) {
+      throw new TelegramBundleException('Chat is null in the update object.');
+    }
+    /** @var Chat $chatEntity */
+    if (is_null(
+      $chatEntity = $this->doctrine->getRepository('KettariTelegramBundle:Chat')
+        ->findOneByTelegramId($chat->id)
+    )) {
+      throw new TelegramBundleException(
+        'Chat entity not found in the database.'
+      );
     }
 
-    return $this->doctrine->getRepository('KettariTelegramBundle:Chat')
-      ->findOneByTelegramId($chatId);
+    return $chatEntity;
   }
 
   /**
-   * Tries to track down user this update was sent from.
+   * Resolves update to user entity.
    *
-   * @param Update $update
-   * @return \Kettari\TelegramBundle\Entity\User|null
+   * @param \unreal4u\TelegramAPI\Telegram\Types\Update $update
+   * @return User
    */
-  private function resolveUser(Update $update)
+  private function resolveUserEntity(Update $update)
   {
-    // Resolve user object
-    $userId = null;
-    if (!is_null($update->message) && !is_null($update->message->from)) {
-      $userId = $update->message->from->id;
-    } elseif (!is_null($update->edited_message) &&
-      !is_null($update->edited_message->from)) {
-      $userId = $update->edited_message->from->id;
-    } elseif (!is_null($update->channel_post) &&
-      !is_null($update->channel_post->from)) {
-      $userId = $update->channel_post->from->id;
-    } elseif (!is_null($update->callback_query)) {
-      if (!is_null($update->callback_query->message) &&
-        !is_null($update->callback_query->from)) {
-        $userId = $update->callback_query->from->id;
-      }
+    $chat = $this->getChatFromUpdate($update);
+    if (is_null($chat)) {
+      throw new TelegramBundleException('User is null in the update object.');
+    }
+    /** @var User $userEntity */
+    if (is_null(
+      $userEntity = $this->doctrine->getRepository('KettariTelegramBundle:User')
+        ->findOneByTelegramId($chat->id)
+    )) {
+      throw new TelegramBundleException(
+        'User entity not found in the database.'
+      );
     }
 
-    return $this->doctrine->getRepository('KettariTelegramBundle:User')
-      ->findOneByTelegramId($userId);
+    return $userEntity;
   }
 
   /**
@@ -219,7 +240,7 @@ class AuditSubscriber extends AbstractBotSubscriber implements EventSubscriberIn
    */
   public function onRequestSent(RequestSentEvent $event)
   {
-    $chat_entity = null;
+    $chatEntity = null;
     $method = $event->getMethod();
 
     // Format human-readable description
@@ -228,25 +249,20 @@ class AuditSubscriber extends AbstractBotSubscriber implements EventSubscriberIn
       (new \ReflectionClass($method))->getShortName()
     );
     // Try to make description more informative
-    if ($method instanceof SendMessage) {
-      $chat_entity = $this->doctrine->getRepository(
+    if (($method instanceof SendMessage) ||
+      ($method instanceof SendChatAction) || ($method instanceof SendPhoto) ||
+      ($method instanceof SendLocation) || ($method instanceof SendDocument)) {
+      $chatEntity = $this->doctrine->getRepository(
         'KettariTelegramBundle:Chat'
       )
         ->findOneByTelegramId($method->chat_id);
     }
-    /*if (!is_null($event->getUpdate()->message)) {
-      $message_type = $this->getBot()
-        ->whatMessageType($event->getUpdate()->message);
-      $message_type_title = $this->getBot()
-        ->getMessageTypeTitle($message_type);
-      $description .= sprintf(', message type "%s"', $message_type_title);
-    }*/
 
     // Write the audit log
     $this->audit(
       RequestSentEvent::NAME,
       $description,
-      $chat_entity,
+      $chatEntity,
       null,
       print_r(
         $event->getMethod()
@@ -264,8 +280,8 @@ class AuditSubscriber extends AbstractBotSubscriber implements EventSubscriberIn
   public function onCommandExecuted(CommandExecutedEvent $event)
   {
     // Resolve chat and user objects
-    $chatEntity = $this->resolveChat($event->getUpdate());
-    $userEntity = $this->resolveUser($event->getUpdate());
+    $chatEntity = $this->resolveChatEntity($event->getUpdate());
+    $userEntity = $this->resolveUserEntity($event->getUpdate());
 
     // Format human-readable description
     $description = sprintf(
@@ -315,10 +331,16 @@ class AuditSubscriber extends AbstractBotSubscriber implements EventSubscriberIn
   public function onMemberJoined(JoinChatMemberEvent $event)
   {
     // Resolve chat and user objects
-    $chatEntity = $this->resolveChat($event->getUpdate());
+    $chatEntity = $this->resolveChatEntity($event->getUpdate());
     /** @var User $userEntity */
-    $userEntity = $this->doctrine->getRepository('KettariTelegramBundle:User')
-      ->findOneByTelegramId($event->getJoinedUser()->id);
+    if (is_null(
+      $userEntity = $this->doctrine->getRepository('KettariTelegramBundle:User')
+        ->findOneByTelegramId($event->getJoinedUser()->id)
+    )) {
+      throw new TelegramBundleException(
+        'User entity not found in the database.'
+      );
+    }
 
     // Format human-readable description
     $description = sprintf(
@@ -357,14 +379,14 @@ class AuditSubscriber extends AbstractBotSubscriber implements EventSubscriberIn
     $userEntity = $event->getUserEntity();
 
     // Format message parts
-    $user_name = $userEntity->getUsername();
-    $external_name = $userEntity->getFirstName();
+    $userName = $userEntity->getUsername();
+    $externalName = $userEntity->getFirstName();
 
     // Format human-readable description
     $description = sprintf(
       'Bot "%s" ("%s") joined the chat "%s"',
-      $user_name,
-      $external_name,
+      $userName,
+      $externalName,
       $this->formatChatTitle($chatEntity)
     );
 
@@ -380,8 +402,8 @@ class AuditSubscriber extends AbstractBotSubscriber implements EventSubscriberIn
     $this->logger->info(
       'Bot "{user_name}" ("{external_name}") joined the chat "{chat_name}"',
       [
-        'user_name'     => $user_name,
-        'external_name' => $external_name,
+        'user_name'     => $userName,
+        'external_name' => $externalName,
         'chat_name'     => $this->formatChatTitle($chatEntity),
       ]
     );
@@ -395,10 +417,16 @@ class AuditSubscriber extends AbstractBotSubscriber implements EventSubscriberIn
   public function onMemberLeft(LeftChatMemberEvent $event)
   {
     // Resolve chat and user objects
-    $chatEntity = $this->resolveChat($event->getUpdate());
+    $chatEntity = $this->resolveChatEntity($event->getUpdate());
     /** @var User $userEntity */
-    $userEntity = $this->doctrine->getRepository('KettariTelegramBundle:User')
-      ->findOneByTelegramId($event->getMessage()->left_chat_member->id);
+    if (is_null(
+      $this->doctrine->getRepository('KettariTelegramBundle:User')
+        ->findOneByTelegramId($event->getMessage()->left_chat_member->id)
+    )) {
+      throw new TelegramBundleException(
+        'User entity not found in the database.'
+      );
+    }
 
     // Format human-readable description
     $description = sprintf(
@@ -472,7 +500,7 @@ class AuditSubscriber extends AbstractBotSubscriber implements EventSubscriberIn
    *
    * @param TextReceivedEvent $event
    */
-  public function onTextReceived(TextReceivedEvent $event)
+  /*public function onTextReceived(TextReceivedEvent $event)
   {
     // Parse command "/start@BotName params". We need NOT a command
     if (!preg_match(
@@ -480,8 +508,8 @@ class AuditSubscriber extends AbstractBotSubscriber implements EventSubscriberIn
       $event->getText()
     )) {
       // Resolve chat and user objects
-      $chatEntity = $this->resolveChat($event->getUpdate());
-      $userEntity = $this->resolveUser($event->getUpdate());
+      $chatEntity = $this->resolveChatEntity($event->getUpdate());
+      $userEntity = $this->resolveUserEntity($event->getUpdate());
 
       // Format human-readable description
       $description = sprintf(
@@ -500,7 +528,7 @@ class AuditSubscriber extends AbstractBotSubscriber implements EventSubscriberIn
         $userEntity
       );
     }
-  }
+  }*/
 
   /**
    * Writes audit log when request is blocked.
@@ -511,8 +539,14 @@ class AuditSubscriber extends AbstractBotSubscriber implements EventSubscriberIn
   {
     // Resolve chat object
     /** @var Chat $chatEntity */
-    $chatEntity = $this->doctrine->getRepository('KettariTelegramBundle:Chat')
-      ->findOneByTelegramId($event->getChatId());
+    if (is_null(
+      $chatEntity = $this->doctrine->getRepository('KettariTelegramBundle:Chat')
+        ->findOneByTelegramId($event->getChatId())
+    )) {
+      throw new TelegramBundleException(
+        'Chat entity not found in the database.'
+      );
+    }
 
     // Format human-readable description
     $description = sprintf(
@@ -537,13 +571,13 @@ class AuditSubscriber extends AbstractBotSubscriber implements EventSubscriberIn
   public function onUserRegistered(UserRegisteredEvent $event)
   {
     // Resolve chat and user objects
-    $chat_entity = $this->resolveChat($event->getUpdate());
-    $user_entity = $event->getRegisteredUser();
+    $chatEntity = $this->resolveChatEntity($event->getUpdate());
+    $userEntity = $event->getRegisteredUser();
 
     // Format human-readable description
     $description = sprintf(
       'User "%s" registered',
-      self::formatUserName($user_entity)
+      self::formatUserName($userEntity)
     );
 
     // Write the audit log
@@ -551,8 +585,8 @@ class AuditSubscriber extends AbstractBotSubscriber implements EventSubscriberIn
       UserRegisteredEvent::NAME,
       $event->getUpdate(),
       $description,
-      $chat_entity,
-      $user_entity
+      $chatEntity,
+      $userEntity
     );
   }
 

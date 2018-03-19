@@ -4,7 +4,9 @@ declare(strict_types=1);
 namespace Kettari\TelegramBundle\Telegram\Command;
 
 use Kettari\TelegramBundle\Telegram\CommandBusInterface;
-use unreal4u\TelegramAPI\Telegram\Types\Update;
+use Kettari\TelegramBundle\Telegram\CommunicatorInterface;
+use Psr\Log\LoggerInterface;
+use Symfony\Component\Translation\TranslatorInterface;
 
 abstract class AbstractCommand implements TelegramCommandInterface
 {
@@ -53,14 +55,9 @@ abstract class AbstractCommand implements TelegramCommandInterface
   static public $declaredNotifications = [];
 
   /**
-   * @var Update
+   * @var \Psr\Log\LoggerInterface
    */
-  protected $update;
-
-  /**
-   * @var string
-   */
-  protected $commandParameter = '';
+  protected $logger;
 
   /**
    * @var \Kettari\TelegramBundle\Telegram\CommandBusInterface
@@ -68,23 +65,33 @@ abstract class AbstractCommand implements TelegramCommandInterface
   protected $bus;
 
   /**
-   * @var \Symfony\Component\Translation\TranslatorInterface
+   * @var TranslatorInterface
    */
   protected $trans;
 
   /**
+   * @var \Kettari\TelegramBundle\Telegram\CommunicatorInterface
+   */
+  protected $comm;
+
+  /**
    * AbstractCommand constructor.
    *
+   * @param \Psr\Log\LoggerInterface $logger
    * @param \Kettari\TelegramBundle\Telegram\CommandBusInterface $bus
-   * @param \unreal4u\TelegramAPI\Telegram\Types\Update $update
+   * @param \Symfony\Component\Translation\TranslatorInterface $translator
+   * @param \Kettari\TelegramBundle\Telegram\CommunicatorInterface $communicator
    */
   public function __construct(
+    LoggerInterface $logger,
     CommandBusInterface $bus,
-    Update $update
+    TranslatorInterface $translator,
+    CommunicatorInterface $communicator
   ) {
+    $this->logger = $logger;
     $this->bus = $bus;
-    $this->update = $update;
-    $this->trans = $bus->getTrans();
+    $this->trans = $translator;
+    $this->comm = $communicator;
   }
 
   /**
@@ -134,30 +141,4 @@ abstract class AbstractCommand implements TelegramCommandInterface
   {
     return static::$declaredNotifications;
   }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function initialize(string $commandParameter): TelegramCommandInterface
-  {
-    $this->commandParameter = $commandParameter;
-
-    return $this;
-  }
-
-  /**
-   * Executes command.
-   *
-   * @return void
-   */
-  abstract public function execute();
-
-  /**
-   * {@inheritdoc}
-   */
-  public function getCommandParameter(): string
-  {
-    return $this->commandParameter;
-  }
-
 }
