@@ -5,11 +5,8 @@ namespace Kettari\TelegramBundle\Telegram\Subscriber;
 
 
 use Kettari\TelegramBundle\Telegram\CommandBusInterface;
-
 use Kettari\TelegramBundle\Telegram\Event\TerminateEvent;
 use Psr\Log\LoggerInterface;
-
-
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
 
@@ -55,7 +52,7 @@ class MenuSubscriber extends AbstractBotSubscriber implements EventSubscriberInt
    */
   public static function getSubscribedEvents()
   {
-    return [TerminateEvent::NAME => 'onRequestTermination'];
+    return [TerminateEvent::NAME => ['onRequestTermination', -90000]];
   }
 
   /**

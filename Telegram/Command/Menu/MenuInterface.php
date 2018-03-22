@@ -4,7 +4,7 @@ namespace Kettari\TelegramBundle\Telegram\Command\Menu;
 
 use unreal4u\TelegramAPI\Telegram\Types\Update;
 
-interface MenuInterface
+interface MenuInterface extends HookHandleInterface
 {
   /**
    * Show menu to user.

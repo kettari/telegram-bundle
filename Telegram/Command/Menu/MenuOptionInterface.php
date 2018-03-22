@@ -5,7 +5,7 @@ namespace Kettari\TelegramBundle\Telegram\Command\Menu;
 
 use unreal4u\TelegramAPI\Telegram\Types\Update;
 
-interface MenuOptionInterface
+interface MenuOptionInterface extends HookHandleInterface
 {
   /**
    * Returns option caption.

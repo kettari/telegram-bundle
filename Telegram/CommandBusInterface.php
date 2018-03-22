@@ -4,7 +4,9 @@ declare(strict_types=1);
 namespace Kettari\TelegramBundle\Telegram;
 
 
+use Kettari\TelegramBundle\Entity\Chat;
 use Kettari\TelegramBundle\Entity\Hook;
+use Kettari\TelegramBundle\Entity\User;
 use Kettari\TelegramBundle\Telegram\Command\TelegramCommandInterface;
 use unreal4u\TelegramAPI\Telegram\Types\Update;
 use unreal4u\TelegramAPI\Telegram\Types\User as TelegramUser;
@@ -92,9 +94,23 @@ interface CommandBusInterface
   public function executeHook(Hook $hook, Update $update): CommandBusInterface;
 
   /**
+   * Deletes all hooks for the update.
+   *
+   * @param \unreal4u\TelegramAPI\Telegram\Types\Update $update
+   */
+  public function deleteAllHooks(Update $update);
+
+  /**
    * Deletes the hook.
    *
    * @param \Kettari\TelegramBundle\Entity\Hook $hook
    */
   public function deleteHook(Hook $hook);
+
+  /**
+   * Sets flag that request is handled.
+   *
+   * @param bool $handled
+   */
+  public function setRequestHandled(bool $handled);
 }

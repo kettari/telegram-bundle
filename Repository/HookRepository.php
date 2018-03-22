@@ -5,6 +5,8 @@ namespace Kettari\TelegramBundle\Repository;
 
 
 use Doctrine\ORM\EntityRepository;
+use Kettari\TelegramBundle\Entity\Chat;
+use Kettari\TelegramBundle\Entity\User;
 
 
 /**
@@ -18,16 +20,16 @@ class HookRepository extends EntityRepository
   /**
    * Finds hooks by chat and user IDs.
    *
-   * @param int $chatId
-   * @param int $userId
+   * @param \Kettari\TelegramBundle\Entity\Chat $chat
+   * @param \Kettari\TelegramBundle\Entity\User $user
    * @return array
    */
-  public function findActive(int $chatId, int $userId)
+  public function findActive(Chat $chat, User $user)
   {
     return $this->findBy(
       [
-        'chat' => $chatId,
-        'user' => $userId,
+        'chat' => $chat,
+        'user' => $user,
       ]
     );
   }

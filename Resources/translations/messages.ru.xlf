@@ -271,6 +271,16 @@ Telegram ID: %telegram_id%
                 <target>Роль убрана.</target>
             </trans-unit>
 
+            <!-- /cancel command -->
+            <trans-unit id="command.cancel.done">
+                <source>command.cancel.done</source>
+                <target>Команда отменена.</target>
+            </trans-unit>
+            <trans-unit id="command.cancel.hook_not_found">
+                <source>command.cancel.hook_not_found</source>
+                <target>Вроде бы, ничего отменять не надо?</target>
+            </trans-unit>
+
             <!-- Menu general -->
             <trans-unit id="menu.main.title">
                 <source>menu.main.title</source>

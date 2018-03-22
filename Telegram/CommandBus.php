@@ -11,6 +11,7 @@ use Kettari\TelegramBundle\Exception\HookException;
 use Kettari\TelegramBundle\Telegram\Command\TelegramCommandInterface;
 use Kettari\TelegramBundle\Telegram\Event\CommandExecutedEvent;
 use Kettari\TelegramBundle\Telegram\Event\CommandUnauthorizedEvent;
+use Kettari\TelegramBundle\Telegram\Event\KeeperSingleton;
 use Psr\Log\LoggerInterface;
 use Symfony\Bridge\Doctrine\RegistryInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -51,6 +52,11 @@ class CommandBus implements CommandBusInterface
   private $commandServices = [];
 
   /**
+   * @var \Kettari\TelegramBundle\Telegram\Event\KeeperSingleton
+   */
+  private $keeper;
+
+  /**
    * CommandBus constructor.
    *
    * @param \Symfony\Component\DependencyInjection\ContainerInterface $container
@@ -68,6 +74,7 @@ class CommandBus implements CommandBusInterface
     $this->logger = $logger;
     $this->doctrine = $doctrine;
     $this->dispatcher = $dispatcher;
+    $this->keeper = KeeperSingleton::getInstance();
   }
 
   /**
@@ -363,6 +370,17 @@ class CommandBus implements CommandBusInterface
   }
 
   /**
+   * @inheritdoc
+   */
+  public function deleteAllHooks(Update $update)
+  {
+    $this->logger->info('Deleting all hooks');
+    while ($hook = $this->findHook($update)) {
+      $this->deleteHook($hook);
+    }
+  }
+
+  /**
    * {@inheritdoc}
    */
   public function findHook(Update $update)
@@ -391,6 +409,7 @@ class CommandBus implements CommandBusInterface
       return null;
     }
     // Find chat object. If not found, nothing to do
+    /** @var \Kettari\TelegramBundle\Entity\Chat $chat */
     $chat = $this->doctrine->getRepository('KettariTelegramBundle:Chat')
       ->findOneByTelegramId($telegramMessage->chat->id);
     if (!$chat) {
@@ -399,6 +418,7 @@ class CommandBus implements CommandBusInterface
       );
     }
     // Find user object. If not found, nothing to do
+    /** @var \Kettari\TelegramBundle\Entity\User $user */
     $user = $this->doctrine->getRepository('KettariTelegramBundle:User')
       ->findOneByTelegramId($telegramUser->id);
     if (!$user) {
@@ -409,7 +429,7 @@ class CommandBus implements CommandBusInterface
 
     // Find hook object
     $activeHooks = $this->doctrine->getRepository('KettariTelegramBundle:Hook')
-      ->findActive($chat->getId(), $user->getId());
+      ->findActive($chat, $user);
     if (count($activeHooks) == 1) {
       /** @var Hook $hook */
       $hook = reset($activeHooks);
@@ -459,12 +479,29 @@ class CommandBus implements CommandBusInterface
   /**
    * {@inheritdoc}
    */
+  public function deleteHook(Hook $hook)
+  {
+    $this->logger->info(
+      'Hook ID={hook_id} deleted',
+      ['hook_id' => $hook->getId()]
+    );
+
+    $this->doctrine->getManager()
+      ->remove($hook);
+    $this->doctrine->getManager()
+      ->flush();
+  }
+
+  /**
+   * {@inheritdoc}
+   */
   public function executeHook(Hook $hook, Update $update): CommandBusInterface
   {
+    $hookId = $hook->getId();
     $this->logger->debug(
       'Executing hook ID={hook_id}',
       [
-        'hook_id'    => $hook->getId(),
+        'hook_id'    => $hookId,
         'update_id'  => $update->update_id,
         'service_id' => $hook->getServiceId(),
       ]
@@ -490,32 +527,24 @@ class CommandBus implements CommandBusInterface
 
     } else {
       throw new HookException(
-        'Unable to execute the hook ID='.$hook->getId().'. Method not exists "'.
+        'Unable to execute the hook ID='.$hookId.'. Method not exists "'.
         $hook->getMethodName().'"" for the class: '.get_class($hookService)
       );
     }
 
     $this->logger->info(
       'Hook ID={hook_id} executed',
-      ['hook_id' => $hook->getId(), 'update_id' => $update->update_id]
+      ['hook_id' => $hookId, 'update_id' => $update->update_id]
     );
 
     return $this;
   }
 
   /**
-   * {@inheritdoc}
+   * @inheritdoc
    */
-  public function deleteHook(Hook $hook)
+  public function setRequestHandled(bool $handled)
   {
-    $this->logger->info(
-      'Hook ID={hook_id} deleted',
-      ['hook_id' => $hook->getId()]
-    );
-
-    $this->doctrine->getManager()
-      ->remove($hook);
-    $this->doctrine->getManager()
-      ->flush();
+    $this->keeper->setRequestHandled($handled);
   }
 }

@@ -37,6 +37,9 @@ abstract class AbstractRegularMenu extends AbstractMenu
         Communicator::PARSE_MODE_PLAIN,
         $this->getReplyKeyboardMarkup()
       );
+
+    // Mark request handled
+    $this->bus->setRequestHandled(true);
   }
 
   /**

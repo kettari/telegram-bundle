@@ -4,7 +4,7 @@ declare(strict_types=1);
 namespace Kettari\TelegramBundle\Telegram\Command;
 
 
-use Kettari\TelegramBundle\Telegram\Command\Menu\MainMenu;
+use Kettari\TelegramBundle\Telegram\Command\Menu\MenuInterface;
 use Kettari\TelegramBundle\Telegram\CommandBusInterface;
 use Kettari\TelegramBundle\Telegram\CommunicatorInterface;
 use Psr\Log\LoggerInterface;
@@ -20,7 +20,7 @@ class MenuCommand extends AbstractCommand
   static public $requiredPermissions = ['execute command menu'];
 
   /**
-   * @var \Kettari\TelegramBundle\Telegram\Command\Menu\MainMenu
+   * @var \Kettari\TelegramBundle\Telegram\Command\Menu\MenuInterface
    */
   private $menu;
 
@@ -31,17 +31,17 @@ class MenuCommand extends AbstractCommand
    * @param \Kettari\TelegramBundle\Telegram\CommandBusInterface $bus
    * @param \Symfony\Component\Translation\TranslatorInterface $translator
    * @param \Kettari\TelegramBundle\Telegram\CommunicatorInterface $communicator
-   * @param \Kettari\TelegramBundle\Telegram\Command\Menu\MainMenu $mainMenu
+   * @param \Kettari\TelegramBundle\Telegram\Command\Menu\MenuInterface $menu
    */
   public function __construct(
     LoggerInterface $logger,
     CommandBusInterface $bus,
     TranslatorInterface $translator,
     CommunicatorInterface $communicator,
-    MainMenu $mainMenu
+    MenuInterface $menu
   ) {
     parent::__construct($logger, $bus, $translator, $communicator);
-    $this->menu = $mainMenu;
+    $this->menu = $menu;
   }
 
   /**

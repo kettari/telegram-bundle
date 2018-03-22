@@ -141,14 +141,14 @@ class TextSubscriber extends AbstractBotSubscriber implements EventSubscriberInt
     string $parameter
   ) {
     // Dispatch command event
-    $command_received_event = new CommandReceivedEvent(
+    $commandReceivedEvent = new CommandReceivedEvent(
       $update,
       $commandName,
       $parameter
     );
     $this->dispatcher->dispatch(
       CommandReceivedEvent::NAME,
-      $command_received_event
+      $commandReceivedEvent
     );
   }
 

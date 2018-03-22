@@ -11,7 +11,7 @@ use Psr\Log\LoggerInterface;
 use Symfony\Component\Translation\TranslatorInterface;
 use unreal4u\TelegramAPI\Telegram\Types\Update;
 
-abstract class AbstractMenuOption implements MenuOptionInterface, HookHandleInterface
+abstract class AbstractMenuOption implements MenuOptionInterface
 {
   /**
    * @var CommandBusInterface

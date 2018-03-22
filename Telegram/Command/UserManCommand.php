@@ -88,6 +88,7 @@ class UserManCommand extends AbstractCommand
       'kettari_telegram.command.userman',
       'showUserManMenu'
     );
+    $this->bus->setRequestHandled(true);
   }
 
   /**
@@ -120,7 +121,7 @@ class UserManCommand extends AbstractCommand
     }
 
     // Cancel
-    if (self::BTN_CANCEL == $name) {
+    if ($this->trans->trans(self::BTN_CANCEL) == $name) {
       $this->replyWithMessage(
         $update,
         $this->trans->trans('command.cancelled'),
@@ -171,6 +172,7 @@ class UserManCommand extends AbstractCommand
       'handleUserMan_Menu',
       serialize($foundUser)
     );
+    $this->bus->setRequestHandled(true);
   }
 
   /**
@@ -184,16 +186,16 @@ class UserManCommand extends AbstractCommand
     $text = $this->trans->trans(
       'command.userman.user_info',
       [
-        '%full_name%' => trim(
+        '%full_name%'          => trim(
           $user->getFirstName().' '.$user->getLastName()
         ),
         '%full_external_name%' => trim(
           $user->getExternalFirstName().' '.$user->getExternalLastName()
         ),
-        '%username%' => $user->getUsername(),
-        '%phone_number%' => $user->getPhone(),
-        '%telegram_id%' => $user->getTelegramId(),
-        '%blocking_status%' => $user->isBlocked() ? $this->trans->trans(
+        '%username%'           => $user->getUsername(),
+        '%phone_number%'       => $user->getPhone(),
+        '%telegram_id%'        => $user->getTelegramId(),
+        '%blocking_status%'    => $user->isBlocked() ? $this->trans->trans(
           'command.option.yes'
         ) : $this->trans->trans('command.option.no'),
       ]
@@ -303,6 +305,7 @@ class UserManCommand extends AbstractCommand
         'handleUserManRoleAdd',
         $serializedFoundUser
       );
+      $this->bus->setRequestHandled(true);
 
       return;
     }
@@ -322,6 +325,7 @@ class UserManCommand extends AbstractCommand
         'handleUserManRoleRemove',
         $serializedFoundUser
       );
+      $this->bus->setRequestHandled(true);
 
       return;
     }

@@ -74,6 +74,14 @@ services:
             - '@kettari_telegram.communicator'
             - '@kettari_telegram.menu.main'
 
+    kettari_telegram.command.cancel:
+        class: Kettari\TelegramBundle\Telegram\Command\CancelCommand
+        arguments:
+            - '@logger'
+            - '@kettari_telegram.bus'
+            - '@translator'
+            - '@kettari_telegram.communicator'
+
     ###
     ### Menu options
     ###
@@ -174,12 +182,12 @@ services:
             - [registerCommand, ['start', 'kettari_telegram.command.start']]
             - [registerCommand, ['settings', 'kettari_telegram.command.settings']]
             - [registerCommand, ['help', 'kettari_telegram.command.help']]
-            - [registerCommand, ['menu', 'kettari_telegram.command.menu']]
             # These standard commands commented out so if you need them, add manually
             #- [registerCommand, ['Kettari\TelegramBundle\Telegram\Command\ListRolesCommand']]
             #- [registerCommand, ['Kettari\TelegramBundle\Telegram\Command\PushCommand']]
             #- [registerCommand, ['Kettari\TelegramBundle\Telegram\Command\UserManCommand']]
             #- [registerCommand, ['Kettari\TelegramBundle\Telegram\Command\RegisterCommand']]
+            #- [registerCommand, ['menu', 'kettari_telegram.command.menu']]
 
     ### Default subscribers
     # Audit subscriber

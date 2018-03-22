@@ -120,14 +120,16 @@ class CommandSubscriber extends AbstractBotSubscriber implements EventSubscriber
       return;
     }
 
+    // Remove all current hooks prior to execute command
+    $this->bus->deleteAllHooks($event->getUpdate());
+
     // Execute the command
-    if ($this->bus->executeCommand(
+    $this->bus->executeCommand(
       $event->getUpdate(),
-      $event->getCommandName()
-    )) {
-      $event->getKeeper()
-        ->setRequestHandled(true);
-    }
+      $event->getCommandName(),
+      $event->getParameter()
+    );
+
     $this->logger->info(
       'CommandSubscriber::CommandReceivedEvent for the message ID={message_id}, command "{command_name}" processed',
       [
@@ -178,9 +180,6 @@ class CommandSubscriber extends AbstractBotSubscriber implements EventSubscriber
       new ReplyKeyboardRemove()
     );
 
-    // Set flag that request is handled
-    $event->getKeeper()
-      ->setRequestHandled(true);
     $this->logger->info(
       'CommandSubscriber::CommandUnknownEvent for the message ID={message_id}, command "{command_name}" processed',
       [

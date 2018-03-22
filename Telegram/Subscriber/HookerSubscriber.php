@@ -89,6 +89,14 @@ class HookerSubscriber extends AbstractBotSubscriber implements EventSubscriberI
       ]
     );
 
+    // Only execute hooker when request is not marked handled
+    if ($event->getKeeper()
+      ->isRequestHandled()) {
+      $this->logger->info('Request handled, skipping Hooker');
+
+      return;
+    }
+
     // Check for hooks and execute if any found
     /** @var Hook $hook */
     if ($hook = $this->bus->findHook($event->getUpdate())) {

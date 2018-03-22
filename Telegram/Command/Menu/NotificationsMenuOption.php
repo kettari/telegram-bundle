@@ -71,8 +71,6 @@ class NotificationsMenuOption extends AbstractMenuOption
       Communicator::PARSE_MODE_PLAIN,
       $this->getReplyKeyboardMarkup_Notifications()
     );
-    // Mark request as handled to prevent home menu
-    $this->keeper->setRequestHandled(true);
 
     $this->logger->info('Clicked notifications option');
 

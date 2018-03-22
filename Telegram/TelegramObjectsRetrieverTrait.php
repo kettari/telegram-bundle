@@ -16,13 +16,17 @@ trait TelegramObjectsRetrieverTrait
    */
   protected function getUserFromUpdate(Update $update)
   {
-    // TODO Return User from callback->from with UpdateTypeResolver
-    if (!is_null($message = $this->getMessageFromUpdate($update))) {
-      return $message->from;
-    } elseif (!is_null($update->edited_message)) {
-      return $update->edited_message->from;
-    } elseif (!is_null($update->channel_post)) {
-      return $update->channel_post->from;
+    if (UpdateTypeResolver::getUpdateType($update) ==
+      UpdateTypeResolver::UT_CALLBACK_QUERY) {
+      return $update->callback_query->from;
+    } else {
+      if (!is_null($message = $this->getMessageFromUpdate($update))) {
+        return $message->from;
+      } elseif (!is_null($update->edited_message)) {
+        return $update->edited_message->from;
+      } elseif (!is_null($update->channel_post)) {
+        return $update->channel_post->from;
+      }
     }
 
     return null;

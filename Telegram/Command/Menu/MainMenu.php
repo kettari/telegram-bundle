@@ -4,7 +4,6 @@ declare(strict_types=1);
 namespace Kettari\TelegramBundle\Telegram\Command\Menu;
 
 
-use Kettari\TelegramBundle\Exception\TelegramBundleException;
 use Kettari\TelegramBundle\Telegram\CommandBusInterface;
 use Kettari\TelegramBundle\Telegram\CommunicatorInterface;
 use Psr\Log\LoggerInterface;

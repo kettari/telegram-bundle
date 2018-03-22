@@ -8,12 +8,13 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Kettari\TelegramBundle\Telegram\CommandBusInterface;
 use Kettari\TelegramBundle\Telegram\CommunicatorInterface;
+use Kettari\TelegramBundle\Telegram\Event\KeeperSingleton;
 use Kettari\TelegramBundle\Telegram\UpdateTypeResolver;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Translation\TranslatorInterface;
 use unreal4u\TelegramAPI\Telegram\Types\Update;
 
-abstract class AbstractMenu implements MenuInterface, HookHandleInterface
+abstract class AbstractMenu implements MenuInterface
 {
   /**
    * @var CommandBusInterface
@@ -50,6 +51,10 @@ abstract class AbstractMenu implements MenuInterface, HookHandleInterface
    */
   protected $title = '';
 
+  /**
+   * @var \Kettari\TelegramBundle\Telegram\Event\KeeperSingleton
+   */
+  protected $keeper;
 
   /**
    * AbstractMenu constructor.
@@ -70,6 +75,7 @@ abstract class AbstractMenu implements MenuInterface, HookHandleInterface
     $this->bus = $bus;
     $this->trans = $translator;
     $this->communicator = $communicator;
+    $this->keeper = KeeperSingleton::getInstance();
   }
 
   /**
@@ -151,7 +157,10 @@ abstract class AbstractMenu implements MenuInterface, HookHandleInterface
     foreach ($this->options->toArray() as $option) {
       if ($option->checkIsClicked($update)) {
         // Let option do whatever is needed when it's clicked
-        $option->click($update);
+        if ($option->click($update)) {
+          $option->hookMySelf($update);
+          $this->keeper->setRequestHandled(true);
+        }
         break;
       }
     }
