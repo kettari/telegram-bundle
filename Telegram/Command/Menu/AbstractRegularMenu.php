@@ -32,11 +32,11 @@ abstract class AbstractRegularMenu extends AbstractMenu
     }
 
     $this->communicator->sendMessage(
-        $telegramMessage->chat->id,
-        $this->trans->trans($this->title),
-        Communicator::PARSE_MODE_PLAIN,
-        $this->getReplyKeyboardMarkup()
-      );
+      $telegramMessage->chat->id,
+      $this->trans->trans($this->title),
+      Communicator::PARSE_MODE_PLAIN,
+      $this->getReplyKeyboardMarkup()
+    );
 
     // Mark request handled
     $this->bus->setRequestHandled(true);
@@ -55,10 +55,26 @@ abstract class AbstractRegularMenu extends AbstractMenu
     $replyMarkup->resize_keyboard = true;
 
     /** @var \Kettari\TelegramBundle\Telegram\Command\Menu\MenuOptionInterface $option */
+    $rowIndex = 0;
+    $row = [];
     foreach ($this->options as $option) {
+      if (!isset($this->layout[$rowIndex])) {
+        throw new TelegramBundleException('Layout index exceeded.');
+      }
+
       $button = new KeyboardButton();
       $button->text = $this->trans->trans($option->getCaption());
-      $replyMarkup->keyboard[][] = $button;
+      $row[] = $button;
+      if (count($row) == $this->layout[$rowIndex]) {
+        $replyMarkup->keyboard[] = $row;
+        $row = [];
+        $rowIndex++;
+      }
+    }
+
+    // Append last row
+    if (count($row)) {
+      $replyMarkup->keyboard[] = $row;
     }
 
     return $replyMarkup;

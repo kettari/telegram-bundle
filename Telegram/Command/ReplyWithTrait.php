@@ -7,6 +7,7 @@ namespace Kettari\TelegramBundle\Telegram\Command;
 use Kettari\TelegramBundle\Telegram\Communicator;
 use unreal4u\TelegramAPI\Abstracts\KeyboardMethods;
 use unreal4u\TelegramAPI\Telegram\Types\Message;
+use unreal4u\TelegramAPI\Telegram\Types\ReplyKeyboardRemove;
 use unreal4u\TelegramAPI\Telegram\Types\Update;
 
 trait ReplyWithTrait
@@ -55,6 +56,11 @@ trait ReplyWithTrait
       }
     }
     $messages[] = $nextMessage;
+
+    // Always remove keyboard if none given
+    if (is_null($replyMarkup)) {
+      $replyMarkup = new ReplyKeyboardRemove();
+    }
 
     // Send all messages
     foreach ($messages as $oneMessage) {

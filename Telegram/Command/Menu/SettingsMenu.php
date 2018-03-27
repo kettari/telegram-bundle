@@ -32,7 +32,7 @@ class SettingsMenu extends AbstractRegularMenu
     $this->title = 'menu.settings.title';
 
     // Settings menu options
-    $this->addOption($notificationsMenuOption);
+    $this->appendOption($notificationsMenuOption);
   }
 
   /**

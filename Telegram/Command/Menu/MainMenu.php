@@ -37,9 +37,9 @@ class MainMenu extends AbstractRegularMenu
     $this->title = 'menu.main.title';
 
     // Main menu options
-    $this->addOption($helpMenuOption);
+    $this->appendOption($helpMenuOption);
     $settingsMenuOption->setTargetMenu($settingsMenu);
-    $this->addOption($settingsMenuOption);
+    $this->appendOption($settingsMenuOption);
   }
 
   /**

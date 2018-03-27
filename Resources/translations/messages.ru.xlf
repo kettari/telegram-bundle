@@ -7,6 +7,14 @@
                 <source>general.account_blocked</source>
                 <target>Извините, ваш аккаунт заблокирован.</target>
             </trans-unit>
+            <trans-unit id="general.format.date_only">
+                <source>general.format.date_only</source>
+                <target>d.m.Y</target>
+            </trans-unit>
+            <trans-unit id="general.format.date_time">
+                <source>general.format.date_time</source>
+                <target>d.m.Y H:i</target>
+            </trans-unit>
 
             <!-- Commands general strings -->
             <trans-unit id="command.private_only">
@@ -286,13 +294,13 @@ Telegram ID: %telegram_id%
             <!-- Help menu -->
             <trans-unit id="menu.help.button_caption">
                 <source>menu.help.button_caption</source>
-                <target>&#8505; Помощь</target>
+                <target>Помощь</target>
             </trans-unit>
 
             <!-- Setting menu -->
             <trans-unit id="menu.settings.button_caption">
                 <source>menu.settings.button_caption</source>
-                <target>&#9881; Настройки</target>
+                <target>Настройки</target>
             </trans-unit>
             <trans-unit id="menu.settings.title">
                 <source>menu.settings.title</source>
@@ -306,7 +314,7 @@ Telegram ID: %telegram_id%
             <!-- Notifications menu -->
             <trans-unit id="menu.notifications.button_caption">
                 <source>menu.notifications.button_caption</source>
-                <target>&#128232; Уведомления</target>
+                <target>Уведомления</target>
             </trans-unit>
             <trans-unit id="menu.notifications.select">
                 <source>menu.notifications.select</source>

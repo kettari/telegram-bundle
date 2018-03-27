@@ -4,9 +4,7 @@ declare(strict_types=1);
 namespace Kettari\TelegramBundle\Telegram;
 
 
-use Kettari\TelegramBundle\Entity\Chat;
 use Kettari\TelegramBundle\Entity\Hook;
-use Kettari\TelegramBundle\Entity\User;
 use Kettari\TelegramBundle\Telegram\Command\TelegramCommandInterface;
 use unreal4u\TelegramAPI\Telegram\Types\Update;
 use unreal4u\TelegramAPI\Telegram\Types\User as TelegramUser;

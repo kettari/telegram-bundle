@@ -57,6 +57,11 @@ abstract class AbstractMenu implements MenuInterface
   protected $keeper;
 
   /**
+   * @var array
+   */
+  protected $layout = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1];
+
+  /**
    * AbstractMenu constructor.
    *
    * @param \Psr\Log\LoggerInterface $logger
@@ -106,12 +111,28 @@ abstract class AbstractMenu implements MenuInterface
   }
 
   /**
+   * Appends option to the end of array.
+   *
    * @param \Kettari\TelegramBundle\Telegram\Command\Menu\MenuOptionInterface $option
    * @return \Kettari\TelegramBundle\Telegram\Command\Menu\AbstractMenu
    */
-  public function addOption(MenuOptionInterface $option): AbstractMenu
+  public function appendOption(MenuOptionInterface $option): AbstractMenu
   {
     $this->options->add($option);
+
+    return $this;
+  }
+
+  /**
+   * Inserts option to the start of array.
+   *
+   * @param \Kettari\TelegramBundle\Telegram\Command\Menu\MenuOptionInterface $option
+   * @return \Kettari\TelegramBundle\Telegram\Command\Menu\AbstractMenu
+   */
+  public function insertOption(MenuOptionInterface $option): AbstractMenu
+  {
+    $items = array_merge([$option], $this->options->toArray());
+    $this->options = new ArrayCollection($items);
 
     return $this;
   }
@@ -170,4 +191,25 @@ abstract class AbstractMenu implements MenuInterface
       ['update_id' => $update->update_id]
     );
   }
+
+  /**
+   * @return array
+   */
+  public function getLayout(): array
+  {
+    return $this->layout;
+  }
+
+  /**
+   * @param array $layout
+   * @return AbstractMenu
+   */
+  public function setLayout(array $layout): AbstractMenu
+  {
+    $this->layout = $layout;
+
+    return $this;
+  }
+
+
 }

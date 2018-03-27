@@ -108,6 +108,7 @@ class MessageSubscriber extends AbstractBotSubscriber implements EventSubscriber
       [
         'message_id' => $event->getMessage()->message_id,
         'chat_id'    => $event->getMessage()->chat->id,
+        'message'    => $event->getMessage(),
       ]
     );
 
