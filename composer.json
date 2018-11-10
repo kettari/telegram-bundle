@@ -12,7 +12,8 @@
   ],
   "require": {
     "php": ">=7.0.0",
-    "unreal4u/telegram-api": "~2.3"
+    "unreal4u/telegram-api": "~2.3",
+    "codeception/codeception": "*"
   },
   "autoload": {
     "psr-4": {
