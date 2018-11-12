@@ -1,0 +1,11 @@
+# Use root/example as user/password credentials
+version: '2'
+
+services:
+  php_telegram:
+    build: ./php
+    ports:
+      - 9009:9000
+    working_dir: /var/www/telegram-bundle
+    volumes:
+      - ./../../.:/var/www/telegram-bundle
