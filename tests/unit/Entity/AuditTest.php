@@ -89,7 +89,13 @@ class AuditTest extends \Codeception\Test\Unit
 
     public function testContent()
     {
-
+      $content = 'content';
+      $this->tester->assertNull($this->audit->getContent());
+      $this->tester->assertSame(
+        $this->audit,
+        $this->audit->setContent($content)
+      );
+      $this->tester->assertSame($content, $this->audit->getContent());
     }
 
     public function count()
@@ -103,6 +109,4 @@ class AuditTest extends \Codeception\Test\Unit
         parent::run($result);
         // TODO: Implement run() method.
     }
-
-
 }
